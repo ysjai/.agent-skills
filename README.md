@@ -8,15 +8,31 @@
 - **存放位置**：`~/.agent-skills/` - 集中存放所有 skills（SkillHub 下载、本地自建、Git 仓库）
 - **管理命令**：安装几个快捷命令到 OpenCode，方便你通过 `/download-skills`、`/install-skills` 管理 skills
 
+## 前置要求
+
+在开始之前，请确保已安装以下工具：
+
+| 工具 | 说明 | 安装方式 |
+|------|------|----------|
+| [OpenCode](https://opencode.ai) | AI 编程助手（本仓库的宿主） | 参见官网文档 |
+| [git](https://git-scm.com) | 版本控制，用于克隆仓库和管理子模块 | `brew install git`（macOS） |
+| [skillhub CLI](https://skillhub.tencent.com) | SkillHub 官方命令行工具，用于搜索和下载在线技能 | `npm install -g skillhub` |
+
+> **注意**：skillhub CLI 仅在使用 SkillHub 在线来源时才需要。如果你只使用本地或 Git 仓库来源，可以跳过安装。
+
 ## 快速设置
 
 ### 第一步：克隆仓库到 ~/.agent-skills/
 
-```bash
-# 方式1：使用 HTTPS
-git clone --recurse-submodules https://github.com/mac-home-config-ysj/.agent-skills.git ~/.agent-skills
+方式1：使用 HTTPS
 
-# 方式2：使用 SSH（推荐，已配置 SSH key 的用户）
+```bash
+git clone --recurse-submodules https://github.com/mac-home-config-ysj/.agent-skills.git ~/.agent-skills
+```
+
+方式2：使用 SSH（推荐，已配置 SSH key 的用户）
+
+```bash
 git clone --recurse-submodules git@github.com:mac-home-config-ysj/.agent-skills.git ~/.agent-skills
 ```
 
@@ -38,10 +54,10 @@ ln -s ~/.agent-skills/.opencode/commands/update-skills.md ~/.config/opencode/com
 ### 第三步：验证
 
 启动 OpenCode，输入 `/` 查看可用命令，你应该看到：
-- `/download-skills` - 只下载 skills 到 `~/.agent-skills/`，**不创建软链接**（支持 SkillHub 和 Git clone）
-- `/install-skills` - 安装 skills（先选项目级还是全局，再选来源：SkillHub、local-skills、git-repo-skills）
-- `/uninstall-skills` - 卸载已安装的 skills
-- `/update-skills` - 更新 git-repo-skills 中的所有子模块
+- `/download-skills` - 只下载 skills 到 `~/.agent-skills/`，**不创建软链接**（支持 SkillHub 在线下载和 Git clone）
+- `/install-skills` - 安装 skills 并创建软链接（先选安装目标：当前项目 or 全局；再选来源：SkillHub、local-skills、git-repo-skills）
+- `/uninstall-skills` - 卸载已安装的 skills（移除软链接）
+- `/update-skills` - 更新已有 skills（支持更新 SkillHub 来源和 git-repo-skills 子模块）
 
 ## 日常使用
 
@@ -63,17 +79,6 @@ ln -s ~/.agent-skills/.opencode/commands/update-skills.md ~/.config/opencode/com
 - `/download-skills`：支持 SkillHub 在线下载和 Git 仓库 clone，只下载源文件不安装
 - `/install-skills`：先询问安装目标（当前项目 or 全局），再支持三种来源（SkillHub、git-repo-skills、local-skills），安装时会先执行下载流程再创建软链接
 
-### 添加本地自建 skill
-
-在 `local-skills/` 下创建目录，放入 skill 文件：
-
-```bash
-mkdir ~/.agent-skills/local-skills/my-skill
-# 创建 SKILL.md 等文件...
-```
-
-然后通过 `/install-skills` → 选择 local-skills 来源安装。
-
 ### 添加 Git 仓库 skill
 
 通过 `/install-skills` → 选择 git-repo-skills 来源，按提示输入 clone 地址即可。
@@ -86,7 +91,18 @@ git submodule add https://github.com/user/repo.git git-repo-skills/my-repo
 git submodule update --init git-repo-skills/my-repo
 ```
 
-### 更新 git-repo-skills 中的所有子模块
+### 添加本地自建 skill
+
+在 `local-skills/` 下创建目录，放入 skill 文件：
+
+```bash
+mkdir ~/.agent-skills/local-skills/my-skill
+# 创建 SKILL.md 等文件...
+```
+
+然后通过 `/install-skills` → 选择 local-skills 来源安装。
+
+### 更新已有 skills
 
 ```
 /update-skills
@@ -160,5 +176,5 @@ git push
 A: 这是约定的位置，方便管理命令用绝对路径找到所有 skills。
 
 **Q: SkillHub、git-repo-skills、local-skills 有什么区别？**
-A: SkillHub 是在线下载的第三方 skills；git-repo-skills 是通过 git submodule 跟踪的外部仓库；local-skills 是你自己创建的，可以统一更新。
+A: SkillHub 是从 [skillhub.tencent.com](https://skillhub.tencent.com) 在线下载的第三方 skills；git-repo-skills 是通过 git submodule 跟踪的外部仓库，可以统一执行 `git submodule update --remote` 更新；local-skills 是你自己创建和维护的技能。
 
