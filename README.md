@@ -6,7 +6,7 @@
 
 这是一个技能仓库管理器：
 - **存放位置**：`~/.agent-skills/` - 集中存放所有 skills（SkillHub 下载、本地自建、Git 仓库）
-- **管理命令**：安装几个快捷命令到 OpenCode，方便你通过 `/install-skills` 安装 skills
+- **管理命令**：安装几个快捷命令到 OpenCode，方便你通过 `/download-skills`、`/install-project-skills`、`/install-home-skills` 管理 skills
 
 ## 快速设置
 
@@ -29,7 +29,9 @@ git clone --recurse-submodules git@github.com:mac-home-config-ysj/.agent-skills.
 mkdir -p ~/.config/opencode/commands
 
 # 创建软链接
-ln -s ~/.agent-skills/.opencode/commands/install-skills.md ~/.config/opencode/commands/
+ln -s ~/.agent-skills/.opencode/commands/download-skills.md ~/.config/opencode/commands/
+ln -s ~/.agent-skills/.opencode/commands/install-project-skills.md ~/.config/opencode/commands/
+ln -s ~/.agent-skills/.opencode/commands/install-home-skills.md ~/.config/opencode/commands/
 ln -s ~/.agent-skills/.opencode/commands/uninstall-skills.md ~/.config/opencode/commands/
 ln -s ~/.agent-skills/.opencode/commands/update-skills.md ~/.config/opencode/commands/
 ```
@@ -37,24 +39,37 @@ ln -s ~/.agent-skills/.opencode/commands/update-skills.md ~/.config/opencode/com
 ### 第三步：验证
 
 启动 OpenCode，输入 `/` 查看可用命令，你应该看到：
-- `/install-skills` - 安装 skills（支持 SkillHub、local-skills、git-repo-skills 三种来源）
-- `/uninstall-skills` - 卸载已安装的 skills
+- `/download-skills` - 只下载 skills 到 `~/.agent-skills/`，**不创建软链接**（支持 SkillHub 和 Git clone）
+- `/install-project-skills` - 安装 skills 到**当前项目**（支持 SkillHub、local-skills、git-repo-skills 三种来源）
+- `/install-home-skills` - 安装 skills 到**全局**（`~/.config/opencode/skills/`，所有项目均可用）
+- `/uninstall-skills` - 卸载当前项目已安装的 skills
 - `/update-skills` - 更新 git-repo-skills 中的所有子模块
 
 ## 日常使用
 
 ### 安装 skills
 
-在任何项目目录下启动 OpenCode，运行：
+**只下载不安装**（仅下载到 `~/.agent-skills/`，不创建软链接）：
 
 ```
-/install-skills
+/download-skills
 ```
 
-支持三种来源：
-1. **SkillHub**（默认）：从腾讯 SkillHub 在线下载，存储在 `skill-hub/`，收录 1.3 万个 AI Skills
-2. **git-repo-skills**：`git-repo-skills/` 下的 Git 仓库，支持输入 clone 地址新增
-3. **local-skills**：手动放入 `local-skills/` 的自建 skills
+**安装到当前项目**（仅当前项目可用）：
+
+```
+/install-project-skills
+```
+
+**安装到全局**（所有项目均可用，推荐常用 skills）：
+
+```
+/install-home-skills
+```
+
+三个命令说明：
+- `/download-skills`：支持 SkillHub 在线下载和 Git 仓库 clone，只下载源文件不安装
+- `/install-project-skills` 和 `/install-home-skills`：支持相同的三种来源（SkillHub、git-repo-skills、local-skills），安装时会先执行下载流程再创建软链接
 
 ### 添加本地自建 skill
 
@@ -65,11 +80,11 @@ mkdir ~/.agent-skills/local-skills/my-skill
 # 创建 SKILL.md 等文件...
 ```
 
-然后通过 `/install-skills` → 选择 local-skills 来源安装。
+然后通过 `/install-project-skills` → 选择 local-skills 来源安装。
 
 ### 添加 Git 仓库 skill
 
-通过 `/install-skills` → 选择 git-repo-skills 来源，按提示输入 clone 地址即可。
+通过 `/install-project-skills` → 选择 git-repo-skills 来源，按提示输入 clone 地址即可。
 
 也可以手动添加子模块：
 
@@ -101,12 +116,14 @@ git push
 ~/.agent-skills/                    # 本仓库位置
 ├── .opencode/
 │   └── commands/                   # 管理命令（软链接到 ~/.config/opencode/commands/）
-│       ├── install-skills.md
+│       ├── download-skills.md
+│       ├── install-project-skills.md
+│       ├── install-home-skills.md
 │       ├── uninstall-skills.md
 │       ├── update-skills.md
 │       └── git-update.md           # 仓库内部命令，不需全局安装
 │
-├── skill-hub/                      # SkillHub 下载的 skills（由 /install-skills 自动管理）
+├── skill-hub/                      # SkillHub 下载的 skills（由 /install-project-skills 自动管理）
 │   └── <slug>/
 │
 ├── local-skills/                   # 本地自建 skills
@@ -127,7 +144,7 @@ git push
 ```
 <你的项目>/
 └── .opencode/
-    └── skills/                     # 软链接由 /install-skills 自动创建，指向 ~/.agent-skills/ 中的源文件
+    └── skills/                     # 软链接由 /install-project-skills 或 /install-home-skills 自动创建，指向 ~/.agent-skills/ 中的源文件
         ├── brave-search -> ~/.agent-skills/skill-hub/brave-search/
         ├── github -> ~/.agent-skills/local-skills/github/
         └── frontend-design -> ~/.agent-skills/git-repo-skills/anthropics-skills/skills/frontend-design/
@@ -139,17 +156,21 @@ git push
 2. **`<当前项目>/.opencode/skills/`**：软链接安装目标，指向 `~/.agent-skills/` 中的源文件
 3. **`~/.config/opencode/commands/`**：存放全局可用的管理命令软链接
 
-当你运行 `/install-skills` 时：
-- SkillHub 来源：下载源文件到 `~/.agent-skills/skill-hub/<slug>/`，再在当前项目的 `.opencode/skills/` 创建软链接
-- local-skills / git-repo-skills 来源：直接在当前项目的 `.opencode/skills/` 创建指向源目录的软链接
+当你运行 `/download-skills` 时：
+- SkillHub 来源：下载源文件到 `~/.agent-skills/skill-hub/<slug>/`，不创建软链接
+- Git 仓库来源：clone 到 `~/.agent-skills/git-repo-skills/<repo>/`，不创建软链接
+
+当你运行 `/install-project-skills` 或 `/install-home-skills` 时：
+- SkillHub 来源：先执行下载（同 `/download-skills`），再在目标目录创建软链接
+- local-skills / git-repo-skills 来源：（如需 clone 则先执行），再创建指向源目录的软链接
 
 ## 常见问题
 
 **Q: 为什么要把仓库放在 ~/.agent-skills/？**
 A: 这是约定的位置，方便管理命令用绝对路径找到所有 skills。
 
-**Q: SkillHub、local-skills、git-repo-skills 有什么区别？**
-A: SkillHub 是在线下载的第三方 skills；local-skills 是你自己创建的；git-repo-skills 是通过 git submodule 跟踪的外部仓库，可以统一更新。
+**Q: SkillHub、git-repo-skills、local-skills 有什么区别？**
+A: SkillHub 是在线下载的第三方 skills；git-repo-skills 是通过 git submodule 跟踪的外部仓库；local-skills 是你自己创建的，可以统一更新。
 
 **Q: git-update.md 为什么不全局安装？**
 A: 它是用于更新本仓库自身的命令，只在 `~/.agent-skills/` 内使用。
