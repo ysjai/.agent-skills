@@ -11,7 +11,6 @@ Security-first vetting protocol for AI agent skills. **Never install a skill wit
 ## When to Use
 
 - Before installing any skill from ClawdHub
-- Before installing any skill from ClawdHub
 - Before running skills from GitHub repos
 - When evaluating skills shared by other agents
 - Anytime you're asked to install unknown code
