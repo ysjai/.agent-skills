@@ -63,22 +63,22 @@ curl -fsSL "https://skillhub-1388575217.cos.ap-guangzhou.myqcloud.com/skills.jso
   python3 -c "
 import json, sys
 data = json.load(sys.stdin)
-featured = data.get('featured', [])
-skills_map = {s['slug']: s for s in data.get('skills', [])}
-for i, slug in enumerate(featured[:10], 1):
-    s = skills_map.get(slug, {})
+skills = data.get('skills', [])
+for s in skills[:10]:
+    slug = s.get('slug', '')
     name = s.get('name', slug)
-    desc_zh = s.get('description_zh', s.get('description', ''))[:60]
+    desc = s.get('description', '')[:60]
     version = s.get('version', '')
     stars = s.get('stars', 0)
-    print(f'{i:2d}. [{slug}] {name} v{version} ★{stars}')
-    print(f'    {desc_zh}')
+    rank = s.get('rank', '')
+    print(f'{rank:>2}. [{slug}] {name} v{version} ★{stars}')
+    print(f'    {desc}')
 "
 ```
 
 用 question 工具展示，让用户输入编号选择（多个用空格分隔，`more` 加载更多，`exit` 取消）。
 
-若用户输入 `more`，将上限改为 50 重新获取并展示。
+若用户输入 `more`，每次在当前基础上 +10 重新获取并展示（10→20→30...最多50），达到50后不再显示 `more` 选项。
 
 ### A3b. 直接输入技能名称
 
