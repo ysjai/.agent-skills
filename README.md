@@ -120,6 +120,14 @@ git commit -m "更新 git-repo-skills 子模块"
 git push
 ```
 
+### 同步仓库到最新（换设备 / 拉取他人更新）
+
+一键拉取主仓库最新内容，并同步所有子模块：
+
+```bash
+git -C ~/.agent-skills pull && git -C ~/.agent-skills submodule update --init --recursive --remote
+```
+
 ## 目录结构
 
 ```
