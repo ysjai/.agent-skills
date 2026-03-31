@@ -15,6 +15,7 @@ Thumbs.db
 # Private directories
 .private-journal/
 .claude/
+.serena/
 
 # Python
 __pycache__/
