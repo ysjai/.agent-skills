@@ -149,6 +149,68 @@ mkdir ~/.agent-skills/personal-skills/my-skill
 
 然后通过 `install-skills` → 选择 personal-skills 来源安装。
 
+### 手动创建软链接
+
+如果你不想通过命令方式安装，也可以手动创建软链接。以下列出三种 skill 类型分别链接到两个平台的命令。
+
+> 以下示例均为**全局安装**（用户级目录），如需项目级安装，将目标路径替换为项目内的 `.opencode/skills/` 或 `.claude/skills/`。
+
+#### SkillHub 类型（`skill-hub/`）
+
+SkillHub 下载的 skill 存放在 `~/.agent-skills/skill-hub/<slug>/`：
+
+```bash
+# OpenCode（全局）
+mkdir -p ~/.config/opencode/skills
+ln -s ~/.agent-skills/skill-hub/<slug> ~/.config/opencode/skills/<slug>
+
+# Claude Code（全局）
+mkdir -p ~/.claude/skills
+ln -s ~/.agent-skills/skill-hub/<slug> ~/.claude/skills/<slug>
+```
+
+#### Git 仓库类型（`git-repo-skills/`）
+
+Git 仓库中的 skill 存放在 `~/.agent-skills/git-repo-skills/<repo>/` 下的某个子目录：
+
+```bash
+# OpenCode（全局）
+mkdir -p ~/.config/opencode/skills
+ln -s ~/.agent-skills/git-repo-skills/<repo>/<skill-dir> ~/.config/opencode/skills/<skill-name>
+
+# Claude Code（全局）
+mkdir -p ~/.claude/skills
+ln -s ~/.agent-skills/git-repo-skills/<repo>/<skill-dir> ~/.claude/skills/<skill-name>
+```
+
+示例（链接 Anthropic 官方 skill 中的 `frontend-design`）：
+
+```bash
+# OpenCode
+ln -s ~/.agent-skills/git-repo-skills/anthropics-skills/skills/frontend-design ~/.config/opencode/skills/frontend-design
+
+# Claude Code
+ln -s ~/.agent-skills/git-repo-skills/anthropics-skills/skills/frontend-design ~/.claude/skills/frontend-design
+```
+
+#### 本地自建类型（`personal-skills/`）
+
+个人自建 skill 存放在 `~/.agent-skills/personal-skills/<skill-name>/`：
+
+```bash
+# OpenCode（全局）
+mkdir -p ~/.config/opencode/skills
+ln -s ~/.agent-skills/personal-skills/<skill-name> ~/.config/opencode/skills/<skill-name>
+
+# Claude Code（全局）
+mkdir -p ~/.claude/skills
+ln -s ~/.agent-skills/personal-skills/<skill-name> ~/.claude/skills/<skill-name>
+```
+
+> **提示**：链接创建后，可用 `ls -la ~/.config/opencode/skills/`（OpenCode）或 `ls -la ~/.claude/skills/`（Claude Code）验证软链接是否正确指向源目录。
+
+---
+
 ### 卸载 skills
 
 ```
