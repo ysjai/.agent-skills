@@ -38,7 +38,7 @@ This structure informs the task decomposition. Each task should produce self-con
 - "Run it to make sure it fails" - step
 - "Implement the minimal code to make the test pass" - step
 - "Run the tests and make sure they pass" - step
-- "Commit" - step
+- "Commit (if user requests or project workflow requires)" - step
 
 ## Plan Document Header
 
@@ -93,7 +93,7 @@ def function(input):
 Run: `pytest tests/path/test.py::test_name -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Commit (if requested)**
 
 ```bash
 git add tests/path/test.py src/path/file.py
