@@ -47,7 +47,7 @@ else
 fi
 ```
 
-如果 `skill-hub/` 为空（EMPTY），告知用户本地没有已下载的 SkillHub skills，可先运行 install-skills 命令下载（OpenCode: `/install-skills`；Claude Code: `/user:install-skills`），终止本分支。
+如果 `skill-hub/` 为空（EMPTY），告知用户本地没有已下载的 SkillHub skills，可先运行对应平台的安装命令下载（OpenCode: `/install-skills-opencode`、`/install-skills-claude`、`/install-skills-codex`；Claude Code: `/user:install-skills-opencode`、`/user:install-skills-claude`、`/user:install-skills-codex`），终止本分支。
 
 ### A2. 选择要更新的 skills
 
@@ -142,7 +142,7 @@ else
 fi
 ```
 
-如果 `git-repo-skills/` 为空（EMPTY），告知用户本地没有已克隆的 Git 仓库，可先运行 install-skills 命令添加（OpenCode: `/install-skills`；Claude Code: `/user:install-skills`），终止本分支。
+如果 `git-repo-skills/` 为空（EMPTY），告知用户本地没有已克隆的 Git 仓库，可先运行对应平台的安装命令添加（OpenCode: `/install-skills-opencode`、`/install-skills-claude`、`/install-skills-codex`；Claude Code: `/user:install-skills-opencode`、`/user:install-skills-claude`、`/user:install-skills-codex`），终止本分支。
 
 ### B4. 检测未注册为子模块的仓库
 
