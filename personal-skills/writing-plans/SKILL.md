@@ -1,74 +1,200 @@
 ---
 name: writing-plans
-description: Use when you have a spec or requirements for a multi-step task, before touching code
+description: 有已批准设计文档或 spec、且还不能动代码时使用。生成详细执行计划。默认 lightweight 轻便模式；如果设计文档启用了 explore-review，则继承该模式；也可以从计划阶段开始启用审核，让计划和后续实现各审核修复一轮。
 ---
 
-# Writing Plans
+# 编写执行计划
 
-## Overview
+## 概览
 
-Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+编写全面的执行计划，假设执行者对当前代码库几乎没有上下文，而且工程判断不一定可靠。把他们需要知道的内容都写清楚：哪些设计决策驱动这次实现、每个任务要改哪些文件、核心代码形态、测试、需要查哪些文档、如何验证，以及到底用什么证据证明完成。把完整计划拆成小而可执行的任务。坚持 DRY、YAGNI、TDD 和按需频繁提交。
 
-Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+假设执行者是熟练开发者，但几乎不了解我们的工具链和业务领域。也假设他们不一定擅长测试设计。
 
-**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+**开始时说明：** “我正在使用 writing-plans skill 创建执行计划。”
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
-- (User preferences for plan location override this default)
+**计划保存到：** `docs/plans/YYYY-MM-DD-<feature-name>.md`
 
-## Scope Check
+- 如果用户指定其他计划路径，以用户偏好为准
 
-If the spec covers multiple independent subsystems, it should have been broken into sub-project specs during brainstorming. If it wasn't, suggest breaking this into separate plans — one per subsystem. Each plan should produce working, testable software on its own.
+## 必需输入
 
-## File Structure
+执行计划应基于已批准的设计文档或 spec。开始前先定位来源设计文档，通常是 `docs/specs/YYYY-MM-DD-<topic>-design.md`。
 
-Before defining tasks, map out which files will be created or modified and what each one is responsible for. This is where decomposition decisions get locked in.
+如果用户只有需求描述、没有设计文档，默认建议先使用 `brainstorming` 产出设计文档。只有用户明确要求跳过 spec 时，才可以继续写计划；此时必须在计划头部把 `来源设计文档` 写为 `无（用户明确跳过）`，并额外记录关键需求、假设和设计决策来源，避免后续实现缺少依据。
 
-- Design units with clear boundaries and well-defined interfaces. Each file should have one clear responsibility.
-- You reason best about code you can hold in context at once, and your edits are more reliable when files are focused. Prefer smaller, focused files over large ones that do too much.
-- Files that change together should live together. Split by responsibility, not by technical layer.
-- In existing codebases, follow established patterns. If the codebase uses large files, don't unilaterally restructure - but if a file you're modifying has grown unwieldy, including a split in the plan is reasonable.
+## 工作流审核模式
 
-This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
+审核模式优先级为：**当前用户明确指定 > 设计文档记录 > 默认 `lightweight`**。如果用户当前明确要求在计划阶段开启 `explore-review`，即使设计文档记录为 `lightweight`，也以当前用户指令为准；但只影响计划和后续实现，不回头补跑设计文档审核。
 
-## Bite-Sized Task Granularity
+如果设计文档没有记录审核模式，默认使用 `lightweight`，除非用户明确开启审核模式。需要给选择时，可以这样说：
 
-**Each step is one action (2-5 minutes):**
-- "Write the failing test" - step
-- "Run it to make sure it fails" - step
-- "Implement the minimal code to make the test pass" - step
-- "Run the tests and make sure they pass" - step
-- "Commit (if user requests or project workflow requires)" - step
+> “默认审核模式是 `lightweight`（不使用 subagent）。如果你希望从当前阶段开始更严格地审核，说 `explore-review` 即可；我会在写完计划后运行一轮计划审核，后续 executing-plans 也会运行一轮实现审核。更早的阶段不会补跑审核，除非你明确要求。”
 
-## Plan Document Header
+模式行为：
 
-**Every plan MUST start with this header:**
+- `lightweight`：跳过 subagent 审核，自检通过后结束。在计划中写入 `Workflow Review Mode: lightweight` 和 `Plan Review Status: lightweight`
+- `explore-review`：从当前阶段起对后续阶段生效。保存计划并完成自检后，派发一个 `explore` subagent 做一轮计划审核。后续 executing-plans 必须自动运行一轮实现审核，不要在实现阶段再次询问用户
+- 如果用户说“快速”“轻便”“不使用 subagent”等，使用 `lightweight`
+- 如果用户明确要求额外、独立、subagent 或 explore 审核，例如“用 explore 审核计划”“让 subagent double check”，使用 `explore-review` 覆盖剩余链路，每个产物/阶段一轮审核修复。普通“请 review 计划”不自动等同于 `explore-review`，按上下文判断，必要时简短确认
+- 一旦选择 `explore-review`，把它持久化到计划中，后续不要降级为 `lightweight`，除非用户明确改模式
+- 如果用户在计划阶段才选择 `explore-review`，不要回头运行设计文档审核。设计文档保持已批准状态；审核模式只应用于计划和后续实现，除非用户明确要求也审核设计文档
+
+`Plan Review Status` 可用值：`lightweight`、`explore-reviewed`、`needs-review-after-changes`。只有当前最终版执行计划已经被 explore 审核覆盖时，才能使用 `explore-reviewed`。
+
+Explore 审核提示词模式：
+
+实际派发 explore review 时，以同目录的 `plan-document-reviewer-prompt.md` 为 canonical 提示词；下方是内联摘要，方便理解审核重点。若两者冲突，以 `plan-document-reviewer-prompt.md` 为准。
+
+```text
+对照已批准的设计文档，审核这份执行计划。
+
+设计文档：[SPEC_FILE_PATH]
+执行计划：[PLAN_FILE_PATH]
+
+使用中等深入程度。不要编辑文件。只关注会实质影响实现的问题：
+- 设计决策或需求没有映射到任务
+- 任务过于含糊或顺序不合理
+- 缺少关键接口、代码片段、测试或命令
+- 验收标准不可执行或不可判定真假
+- 与现有项目约定或工程约束冲突
+- 超出已批准设计范围
+
+只返回可执行发现，按严重程度排序，附文件/章节引用和建议修复方式。
+```
+
+如果修复不违背已批准设计，就直接应用到计划。若 reviewer 建议会改变设计文档、放宽验收标准或引入新范围，先问用户再改。修复后重新跑一遍计划自检，将 `Plan Review Status` 设为 `explore-reviewed`，然后结束计划阶段。
+
+`Plan Review Status: explore-reviewed` 只表示当前最终版执行计划已经被 explore 审核覆盖。如果 explore 审核后又发生实质性修改，先把状态改回 `needs-review-after-changes`，重新运行计划自检；若 `Workflow Review Mode` 仍是 `explore-review`，必须对修改后的最终版本再运行一轮 explore 审核，审核通过并应用有效修复后，才能重新标记为 `explore-reviewed`。纯错别字或格式修正不需要重新审核。
+
+## 范围检查
+
+如果设计文档覆盖多个独立子系统，头脑风暴阶段本应拆成多个子项目规格。如果没有拆，建议拆成多份计划，每个子系统一份。每份计划都应该独立产出可运行、可测试的软件。
+
+## 文件结构
+
+在定义任务前，先梳理要创建或修改哪些文件，以及每个文件负责什么。这一步锁定拆分决策。
+
+- 设计边界清晰、接口明确的单元。每个文件应该只有一个明确职责
+- 你更擅长处理能放进上下文的小段代码；文件职责集中时，编辑更可靠。优先使用小而聚焦的文件，避免一个大文件承担太多职责
+- 会一起变化的文件应该放在一起。按职责拆分，而不是机械地按技术层拆分
+- 在现有代码库中，遵循既有模式。如果代码库本来就是大文件风格，不要单方面重构；但如果你要修改的文件已经明显臃肿，把拆分纳入计划是合理的
+
+这个结构会影响任务拆分。每个任务都应该产生自洽、可独立理解的变更。
+
+## 设计与决策映射
+
+写任务前，先从设计文档中提取与实现相关的决策。好的计划能追溯到设计：每个重要需求或决策都应该指向一个或多个具体任务。
+
+在计划中包含这个映射：
 
 ```markdown
-# [Feature Name] Implementation Plan
+## 设计决策到任务的映射
 
-> Steps use checkbox (`- [ ]`) syntax for progress tracking.
+| 设计需求/决策 | 实现任务 | 验证方式 |
+|---------------|----------|----------|
+| [设计文档中的决策] | 任务 N | [测试、命令、UI 检查或人工验收步骤] |
+```
 
-**Goal:** [One sentence describing what this builds]
+如果设计文档中存在阻塞计划的缺失或矛盾决策，停下来询问澄清，不要自行编造细节。
 
-**Architecture:** [2-3 sentences about approach]
+## 小步任务粒度
 
-**Tech Stack:** [Key technologies/libraries]
+**每一步只做一个动作，理想情况下 2-5 分钟完成：**
+
+- “写失败测试”是一步
+- “运行测试确认它失败”是一步
+- “写最小实现让测试通过”是一步
+- “运行测试确认通过”是一步
+- “提交（如果用户要求或项目流程需要）”是一步
+
+## 计划文档头部
+
+**每份计划都必须以这个头部开始：**
+
+状态字段必须写入单个实际值，不要在最终计划中保留多个候选值或条件说明。
+
+```markdown
+# [功能名称] 执行计划
+
+> 步骤使用复选框（`- [ ]`）语法，便于跟踪进度。
+
+**目标：** [一句话说明要构建什么]
+
+**架构：** [2-3 句话说明实现思路]
+
+**技术栈：** [关键技术/库]
+
+**来源设计文档：** [`docs/specs/YYYY-MM-DD-topic-design.md`]
+
+**工作流审核模式（Workflow Review Mode）：** `lightweight`
+
+**规格审核状态（Spec Review Status）：** `not recorded`
+
+**计划审核状态（Plan Review Status）：** `lightweight`
+
+**主要验收标准：**
+- [ ] [必须成立的具体用户可见行为或系统行为]
+- [ ] [具体集成或回归要求]
+- [ ] [具体测试/构建/lint 期望]
 
 ---
 ```
 
-## Task Structure
+## 必备计划章节
+
+每份计划在任务列表前都必须包含这些章节：
+
+```markdown
+## 实现摘要
+[简要说明实现策略和顺序。]
+
+## 设计决策到任务的映射
+[用表格把设计决策/需求映射到任务和验证方式。]
+
+## 文件结构
+[要创建/修改的文件、职责和重要接口。]
+
+## 关键接口与代码形态
+[核心类型、函数签名、组件 props、API 合约、数据模型，以及后续任务必须遵循的代表性代码片段。]
+
+## 执行任务
+[详细复选框任务。]
+
+## 最终验收清单
+[严格、可执行的检查，用于证明整个计划完成。]
+```
+
+## 关键代码片段
+
+计划不应该用大段伪代码替代实现，但必须包含足够的代码形态，让实现者不需要猜核心结构。
+
+包括这些片段：
+
+- 核心类型、schema、接口、组件 props、API 合约或数据模型
+- 主要控制流或编排函数
+- 一个代表性的 happy-path 测试，以及一个重要失败/边界场景测试
+- 容易写错的迁移、配置、路由、命令或集成点
+
+如果完整代码太冗长，给出最小但足够明确的代表性片段和精确的上下文说明。改代码步骤必须包含核心接口、签名、关键控制流或代表性测试，确保实现者不需要发明核心结构。避免使用 `// ...` 这类占位，除非省略的是已有且不变的代码，并且计划明确说明这一点。
+
+## 任务结构
 
 ````markdown
-### Task N: [Component Name]
+### 任务 N：[组件名称]
 
-**Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
+**文件：**
+- 新建：`exact/path/to/file.py`
+- 修改：`exact/path/to/existing.py:123-145`
+- 测试：`tests/exact/path/to/test.py`
 
-- [ ] **Step 1: Write the failing test**
+**设计关联：** [此任务实现的需求/决策]
+
+**验收标准：**
+- [ ] [此任务的可执行或可直接观察标准]
+- [ ] [回归/边界场景标准]
+
+- [ ] **步骤 1：编写失败测试**
 
 ```python
 def test_specific_behavior():
@@ -76,24 +202,29 @@ def test_specific_behavior():
     assert result == expected
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **步骤 2：运行测试，确认它失败**
 
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: FAIL with "function not defined"
+运行：`pytest tests/path/test.py::test_name -v`
+期望：失败，错误信息包含 "function not defined"
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **步骤 3：编写最小实现**
 
 ```python
 def function(input):
     return expected
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **步骤 4：运行测试，确认通过**
 
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: PASS
+运行：`pytest tests/path/test.py::test_name -v`
+期望：通过
 
-- [ ] **Step 5: Commit (if requested)**
+- [ ] **步骤 5：验证任务验收标准**
+
+运行：`[精确命令或人工检查]`
+期望：`[严格的预期结果，包括输出/状态/UI 状态]`
+
+- [ ] **步骤 6：提交（如果被要求）**
 
 ```bash
 git add tests/path/test.py src/path/file.py
@@ -101,38 +232,50 @@ git commit -m "feat: add specific feature"
 ```
 ````
 
-## No Placeholders
+## 禁止占位
 
-Every step must contain the actual content an engineer needs. These are **plan failures** — never write them:
-- "TBD", "TODO", "implement later", "fill in details"
-- "Add appropriate error handling" / "add validation" / "handle edge cases"
-- "Write tests for the above" (without actual test code)
-- "Similar to Task N" (repeat the code — the engineer may be reading tasks out of order)
-- Steps that describe what to do without showing how (code blocks required for code steps)
-- References to types, functions, or methods not defined in any task
+每一步都必须包含工程师需要的实际内容。下面这些都是**计划失败**，不要写：
 
-## Remember
-- Exact file paths always
-- Complete code in every step — if a step changes code, show the code
-- Exact commands with expected output
-- DRY, YAGNI, TDD, frequent commits
+- “TBD”、“TODO”、“后续实现”、“补充细节”
+- “添加适当错误处理” / “添加校验” / “处理边界情况”
+- “为上面内容写测试”，但没有实际测试代码
+- “类似任务 N”，要重复写出代码，因为工程师可能非顺序阅读任务
+- 只描述要做什么但不展示怎么做的步骤。涉及代码的步骤必须有足够明确的代码块，至少覆盖关键接口、签名、控制流或代表性测试
+- 引用了任何任务中都没有定义的类型、函数或方法
+- 验收标准写“正常工作”“处理错误”“测试通过”，但没有具体行为、命令和预期结果
+- 关键实现决策只隐含在设计文档中，没有映射到任务
 
-## Self-Review
+## 记住
 
-After writing the complete plan, look at the spec with fresh eyes and check the plan against it. This is a checklist you run yourself — not a subagent dispatch.
+- 始终写精确文件路径
+- 改代码步骤要展示足够明确的关键代码片段；如果改动短小且关键，直接给出完整代码
+- 命令要精确，并写出预期输出
+- 在相关任务前或任务中给出关键代码片段，尤其是接口和高风险逻辑
+- 每个任务和最终计划都要有严格验收标准
+- 坚持 DRY、YAGNI、TDD 和按需频繁提交
 
-**1. Spec coverage:** Skim each section/requirement in the spec. Can you point to a task that implements it? List any gaps.
+## 自检
 
-**2. Placeholder scan:** Search your plan for red flags — any of the patterns from the "No Placeholders" section above. Fix them.
+写完整份计划后，换个视角重新看设计文档，并对照检查计划。这是你自己执行的清单，不是 subagent 派发。
 
-**3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug.
+**1. 设计覆盖：** 快速浏览设计文档的每个章节/需求。每个需求能否指向一个实现任务？列出缺口。
 
-If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
+**2. 占位符扫描：** 搜索计划中的红旗，例如“禁止占位”章节中的所有模式。修复它们。
 
-## Completion
+**3. 类型一致性：** 后续任务中使用的类型、方法签名、属性名是否和前面定义一致？任务 3 叫 `clearLayers()`，任务 7 叫 `clearFullLayers()`，这就是 bug。
 
-After saving the plan, inform the user:
+**4. 决策可追溯：** 每个重要设计决策是否出现在“设计决策到任务的映射”里，并且都有验证方式？补齐缺口。
 
-**"Plan complete and saved to `docs/plans/<filename>.md`. You can now review it and decide how to proceed with implementation."**
+**5. 代码充分性：** 实现者能否依靠包含的片段、签名和示例写出预期方案，而不用发明核心接口？补上缺失片段。
 
-The planning phase ends here. How the plan gets executed is entirely up to the user.
+**6. 验收严格性：** 验收标准是否可执行、可判定真假？把含糊检查替换成精确命令、预期输出、UI 状态、API 响应或文件 diff。
+
+如果发现问题，直接在计划中修复；自检修复本身不需要额外运行 subagent review。如果发现某个设计需求没有任务，就添加任务。但如果计划已经标记为 `Plan Review Status: explore-reviewed` 后又发生实质性修改，必须按前文状态规则处理，不能继续声称旧审核覆盖最终计划。
+
+## 完成
+
+保存计划后，告诉用户：
+
+**“计划已完成并保存到 `docs/plans/<filename>.md`。请审核。准备实现时，使用 executing-plans skill 按已批准设计文档和验收标准执行计划。如果 `Workflow Review Mode` 是 `explore-review`，executing-plans 会自动运行实现审核。”**
+
+计划阶段到此结束。建议 `executing-plans` 作为自然下一步，但不要自动调用它；由用户决定什么时候开始实现。

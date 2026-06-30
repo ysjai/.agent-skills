@@ -1,49 +1,51 @@
-# Plan Document Reviewer Prompt Template
+# 执行计划审核提示词模板
 
-Optional template for running a separate plan review. Use this if you want an independent reviewer to check the plan before implementation.
+这是一个可选模板，用于在实现前，让独立 reviewer 检查执行计划。
 
-**Purpose:** Verify the plan is complete, matches the spec, and has proper task decomposition.
+**目的：** 验证计划是否完整、是否匹配设计文档、任务拆分是否合理。
 
-**Dispatch after:** The complete plan is written.
+**派发时机：** 完整计划写入之后。
 
 ```
-Task tool (general-purpose):
+Task tool（explore subagent，默认只审核一轮）：
   description: "Review plan document"
   prompt: |
-    You are a plan document reviewer. Verify this plan is complete and ready for implementation.
+    你是执行计划 reviewer。请验证这份计划是否完整，并且已经准备好进入实现阶段。不要编辑文件，只返回可执行发现。
 
-    **Plan to review:** [PLAN_FILE_PATH]
-    **Spec for reference:** [SPEC_FILE_PATH]
+    **待审核计划：** [PLAN_FILE_PATH]
+    **参考设计文档：** [SPEC_FILE_PATH]
 
-    ## What to Check
+    ## 检查内容
 
-    | Category | What to Look For |
-    |----------|------------------|
-    | Completeness | TODOs, placeholders, incomplete tasks, missing steps |
-    | Spec Alignment | Plan covers spec requirements, no major scope creep |
-    | Task Decomposition | Tasks have clear boundaries, steps are actionable |
-    | Buildability | Could an engineer follow this plan without getting stuck? |
+    | 类别 | 重点检查 |
+    |------|----------|
+    | 完整性 | TODO、占位符、未完成任务、缺失步骤 |
+    | 设计对齐 | 是否覆盖设计需求，是否有明显范围蔓延 |
+    | 决策可追溯 | 重要设计决策是否映射到具体任务和验证步骤 |
+    | 任务拆分 | 任务边界是否清晰，步骤是否可执行 |
+    | 关键代码 | 是否包含核心接口、签名、代表性测试和高风险实现片段 |
+    | 验收标准 | 每个任务和最终计划是否有严格、可执行或可直接观察的验收标准，并写明预期结果 |
+    | 可构建性 | 工程师能否按这份计划执行而不被卡住 |
 
-    ## Calibration
+    ## 判断标准
 
-    **Only flag issues that would cause real problems during implementation.**
-    An implementer building the wrong thing or getting stuck is an issue.
-    Minor wording, stylistic preferences, and "nice to have" suggestions are not.
+    **只指出会在实现阶段造成真实问题的内容。**
+    会导致实现错误或让实现者卡住的，就是问题。
+    小的措辞、风格偏好和“锦上添花”的建议，不要作为问题。
 
-    Approve unless there are serious gaps — missing requirements from the spec,
-    contradictory steps, placeholder content, or tasks so vague they can't be acted on.
+    除非存在严重缺口，否则批准：例如遗漏设计需求、步骤矛盾、占位内容、缺少关键代码形态、验收标准含糊、未映射设计决策，或任务含糊到无法执行。
 
-    ## Output Format
+    ## 输出格式
 
-    ## Plan Review
+    ## 执行计划审核
 
-    **Status:** Approved | Issues Found
+    **状态：** 通过 | 发现问题
 
-    **Issues (if any):**
-    - [Task X, Step Y]: [specific issue] - [why it matters for implementation]
+    **问题（如有）：**
+    - [任务 X，步骤 Y]：[具体问题] - [为什么会影响实现]
 
-    **Recommendations (advisory, do not block approval):**
-    - [suggestions for improvement]
+    **建议（仅建议，不阻塞批准）：**
+    - [改进建议]
 ```
 
-**Reviewer returns:** Status, Issues (if any), Recommendations
+**Reviewer 返回：** 状态、问题（如有）、建议。

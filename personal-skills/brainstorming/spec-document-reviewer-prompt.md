@@ -1,49 +1,52 @@
-# Spec Document Reviewer Prompt Template
+# 设计文档审核提示词模板
 
-Optional template for running a separate spec review. Use this if you want an independent reviewer to check the spec before planning.
+这是一个可选模板，用于在进入计划阶段前，让独立 reviewer 检查设计文档。
 
-**Purpose:** Verify the spec is complete, consistent, and ready for implementation planning.
+**目的：** 验证设计文档是否完整、一致，并且已经准备好进入实现计划阶段。
 
-**Dispatch after:** Spec document is written to docs/specs/
+**派发时机：** 设计文档写入 `docs/specs/` 之后。
 
 ```
-Task tool (general-purpose):
+Task tool（explore subagent，默认只审核一轮）：
   description: "Review spec document"
   prompt: |
-    You are a spec document reviewer. Verify this spec is complete and ready for planning.
+    你是设计文档 reviewer。请验证这份设计文档是否完整，并且已经准备好进入计划阶段。不要编辑文件，只返回可执行发现。
 
-    **Spec to review:** [SPEC_FILE_PATH]
+    **待审核设计文档：** [SPEC_FILE_PATH]
 
-    ## What to Check
+    ## 检查内容
 
-    | Category | What to Look For |
-    |----------|------------------|
-    | Completeness | TODOs, placeholders, "TBD", incomplete sections |
-    | Consistency | Internal contradictions, conflicting requirements |
-    | Clarity | Requirements ambiguous enough to cause someone to build the wrong thing |
-    | Scope | Focused enough for a single plan — not covering multiple independent subsystems |
-    | YAGNI | Unrequested features, over-engineering |
+    | 类别 | 重点检查 |
+    |------|----------|
+    | 完整性 | TODO、占位符、"TBD"、未完成章节 |
+    | 一致性 | 内部矛盾、互相冲突的需求 |
+    | 清晰度 | 需求是否含糊到可能导致实现偏离意图 |
+    | 范围 | 是否足够聚焦，可以进入单个计划；是否混入多个独立子系统 |
+    | 对话覆盖 | 是否捕捉了关键头脑风暴问题、用户回答、方案、取舍和设计决策，而不只是最终答案 |
+    | 决策可追溯 | 非显然决策是否包含理由、被拒绝的替代方案，以及对实现的影响 |
+    | 验收标准 | 是否定义了能在执行计划中转成可执行检查的具体成功标准 |
+    | YAGNI | 未要求的功能、过度设计 |
 
-    ## Calibration
+    ## 判断标准
 
-    **Only flag issues that would cause real problems during implementation planning.**
-    A missing section, a contradiction, or a requirement so ambiguous it could be
-    interpreted two different ways — those are issues. Minor wording improvements,
-    stylistic preferences, and "sections less detailed than others" are not.
+    **只指出会在实现计划阶段造成真实问题的内容。**
+    缺失章节、矛盾、某个需求含糊到可能被两种方式理解，这些是问题。
+    小的措辞优化、风格偏好、或者“某些章节比其他章节短”，不是问题。
 
-    Approve unless there are serious gaps that would lead to a flawed plan.
+    除非存在会导致计划错误的严重缺口，否则批准。
+    如果缺少对话覆盖或决策理由，会导致未来实现者重新推导已确定的决策、重新讨论已确定的范围，或误解为什么选择当前设计，也要视为严重问题。
 
-    ## Output Format
+    ## 输出格式
 
-    ## Spec Review
+    ## 设计文档审核
 
-    **Status:** Approved | Issues Found
+    **状态：** 通过 | 发现问题
 
-    **Issues (if any):**
-    - [Section X]: [specific issue] - [why it matters for planning]
+    **问题（如有）：**
+    - [章节 X]：[具体问题] - [为什么会影响计划]
 
-    **Recommendations (advisory, do not block approval):**
-    - [suggestions for improvement]
+    **建议（仅建议，不阻塞批准）：**
+    - [改进建议]
 ```
 
-**Reviewer returns:** Status, Issues (if any), Recommendations
+**Reviewer 返回：** 状态、问题（如有）、建议。
