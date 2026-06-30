@@ -1,0 +1,1 @@
+observation_id,ingestion_run_id,source_id,source_period,data_period,period_scope,value_kind,as_of_date,target_period,segment,metric,raw_value,raw_unit,value,unit,yoy,qoq,calculation_method,source_location,confidence,review_status,notes

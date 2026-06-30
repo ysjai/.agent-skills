@@ -1,0 +1,1 @@
+forecast_id,source_id,source_period,forecast_period,source_name,source_type,publication_date,captured_at,version,metric,segment,value,unit,scenario,assumptions,confidence,review_status,source_location,notes

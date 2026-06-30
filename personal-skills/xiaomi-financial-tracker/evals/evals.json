@@ -1,0 +1,71 @@
+{
+  "skill_name": "xiaomi-financial-tracker",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "请使用 xiaomi-financial-tracker 处理 2025FY，input 里有小米官方年报 PDF 和官方业绩 PPT。",
+      "expected_output": "生成 report.md、extracted_metrics.csv、long_metrics.csv、metric_observations.csv，并更新 FY/H1 宽表。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "请处理 2025H1，并根据已有 2025Q1 数据体现 H1 累计和 Q2 单季数据。",
+      "expected_output": "H1 累计数据保留为 cumulative，Q2 单季流量指标以 derived_from_cumulative_delta 生成并在报告里用 * 标注。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "2025FY 同一指标在官方 PDF 和官方截图里不一致，请处理并告诉我是否需要复核。",
+      "expected_output": "官方 PDF 优先；冲突或被替代来源写入 review_queue.csv，且不静默覆盖来源观察值。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "请重复处理一次 2025FY，确认不会重复写入相同数据。",
+      "expected_output": "稳定 ID 去重，metric_observations.csv、long_metrics.csv、forecasts.csv、valuation_history.csv 不重复污染。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "我只给了一年 PB 历史数据，请更新估值快照。",
+      "expected_output": "valuation_snapshot.md 说明样本不足或仅有可得历史，不假装有完整 5 年或 10 年样本。",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "同一天同一家券商修订了 2027E 小米汽车交付量预测，请合并研报预测。",
+      "expected_output": "forecasts.csv 保留多版本，不用 captured_at 破坏幂等；需要复核的候选有 forecast_id。",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "现金储备、MAU、门店数这些点时指标不要从累计数据相减，请验证。",
+      "expected_output": "点时指标不会被派生为 Q2/Q3/Q4，缺少父数据或禁止派生时进入说明或复核队列。",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "官方截图 OCR 出来的一个收入数据不清楚，请确认不要直接入 long_metrics。",
+      "expected_output": "候选值进入 metric_observations.csv，并在 review_queue.csv 生成 candidate_row_id=observation_id 的待复核项。",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "后续官方 PDF 修正了 H1 收入，请重跑并确保 Q2 派生数据被重算。",
+      "expected_output": "父累计 fact 更新后，旧派生 Q2 被替换或重新计算，long_metrics.csv 不保留自相矛盾的派生数据。",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "同日 PB 有两个来源冲突，我批准其中一个后请重新计算估值百分位。",
+      "expected_output": "被批准的 valuation_id 变为 user_approved，旧冲突行被 rejected，百分位计算包含被批准样本。",
+      "files": []
+    },
+    {
+      "id": 11,
+      "prompt": "券商预测和估值候选都进入复核队列后，我标记 user_approved，请应用复核结果。",
+      "expected_output": "resolve_review_queue.py 能通过 forecast_id 或 valuation_id 找到候选行并更新 review_status。",
+      "files": []
+    }
+  ]
+}
