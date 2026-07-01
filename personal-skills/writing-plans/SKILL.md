@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: 有已批准设计文档或 spec、且还不能动代码时使用。生成详细执行计划。默认 lightweight 轻便模式；如果设计文档启用了 explore-review，则继承该模式；也可以从计划阶段开始启用审核，让计划和后续实现各审核修复一轮。
+description: 有已批准设计文档或 spec、且还不能动代码时使用。生成详细执行计划。默认 lightweight 轻便模式；如果设计文档已记录 `Workflow Review Mode`，则直接继承；若继承或显式选择 `explore-review`，本阶段和后续代码实现都会各自动运行一轮审核修复，中间不再询问。
 ---
 
 # 编写执行计划
@@ -27,17 +27,19 @@ description: 有已批准设计文档或 spec、且还不能动代码时使用�
 
 审核模式优先级为：**当前用户明确指定 > 设计文档记录 > 默认 `lightweight`**。如果用户当前明确要求在计划阶段开启 `explore-review`，即使设计文档记录为 `lightweight`，也以当前用户指令为准；但只影响计划和后续实现，不回头补跑设计文档审核。
 
-如果设计文档没有记录审核模式，默认使用 `lightweight`，除非用户明确开启审核模式。需要给选择时，可以这样说：
+正常情况下不要在计划阶段再次主动询问审核模式。`brainstorming` 应该已经在生成设计文档前完成选择；只要来源设计文档里有 `Workflow Review Mode`，就必须直接继承。只有来源设计文档缺失该字段，或用户当前明确要求改模式时，才需要补充说明或确认。
+
+如果设计文档没有记录审核模式，而你又确实需要补充确认，可以这样说：
 
 > “默认审核模式是 `lightweight`（不使用 subagent）。如果你希望从当前阶段开始更严格地审核，说 `explore-review` 即可；我会在写完计划后运行一轮计划审核，后续 executing-plans 也会运行一轮实现审核。更早的阶段不会补跑审核，除非你明确要求。”
 
 模式行为：
 
 - `lightweight`：跳过 subagent 审核，自检通过后结束。在计划中写入 `Workflow Review Mode: lightweight` 和 `Plan Review Status: lightweight`
-- `explore-review`：从当前阶段起对后续阶段生效。保存计划并完成自检后，派发一个 `explore` subagent 做一轮计划审核。后续 executing-plans 必须自动运行一轮实现审核，不要在实现阶段再次询问用户
+- `explore-review`：如果是从设计文档继承，或用户当前明确开启，就从当前阶段起对后续阶段生效。保存计划并完成自检后，派发一个 `explore` subagent 做一轮计划审核。后续 executing-plans 必须自动运行一轮实现审核，不要在实现阶段再次询问用户
 - 如果用户说“快速”“轻便”“不使用 subagent”等，使用 `lightweight`
 - 如果用户明确要求额外、独立、subagent 或 explore 审核，例如“用 explore 审核计划”“让 subagent double check”，使用 `explore-review` 覆盖剩余链路，每个产物/阶段一轮审核修复。普通“请 review 计划”不自动等同于 `explore-review`，按上下文判断，必要时简短确认
-- 一旦选择 `explore-review`，把它持久化到计划中，后续不要降级为 `lightweight`，除非用户明确改模式
+- 一旦选择或继承 `explore-review`，把它持久化到计划中，后续不要降级为 `lightweight`，除非用户明确改模式
 - 如果用户在计划阶段才选择 `explore-review`，不要回头运行设计文档审核。设计文档保持已批准状态；审核模式只应用于计划和后续实现，除非用户明确要求也审核设计文档
 
 `Plan Review Status` 可用值：`lightweight`、`explore-reviewed`、`needs-review-after-changes`。只有当前最终版执行计划已经被 explore 审核覆盖时，才能使用 `explore-reviewed`。
@@ -113,6 +115,8 @@ Explore 审核提示词模式：
 **每份计划都必须以这个头部开始：**
 
 状态字段必须写入单个实际值，不要在最终计划中保留多个候选值或条件说明。
+
+如果来源设计文档已经写入 `Workflow Review Mode` 和 `Spec Review Status`，这里必须复制它们的实际值，不要重置回模板默认值。
 
 ```markdown
 # [功能名称] 执行计划

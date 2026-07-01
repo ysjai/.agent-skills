@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: "在创意或行为变更前使用：创建功能、构建组件、添加能力或修改行为。通过对话澄清用户意图、需求和设计，再进入实现。默认 lightweight 轻便模式；可选择 explore-review，从设计文档、执行计划到代码实现各进行一轮 explore 审核和修复。"
+description: "在创意或行为变更前使用：创建功能、构建组件、添加能力或修改行为。通过对话澄清用户意图、需求和设计，再进入实现。生成设计文档前先确认审核模式，默认 lightweight；若选择 explore-review，则设计文档、执行计划和代码实现都会各自动运行一轮 explore 审核和修复。"
 ---
 
 # 把想法梳理成设计
@@ -28,11 +28,12 @@ description: "在创意或行为变更前使用：创建功能、构建组件、
 3. **提出澄清问题** — 一次只问一个，理解目的、约束和成功标准
 4. **提出 2-3 个方案** — 说明取舍，并给出你的推荐
 5. **展示设计** — 按复杂度分段展示，每段之后获取用户确认
-6. **编写设计文档** — 保留对话中的完整推理链，然后保存到 `docs/specs/YYYY-MM-DD-<topic>-design.md`。如果用户要求或项目流程需要，再提交到 git
-7. **设计文档自检** — 快速检查占位符、矛盾、歧义和范围问题
-8. **工作流审核模式** — 默认 `lightweight`；如果用户选择 `explore-review`，记录到设计文档，并立即运行一轮 explore 设计文档审核
-9. **用户审核设计文档** — 请用户先审核设计文档，再进入下一步
-10. **建议 writing-plans** — 建议用户使用 writing-plans skill 生成执行计划，由用户决定是否继续
+6. **确认工作流审核模式** — 除非用户更早已明确指定，否则在生成设计文档前让用户一次性选择：`lightweight`（默认）或 `explore-review`
+7. **编写设计文档** — 保留对话中的完整推理链，然后保存到 `docs/specs/YYYY-MM-DD-<topic>-design.md`。如果用户要求或项目流程需要，再提交到 git
+8. **设计文档自检** — 快速检查占位符、矛盾、歧义和范围问题
+9. **可选 explore 设计文档审核** — 如果当前模式是 `explore-review`，立即运行一轮 explore 设计文档审核并直接修复
+10. **用户审核设计文档** — 请用户先审核设计文档，再进入下一步
+11. **建议 writing-plans** — 建议用户使用 writing-plans skill 生成执行计划，由用户决定是否继续
 
 ## 流程图
 
@@ -45,9 +46,10 @@ digraph brainstorming {
     "提出 2-3 个方案" [shape=box];
     "分段展示设计" [shape=box];
     "用户批准设计？" [shape=diamond];
+    "确认工作流审核模式\n（默认 lightweight）" [shape=diamond];
     "编写设计文档" [shape=box];
     "设计文档自检\n（直接修复）" [shape=box];
-    "工作流审核模式？" [shape=diamond];
+    "已选择 explore-review？" [shape=diamond];
     "Explore 审核设计文档\n（一轮，直接修复）" [shape=box];
     "用户审核设计文档？" [shape=diamond];
     "完成：建议 writing-plans" [shape=doublecircle];
@@ -60,11 +62,12 @@ digraph brainstorming {
     "提出 2-3 个方案" -> "分段展示设计";
     "分段展示设计" -> "用户批准设计？";
     "用户批准设计？" -> "分段展示设计" [label="否，修订"];
-    "用户批准设计？" -> "编写设计文档" [label="是"];
+    "用户批准设计？" -> "确认工作流审核模式\n（默认 lightweight）" [label="是"];
+    "确认工作流审核模式\n（默认 lightweight）" -> "编写设计文档";
     "编写设计文档" -> "设计文档自检\n（直接修复）";
-    "设计文档自检\n（直接修复）" -> "工作流审核模式？";
-    "工作流审核模式？" -> "Explore 审核设计文档\n（一轮，直接修复）" [label="explore-review"];
-    "工作流审核模式？" -> "用户审核设计文档？" [label="lightweight 默认"];
+    "设计文档自检\n（直接修复）" -> "已选择 explore-review？";
+    "已选择 explore-review？" -> "Explore 审核设计文档\n（一轮，直接修复）" [label="是"];
+    "已选择 explore-review？" -> "用户审核设计文档？" [label="否，lightweight"];
     "Explore 审核设计文档\n（一轮，直接修复）" -> "用户审核设计文档？";
     "用户审核设计文档？" -> "编写设计文档" [label="要求修改"];
     "用户审核设计文档？" -> "完成：建议 writing-plans" [label="批准"];
@@ -187,19 +190,19 @@ digraph brainstorming {
 直接修复发现的问题，不需要再单独 review 一遍。
 
 **工作流审核模式：**
-默认使用 `lightweight`。不要为了询问审核模式而阻塞进度；在第一个自然检查点给用户一个轻量的开启机会，并遵守用户已经明确表达的模式。
+审核模式要在**生成设计文档前**确定，并写入设计文档头部。不要等写完文档再给用户“补选一次”。如果用户在更早的对话里已经明确说了“快速 / 轻便 / 不用 subagent”或明确要求 `explore-review`，直接沿用；否则就在写设计文档前做一次二选一确认。
 
 建议话术：
 
-> “默认审核模式是 `lightweight`（不使用 subagent）。如果你想使用更严格的全链路审核，说 `explore-review` 即可；这样设计文档、执行计划和代码实现都会各由 explore subagent 审核一轮，我会应用有效修复。”
+> “生成设计文档前先确认审核模式：默认是 `lightweight`（不使用 subagent）；如果你选择 `explore-review`，设计文档、执行计划和代码实现这三个环节都会各自动运行一轮 explore 审核和修复，中间我不会再重复询问。若你不特别选择，我就按 `lightweight` 继续。”
 
 模式行为：
 
 - `lightweight`：跳过 subagent 审核，进入用户审核关口。在设计文档中写入 `Workflow Review Mode: lightweight` 和 `Spec Review Status: lightweight`
-- `explore-review`：这是全链路模式。在设计文档中写入 `Workflow Review Mode: explore-review`。立即运行一轮 explore subagent 设计文档审核；之后 writing-plans 必须自动运行一轮计划审核，executing-plans 必须自动运行一轮实现审核。不要在每个阶段重复询问用户
+- `explore-review`：这是全链路模式。在设计文档中写入 `Workflow Review Mode: explore-review`。设计文档自检后立即运行一轮 explore subagent 设计文档审核；之后 writing-plans 必须自动运行一轮计划审核，executing-plans 必须自动运行一轮实现审核。不要在后续阶段再次询问用户是否开启审核
 - 如果用户说“快速”“轻便”“不使用 subagent”等等，使用 `lightweight`
 - 如果用户明确要求额外、独立、subagent 或 explore 审核，例如“用 explore 审核”“让 subagent double check”，使用 `explore-review`，整条链路每个产物/阶段各一轮审核修复。普通“请 review 文档”不自动等同于 `explore-review`，按上下文判断，必要时简短确认
-- 一旦选择 `explore-review`，后续不要降级为 `lightweight`，除非用户明确改模式
+- 一旦选择 `explore-review`，把该模式持久化到设计文档；后续 `writing-plans` 和 `executing-plans` 必须直接继承，不再主动询问，除非用户明确改模式
 
 `Spec Review Status` 可用值：`lightweight`、`explore-reviewed`、`needs-review-after-changes`。只有当前最终版设计文档已经被 explore 审核覆盖时，才能使用 `explore-reviewed`。
 

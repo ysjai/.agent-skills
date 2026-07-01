@@ -34,12 +34,13 @@ description: 更新本地已有的 skills（支持 SkillHub 和 git-repo-skills 
 
 ```bash
 SKILL_HUB_DIR="$HOME/.agent-skills/skill-hub"
-if [ -d "$SKILL_HUB_DIR" ] && [ -n "$(ls -A "$SKILL_HUB_DIR" 2>/dev/null)" ]; then
-    for d in "$SKILL_HUB_DIR"/*/; do
-        [ -d "$d" ] || continue
+if [ -d "$SKILL_HUB_DIR" ] && find "$SKILL_HUB_DIR" -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+    find "$SKILL_HUB_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r d; do
         slug=$(basename "$d")
         skill_md="$d/SKILL.md"
-        name=$(grep -m1 '^# ' "$skill_md" 2>/dev/null | sed 's/^# //' || echo "$slug")
+        name=$(sed -n 's/^name:[[:space:]]*//p' "$skill_md" 2>/dev/null | head -1 | sed 's/^["'"'"']//;s/["'"'"']$//')
+        [ -z "$name" ] && name=$(sed -n 's/^#[[:space:]]*//p' "$skill_md" 2>/dev/null | head -1)
+        [ -z "$name" ] && name="$slug"
         echo "$slug|$name"
     done
 else
@@ -95,7 +96,7 @@ if [ -d "$INSTALLED_DIR" ]; then
     mv "$INSTALLED_DIR" "$TARGET_DIR/$SKILL_SLUG"
     echo "UPDATED: $SKILL_SLUG"
 else
-    FOUND=$(ls "$TMP_DIR/skills/" 2>/dev/null | head -1)
+    FOUND=$(find "$TMP_DIR/skills" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | head -1)
     if [ -n "$FOUND" ]; then
         rm -rf "$TARGET_DIR/$SKILL_SLUG"
         mv "$TMP_DIR/skills/$FOUND" "$TARGET_DIR/$SKILL_SLUG"
@@ -118,7 +119,7 @@ rm -rf "$TMP_DIR"
 ### B1. 检查仓库是否存在
 
 ```bash
-ls -d "$HOME/.agent-skills/.git" 2>/dev/null || echo "NOT_GIT"
+[ -e "$HOME/.agent-skills/.git" ] || echo "NOT_GIT"
 ```
 
 如果 `~/.agent-skills` 不是 git 仓库，告知用户并终止。
@@ -135,8 +136,8 @@ git -C "$HOME/.agent-skills" status --short
 
 ```bash
 GIT_REPO_DIR="$HOME/.agent-skills/git-repo-skills"
-if [ -d "$GIT_REPO_DIR" ] && [ -n "$(ls -A "$GIT_REPO_DIR" 2>/dev/null)" ]; then
-    ls -1 "$GIT_REPO_DIR"
+if [ -d "$GIT_REPO_DIR" ] && find "$GIT_REPO_DIR" -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+    find "$GIT_REPO_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;
 else
     echo "EMPTY"
 fi
@@ -151,10 +152,9 @@ fi
 ```bash
 cd "$HOME/.agent-skills"
 # 列出 git-repo-skills/ 下所有含 .git 的目录
-for d in git-repo-skills/*/; do
-    [ -d "$d/.git" ] || continue
-    path="${d%/}"
-    echo "HAS_GIT|$path"
+find "git-repo-skills" -mindepth 1 -maxdepth 1 -type d | while read -r d; do
+    [ -e "$d/.git" ] || continue
+    echo "HAS_GIT|$d"
 done
 
 # 查看已注册的子模块
@@ -166,7 +166,14 @@ git submodule status 2>/dev/null | awk '{print $2}'
 ```bash
 git -C "$HOME/.agent-skills/$REPO_PATH" status --short
 git -C "$HOME/.agent-skills/$REPO_PATH" remote get-url origin 2>/dev/null || echo "NO_REMOTE"
+if git -C "$HOME/.agent-skills/$REPO_PATH" rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+    git -C "$HOME/.agent-skills/$REPO_PATH" log --oneline '@{u}'..HEAD
+else
+    echo "NO_UPSTREAM"
+fi
 ```
+
+若 `status --short` 非空、输出 `NO_REMOTE`、输出 `NO_UPSTREAM`，或 `git log @{u}..HEAD` 有内容，则停止自动注册并报告用户，需要先清理或推送该仓库。
 
 若干净且有 remote，询问用户是否注册为子模块：
 - 选项1（默认）：注册为子模块（先删除目录再 `git submodule add`）
@@ -203,7 +210,9 @@ git -C "$HOME/.agent-skills" status --short
 
 ```bash
 git -C "$HOME/.agent-skills" add .gitmodules
-git -C "$HOME/.agent-skills" add git-repo-skills/
+git -C "$HOME/.agent-skills" submodule status 2>/dev/null | awk '{print $2}' | while read -r path; do
+    git -C "$HOME/.agent-skills" add "$path"
+done
 git -C "$HOME/.agent-skills" commit -m "Update git-repo-skills submodules to latest version"
 ```
 

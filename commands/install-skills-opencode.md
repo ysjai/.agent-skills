@@ -45,13 +45,15 @@ description: 安装 skills 到 OpenCode（项目级或全局，来源支持 Skil
 ### 检测
 
 ```bash
+SOURCE_PATH="<源目录绝对路径>"
 LINK_PATH="$SKILLS_DIR/<skillname>"
 if [ ! -e "$LINK_PATH" ] && [ ! -L "$LINK_PATH" ]; then
     echo "OK"
 elif [ -L "$LINK_PATH" ]; then
     TARGET=$(readlink "$LINK_PATH")
     case "$TARGET" in
-        $HOME/.agent-skills/*) echo "MANAGED" ;;
+        "$SOURCE_PATH") echo "MANAGED_SAME" ;;
+        $HOME/.agent-skills/*) echo "MANAGED_OTHER|$TARGET" ;;
         *) echo "CONFLICT_SYMLINK|$TARGET" ;;
     esac
 else
@@ -64,7 +66,8 @@ fi
 | 检测结果 | 处理方式 |
 |----------|----------|
 | `OK` | 直接创建软链接 |
-| `MANAGED` | 删除旧链接，重新创建 |
+| `MANAGED_SAME` | 说明已安装且指向同一源目录，跳过 |
+| `MANAGED_OTHER` | 提示用户当前链接指向 `<target>`，询问：覆盖 / 跳过 |
 | `CONFLICT_SYMLINK` | 提示用户目标已存在并指向 `<target>`，询问：覆盖 / 跳过 |
 | `CONFLICT_REAL` | 提示用户目标是真实目录/文件，询问：覆盖 / 跳过 |
 
@@ -85,12 +88,13 @@ ln -s "$SOURCE_PATH" "$LINK_PATH"
 
 ```bash
 SKILL_HUB_DIR="$HOME/.agent-skills/skill-hub"
-if [ -d "$SKILL_HUB_DIR" ]; then
-    for d in "$SKILL_HUB_DIR"/*/; do
-        [ -d "$d" ] || continue
+if [ -d "$SKILL_HUB_DIR" ] && find "$SKILL_HUB_DIR" -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+    find "$SKILL_HUB_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r d; do
         slug=$(basename "$d")
         skill_md="$d/SKILL.md"
-        name=$(grep -m1 '^# ' "$skill_md" 2>/dev/null | sed 's/^# //' || echo "$slug")
+        name=$(sed -n 's/^name:[[:space:]]*//p' "$skill_md" 2>/dev/null | head -1 | sed 's/^["'"'"']//;s/["'"'"']$//')
+        [ -z "$name" ] && name=$(sed -n 's/^#[[:space:]]*//p' "$skill_md" 2>/dev/null | head -1)
+        [ -z "$name" ] && name="$slug"
         link="$SKILLS_DIR/$slug"
         if [ -L "$link" ]; then
             echo "INSTALLED|$slug|$name"
@@ -192,7 +196,7 @@ if [ -d "$INSTALLED_DIR" ]; then
     rm -rf "$TARGET_DIR/$SKILL_SLUG"
     mv "$INSTALLED_DIR" "$TARGET_DIR/$SKILL_SLUG"
 else
-    FOUND=$(ls "$TMP_DIR/skills/" 2>/dev/null | head -1)
+    FOUND=$(find "$TMP_DIR/skills" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | head -1)
     [ -n "$FOUND" ] && rm -rf "$TARGET_DIR/$SKILL_SLUG" && mv "$TMP_DIR/skills/$FOUND" "$TARGET_DIR/$SKILL_SLUG"
 fi
 rm -rf "$TMP_DIR"
@@ -245,8 +249,8 @@ fi
 
 ```bash
 GIT_REPO_DIR="$HOME/.agent-skills/git-repo-skills"
-if [ -d "$GIT_REPO_DIR" ] && [ -n "$(ls -A "$GIT_REPO_DIR" 2>/dev/null)" ]; then
-    ls -1 "$GIT_REPO_DIR"
+if [ -d "$GIT_REPO_DIR" ] && find "$GIT_REPO_DIR" -mindepth 1 -maxdepth 1 -type d | grep -q .; then
+    find "$GIT_REPO_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;
 else
     echo "EMPTY"
 fi
@@ -292,9 +296,18 @@ clone 完成后进入 C3。
 ```bash
 GIT_REPO_DIR="$HOME/.agent-skills/git-repo-skills"
 REPO_DIR="$GIT_REPO_DIR/<repo>"
-find "$REPO_DIR" -name "SKILL.md" | while read skill_md; do
+find "$REPO_DIR" -maxdepth 4 -name "SKILL.md" \
+    -not -path "*/.git/*" \
+    -not -path "*/template/*" -not -path "*/templates/*" \
+    -not -path "*/example/*" -not -path "*/examples/*" \
+    -not -path "*/codebuddy/*" -not -path "*/codex/*" \
+    -not -path "*/cursor/*" -not -path "*/gemini/*" \
+    -not -path "*/windsurf/*" -not -path "*/kiro/*" -not -path "*/vscode/*" \
+    | sort | { seen=""; while read -r skill_md; do
     skill_dir=$(dirname "$skill_md")
     skill_name=$(basename "$skill_dir")
+    case " $seen " in *" $skill_name "*) echo "duplicate|$skill_name|$(realpath "$skill_dir")"; continue ;; esac
+    seen="$seen $skill_name"
     if [ "$skill_dir" = "$REPO_DIR" ]; then
         echo "standalone|$skill_name|$(realpath "$skill_dir")"
     else
@@ -307,7 +320,7 @@ find "$REPO_DIR" -name "SKILL.md" | while read skill_md; do
             echo "grouped|$skill_name|$(realpath "$skill_dir")|$(realpath "$group_skills_dir")"
         fi
     fi
-done
+done; }
 ```
 
 OpenCode 支持整组选择。展示时允许：

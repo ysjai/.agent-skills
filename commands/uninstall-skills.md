@@ -67,8 +67,8 @@ if [ -d "$SKILLS_DIR" ]; then
                 *) managed="no" ;;
             esac
             # 检查是否是分组（软链接目标目录内含多个 SKILL.md）— OpenCode / Codex 下可能出现
-            if [ "$managed" = "yes" ] && [ -d "$item" ] && ls "$item"/*/SKILL.md >/dev/null 2>&1; then
-                count=$(ls -d "$item"/*/SKILL.md 2>/dev/null | wc -l)
+            if [ "$managed" = "yes" ] && [ -d "$item" ] && find -L "$item" -mindepth 2 -maxdepth 2 -type f -name "SKILL.md" | grep -q .; then
+                count=$(find -L "$item" -mindepth 2 -maxdepth 2 -type f -name "SKILL.md" | wc -l)
                 echo "group|$name|$target|$count|$managed"
             else
                 echo "single|$name|$target|$managed"

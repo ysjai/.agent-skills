@@ -127,8 +127,8 @@ skillhub search "<关键词2>" 2>&1 | head -80  # 如有多个关键词
 ```bash
 TARGET_DIR="$HOME/.agent-skills/skill-hub"
 mkdir -p "$TARGET_DIR"
-for SLUG in <选中的slugs>; do
-    if [ -d "$TARGET_DIR/$SLUG" ]; then echo "EXISTS: $SLUG"; else echo "NEW: $SLUG"; fi
+for SKILL_SLUG in <选中的slugs>; do
+    if [ -d "$TARGET_DIR/$SKILL_SLUG" ]; then echo "EXISTS: $SKILL_SLUG"; else echo "NEW: $SKILL_SLUG"; fi
 done
 ```
 
@@ -158,7 +158,7 @@ if [ -d "$INSTALLED_DIR" ]; then
     mv "$INSTALLED_DIR" "$TARGET_DIR/$SKILL_SLUG"
 else
     # 兜底：找 skills/ 下第一个目录
-    FOUND=$(ls "$TMP_DIR/skills/" 2>/dev/null | head -1)
+    FOUND=$(find "$TMP_DIR/skills" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | head -1)
     [ -n "$FOUND" ] && rm -rf "$TARGET_DIR/$SKILL_SLUG" && mv "$TMP_DIR/skills/$FOUND" "$TARGET_DIR/$SKILL_SLUG"
 fi
 rm -rf "$TMP_DIR"
