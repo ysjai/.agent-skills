@@ -200,6 +200,7 @@ digraph brainstorming {
 
 - `lightweight`：跳过 subagent 审核，进入用户审核关口。在设计文档中写入 `Workflow Review Mode: lightweight` 和 `Spec Review Status: lightweight`
 - `explore-review`：这是全链路模式。在设计文档中写入 `Workflow Review Mode: explore-review`。设计文档自检后立即运行一轮 explore subagent 设计文档审核；之后 writing-plans 必须自动运行一轮计划审核，executing-plans 必须自动运行一轮实现审核。不要在后续阶段再次询问用户是否开启审核
+- 默认每个阶段只运行一轮“审核 -> 修复 -> 自检/复验”。除非用户明确要求多轮审核，例如“再审一轮”“循环审核直到没有问题”，否则不要因为修复完成、用户后续改动或 reviewer 还可能提出新意见，就自动追加第二轮
 - 如果用户说“快速”“轻便”“不使用 subagent”等等，使用 `lightweight`
 - 如果用户明确要求额外、独立、subagent 或 explore 审核，例如“用 explore 审核”“让 subagent double check”，使用 `explore-review`，整条链路每个产物/阶段各一轮审核修复。普通“请 review 文档”不自动等同于 `explore-review`，按上下文判断，必要时简短确认
 - 一旦选择 `explore-review`，把该模式持久化到设计文档；后续 `writing-plans` 和 `executing-plans` 必须直接继承，不再主动询问，除非用户明确改模式
@@ -225,9 +226,9 @@ Explore 审核提示词模式：
 只返回可执行发现，按严重程度排序，附文件/章节引用和建议修复方式。
 ```
 
-如果修复不违背已批准设计，就直接应用到设计文档。若 reviewer 建议会改变范围、违背用户决策，或需要新的产品/设计选择，先问用户再改。修复后重新跑一遍设计文档自检，将 `Spec Review Status` 设为 `explore-reviewed`，然后进入用户审核关口。
+如果修复不违背已批准设计，就直接应用到设计文档。若 reviewer 建议会改变范围、违背用户决策，或需要新的产品/设计选择，先问用户再改。修复后重新跑一遍设计文档自检，将 `Spec Review Status` 设为 `explore-reviewed`，然后进入用户审核关口。默认到此为止，不要自动追加第二轮 explore 审核，除非用户明确要求多轮。
 
-`Spec Review Status: explore-reviewed` 只表示当前最终版设计文档已经被 explore 审核覆盖。如果 explore 审核后又发生实质性修改，先把状态改回 `needs-review-after-changes`，重新运行自检；若 `Workflow Review Mode` 仍是 `explore-review`，必须对修改后的最终版本再运行一轮 explore 审核，审核通过并应用有效修复后，才能重新标记为 `explore-reviewed`。纯错别字或格式修正不需要重新审核。
+`Spec Review Status: explore-reviewed` 只表示当前版本曾被这一轮 explore 审核覆盖。如果 explore 审核后又发生实质性修改，先把状态改回 `needs-review-after-changes`，并重新运行自检。默认不要自动再跑一轮 explore 审核；只有用户明确要求多轮审核时，才对修改后的版本再运行下一轮审核，审核通过并应用有效修复后，才能重新标记为 `explore-reviewed`。纯错别字或格式修正不需要重新审核。
 
 **用户审核关口：**
 设计文档自检和可选审核通过后，请用户审核已写入文件的设计文档：
@@ -252,7 +253,7 @@ Explore 审核提示词模式：
 - **探索替代方案** - 定案前总是提出 2-3 个方案
 - **增量确认** - 展示设计并获得批准后再继续
 - **保留推理链** - 设计文档必须记录头脑风暴中的问题、决策和取舍，而不只是最终架构
-- **审核模式可继承** - `lightweight` 是默认值；如果用户选择 `explore-review`，设计文档、执行计划、代码实现都会各进行一轮 explore 审核
+- **审核模式可继承** - `lightweight` 是默认值；如果用户选择 `explore-review`，设计文档、执行计划、代码实现都会各进行一轮 explore 审核；默认不自动扩展成多轮
 - **保持灵活** - 如果不清楚，就回到澄清环节
 
 ## 可视化伴侣

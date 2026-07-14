@@ -37,6 +37,7 @@ description: 有已批准设计文档或 spec、且还不能动代码时使用�
 
 - `lightweight`：跳过 subagent 审核，自检通过后结束。在计划中写入 `Workflow Review Mode: lightweight` 和 `Plan Review Status: lightweight`
 - `explore-review`：如果是从设计文档继承，或用户当前明确开启，就从当前阶段起对后续阶段生效。保存计划并完成自检后，派发一个 `explore` subagent 做一轮计划审核。后续 executing-plans 必须自动运行一轮实现审核，不要在实现阶段再次询问用户
+- 默认每个阶段只运行一轮“审核 -> 修复 -> 自检/复验”。除非用户明确要求多轮审核，例如“再审一轮”“循环审核直到没有问题”，否则不要因为计划修复完成、后续有修改空间或 reviewer 可能继续提出新意见，就自动追加第二轮
 - 如果用户说“快速”“轻便”“不使用 subagent”等，使用 `lightweight`
 - 如果用户明确要求额外、独立、subagent 或 explore 审核，例如“用 explore 审核计划”“让 subagent double check”，使用 `explore-review` 覆盖剩余链路，每个产物/阶段一轮审核修复。普通“请 review 计划”不自动等同于 `explore-review`，按上下文判断，必要时简短确认
 - 一旦选择或继承 `explore-review`，把它持久化到计划中，后续不要降级为 `lightweight`，除非用户明确改模式
@@ -65,9 +66,9 @@ Explore 审核提示词模式：
 只返回可执行发现，按严重程度排序，附文件/章节引用和建议修复方式。
 ```
 
-如果修复不违背已批准设计，就直接应用到计划。若 reviewer 建议会改变设计文档、放宽验收标准或引入新范围，先问用户再改。修复后重新跑一遍计划自检，将 `Plan Review Status` 设为 `explore-reviewed`，然后结束计划阶段。
+如果修复不违背已批准设计，就直接应用到计划。若 reviewer 建议会改变设计文档、放宽验收标准或引入新范围，先问用户再改。修复后重新跑一遍计划自检，将 `Plan Review Status` 设为 `explore-reviewed`，然后结束计划阶段。默认到此为止，不要自动追加第二轮 explore 审核，除非用户明确要求多轮。
 
-`Plan Review Status: explore-reviewed` 只表示当前最终版执行计划已经被 explore 审核覆盖。如果 explore 审核后又发生实质性修改，先把状态改回 `needs-review-after-changes`，重新运行计划自检；若 `Workflow Review Mode` 仍是 `explore-review`，必须对修改后的最终版本再运行一轮 explore 审核，审核通过并应用有效修复后，才能重新标记为 `explore-reviewed`。纯错别字或格式修正不需要重新审核。
+`Plan Review Status: explore-reviewed` 只表示当前版本曾被这一轮 explore 审核覆盖。如果 explore 审核后又发生实质性修改，先把状态改回 `needs-review-after-changes`，并重新运行计划自检。默认不要自动再跑一轮 explore 审核；只有用户明确要求多轮审核时，才对修改后的版本再运行下一轮审核，审核通过并应用有效修复后，才能重新标记为 `explore-reviewed`。纯错别字或格式修正不需要重新审核。
 
 ## 范围检查
 
@@ -274,7 +275,7 @@ git commit -m "feat: add specific feature"
 
 **6. 验收严格性：** 验收标准是否可执行、可判定真假？把含糊检查替换成精确命令、预期输出、UI 状态、API 响应或文件 diff。
 
-如果发现问题，直接在计划中修复；自检修复本身不需要额外运行 subagent review。如果发现某个设计需求没有任务，就添加任务。但如果计划已经标记为 `Plan Review Status: explore-reviewed` 后又发生实质性修改，必须按前文状态规则处理，不能继续声称旧审核覆盖最终计划。
+如果发现问题，直接在计划中修复；自检修复本身不需要额外运行 subagent review。如果发现某个设计需求没有任务，就添加任务。但如果计划已经标记为 `Plan Review Status: explore-reviewed` 后又发生实质性修改，按前文状态规则处理：默认只把状态改为 `needs-review-after-changes` 并完成自检，不自动再派新的审核轮次；除非用户明确要求多轮。
 
 ## 完成
 
