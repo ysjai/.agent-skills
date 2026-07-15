@@ -46,7 +46,7 @@ digraph brainstorming {
     "提出 2-3 个方案" [shape=box];
     "分段展示设计" [shape=box];
     "用户批准设计？" [shape=diamond];
-    "确认工作流审核模式\n（默认 lightweight）" [shape=diamond];
+    "确认工作流审核模式\n（默认 lightweight）" [shape=box];
     "编写设计文档" [shape=box];
     "设计文档自检\n（直接修复）" [shape=box];
     "已选择 explore-review？" [shape=diamond];
@@ -194,7 +194,7 @@ digraph brainstorming {
 
 建议话术：
 
-> “生成设计文档前先确认审核模式：默认是 `lightweight`（不使用 subagent）；如果你选择 `explore-review`，设计文档、执行计划和代码实现这三个环节都会各自动运行一轮 explore 审核和修复，中间我不会再重复询问。若你不特别选择，我就按 `lightweight` 继续。”
+> “生成设计文档前先确认审核模式：默认是 `lightweight`（不使用 subagent）；如果你选择 `explore-review`，设计文档、执行计划和代码实现这三个阶段都会各自动运行一轮 explore 审核和修复（会多消耗一些 token，但更严格），中间我不会再重复询问。若你不特别选择，我就按 `lightweight` 继续。”
 
 模式行为：
 
@@ -205,7 +205,7 @@ digraph brainstorming {
 - 如果用户明确要求额外、独立、subagent 或 explore 审核，例如“用 explore 审核”“让 subagent double check”，使用 `explore-review`，整条链路每个产物/阶段各一轮审核修复。普通“请 review 文档”不自动等同于 `explore-review`，按上下文判断，必要时简短确认
 - 一旦选择 `explore-review`，把该模式持久化到设计文档；后续 `writing-plans` 和 `executing-plans` 必须直接继承，不再主动询问，除非用户明确改模式
 
-`Spec Review Status` 可用值：`lightweight`、`explore-reviewed`、`needs-review-after-changes`。只有当前最终版设计文档已经被 explore 审核覆盖时，才能使用 `explore-reviewed`。
+`Spec Review Status` 可用值：`lightweight`、`explore-reviewed`、`needs-review-after-changes`、`not recorded`（`not recorded` 仅用于没有设计文档、用户跳过 spec 的场景）。只有当前最终版设计文档已经被 explore 审核覆盖时，才能使用 `explore-reviewed`。
 
 Explore 审核提示词模式：
 
@@ -226,9 +226,9 @@ Explore 审核提示词模式：
 只返回可执行发现，按严重程度排序，附文件/章节引用和建议修复方式。
 ```
 
-如果修复不违背已批准设计，就直接应用到设计文档。若 reviewer 建议会改变范围、违背用户决策，或需要新的产品/设计选择，先问用户再改。修复后重新跑一遍设计文档自检，将 `Spec Review Status` 设为 `explore-reviewed`，然后进入用户审核关口。默认到此为止，不要自动追加第二轮 explore 审核，除非用户明确要求多轮。
+如果修复不违背已批准设计，就直接应用到设计文档。若 reviewer 建议会改变范围、违背用户决策，或需要新的产品/设计选择，先问用户再改。修复后重新跑一遍设计文档自检，将 `Spec Review Status` 设为 `explore-reviewed`，然后进入用户审核关口。
 
-`Spec Review Status: explore-reviewed` 只表示当前版本曾被这一轮 explore 审核覆盖。如果 explore 审核后又发生实质性修改，先把状态改回 `needs-review-after-changes`，并重新运行自检。默认不要自动再跑一轮 explore 审核；只有用户明确要求多轮审核时，才对修改后的版本再运行下一轮审核，审核通过并应用有效修复后，才能重新标记为 `explore-reviewed`。纯错别字或格式修正不需要重新审核。
+`Spec Review Status: explore-reviewed` 只表示当前版本曾被这一轮 explore 审核覆盖。如果之后又发生实质性修改，把状态改回 `needs-review-after-changes` 并重新运行自检；按前文“默认只一轮”规则，除非用户明确要求多轮，否则不自动再跑 explore 审核（纯错别字或格式修正也不需要重新审核）。
 
 **用户审核关口：**
 设计文档自检和可选审核通过后，请用户审核已写入文件的设计文档：
