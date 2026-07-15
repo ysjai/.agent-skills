@@ -1,13 +1,13 @@
 ---
 name: writing-plans
-description: 有已批准设计文档或 spec、且还不能动代码时使用。生成详细执行计划。默认 lightweight 轻便模式；如果设计文档已记录 `Workflow Review Mode`，则直接继承；若继承或显式选择 `explore-review`，本阶段和后续代码实现都会各自动运行一轮审核修复，中间不再询问。
+description: 已有获批设计文档或 spec、尚未进入实现时使用。生成按依赖 DAG 和最大安全并行度组织的 Wave 执行计划，并确定提交策略、验证边界和验收证据。
 ---
 
 # 编写执行计划
 
 ## 概览
 
-编写全面的执行计划，假设执行者对当前代码库几乎没有上下文，而且工程判断不一定可靠。把他们需要知道的内容都写清楚：哪些设计决策驱动这次实现、每个任务要改哪些文件、核心代码形态、测试、需要查哪些文档、如何验证，以及到底用什么证据证明完成。把完整计划拆成小而可执行的任务。坚持 DRY、YAGNI、TDD 和按需频繁提交。
+编写无需执行者猜测核心决策的计划：明确设计依据、文件所有权、接口形态、任务依赖、测试命令和验收证据。把任务 DAG 组织成尽可能宽且安全的 Wave，并为每个 Wave 定义可恢复边界。
 
 假设执行者是熟练开发者，但几乎不了解我们的工具链和业务领域。也假设他们不一定擅长测试设计。
 
@@ -19,56 +19,34 @@ description: 有已批准设计文档或 spec、且还不能动代码时使用�
 
 ## 必需输入
 
-执行计划应基于已批准的设计文档或 spec。开始前先定位来源设计文档，通常是 `docs/specs/YYYY-MM-DD-<topic>-design.md`。
+执行计划应基于已批准的设计文档或 spec。开始前定位来源设计文档，通常是 `docs/specs/YYYY-MM-DD-<topic>-design.md`，并读取 `Workflow Review Mode` 和 `Spec Review Status`。
 
-如果用户只有需求描述、没有设计文档，默认建议先使用 `brainstorming` 产出设计文档。只有用户明确要求跳过 spec 时，才可以继续写计划；此时必须在计划头部把 `来源设计文档` 写为 `无（用户明确跳过）`，并额外记录关键需求、假设和设计决策来源，避免后续实现缺少依据。
+如果用户只有需求描述、没有设计文档，默认建议先使用 `brainstorming`。只有用户明确要求跳过 spec 时才继续：计划头部写 `来源设计文档：无（用户明确跳过）`，并增加 `实现依据（无 spec）` 章节，记录已确认需求、假设、设计决策、范围和验收标准。该章节是后续 worker 与实现 reviewer 的 `SPEC_CONTEXT`，不得留空。
+
+入口状态处理：
+
+- `lightweight`、`explore-reviewed`、`not recorded`：可继续；`not recorded` 仅适用于用户明确跳过 spec
+- `explore-pending`、`review-blocked`：停止，先完成或解决上游审核
+- `needs-review-after-changes`：提示用户选择返回补审，或明确接受未复审风险继续；继续时原样保留该状态，不得伪装成已审核
 
 ## 工作流审核模式
 
-审核模式优先级为：**当前用户明确指定 > 设计文档记录 > 默认 `lightweight`**。如果用户当前明确要求在计划阶段开启 `explore-review`，即使设计文档记录为 `lightweight`，也以当前用户指令为准；但只影响计划和后续实现，不回头补跑设计文档审核。
+有效审核模式优先级为：**当前用户明确指定 > 设计文档记录 > 默认 `lightweight`**。计划头部写入该 effective mode；`Spec Review Status` 原样复制，二者不得混淆。模式只控制当前计划文档是否增加 explore 审核，不改变 executing-plans 的固定实现协议。
 
-正常情况下不要在计划阶段再次主动询问审核模式。`brainstorming` 应该已经在生成设计文档前完成选择；只要来源设计文档里有 `Workflow Review Mode`，就必须直接继承。只有来源设计文档缺失该字段，或用户当前明确要求改模式时，才需要补充说明或确认。
+- `lightweight`：计划只做主 agent 自检，写 `Plan Review Status: lightweight`
+- `explore-review`：计划初始写 `explore-pending`；自检后按 canonical `plan-document-reviewer-prompt.md` 派发一次 explore 审核。缺少 explore 能力时写 `review-blocked` 并停止，不得降级
+- reviewer 的“问题”由主 agent 在不改变设计时修复并自检；需改变设计、范围或验收时写 `review-blocked` 并询问用户。“建议”默认只报告，不自动实施
+- 阻塞发现处理完并通过自检后写 `explore-reviewed`，含义与 spec 阶段一致：一轮审核完成、发现已修复并由主 agent 自检，不表示 reviewer 再看过修复版本
+- 本轮结束后发生实质修改时写 `needs-review-after-changes`；默认不追加第二轮，除非用户明确要求
 
-如果设计文档没有记录审核模式，而你又确实需要补充确认，可以这样说：
+`Plan Review Status` 可用值：`lightweight`、`explore-pending`、`explore-reviewed`、`review-blocked`、`needs-review-after-changes`。完整 reviewer 指令和输出格式只在 `plan-document-reviewer-prompt.md` 维护。
 
-> “默认审核模式是 `lightweight`（不使用 subagent）。如果你希望从当前阶段开始更严格地审核，说 `explore-review` 即可；我会在写完计划后运行一轮计划审核，后续 executing-plans 也会运行一轮实现审核。更早的阶段不会补跑审核，除非你明确要求。”
+## 提交策略与源文档基线
 
-模式行为：
+`Commit Policy` 优先级为：**当前用户明确指定 > 项目明确流程 > 默认 `wave-commits`**。
 
-- `lightweight`：跳过 subagent 审核，自检通过后结束。在计划中写入 `Workflow Review Mode: lightweight` 和 `Plan Review Status: lightweight`
-- `explore-review`：如果是从设计文档继承，或用户当前明确开启，就从当前阶段起对后续阶段生效。保存计划并完成自检后，派发一个 `explore` subagent 做一轮计划审核。后续 executing-plans 必须自动运行一轮实现审核，不要在实现阶段再次询问用户
-- 默认每个阶段只运行一轮“审核 -> 修复 -> 自检/复验”。除非用户明确要求多轮审核，例如“再审一轮”“循环审核直到没有问题”，否则不要因为计划修复完成、后续有修改空间或 reviewer 可能继续提出新意见，就自动追加第二轮
-- 如果用户说“快速”“轻便”“不使用 subagent”等，使用 `lightweight`
-- 如果用户明确要求额外、独立、subagent 或 explore 审核，例如“用 explore 审核计划”“让 subagent double check”，使用 `explore-review` 覆盖剩余链路，每个产物/阶段一轮审核修复。普通“请 review 计划”不自动等同于 `explore-review`，按上下文判断，必要时简短确认
-- 一旦选择或继承 `explore-review`，把它持久化到计划中，后续不要降级为 `lightweight`，除非用户明确改模式
-- 如果用户在计划阶段才选择 `explore-review`，不要回头运行设计文档审核。设计文档保持已批准状态；审核模式只应用于计划和后续实现，除非用户明确要求也审核设计文档
-
-`Plan Review Status` 可用值：`lightweight`、`explore-reviewed`、`needs-review-after-changes`。只有当前最终版执行计划已经被 explore 审核覆盖时，才能使用 `explore-reviewed`。
-
-Explore 审核提示词模式：
-
-实际派发 explore review 时，以同目录的 `plan-document-reviewer-prompt.md` 为 canonical 提示词；下方是内联摘要，方便理解审核重点。若两者冲突，以 `plan-document-reviewer-prompt.md` 为准。
-
-```text
-对照已批准的设计文档，审核这份执行计划。
-
-设计文档：[SPEC_FILE_PATH]
-执行计划：[PLAN_FILE_PATH]
-
-使用中等深入程度。不要编辑文件。只关注会实质影响实现的问题：
-- 设计决策或需求没有映射到任务
-- 任务过于含糊或顺序不合理
-- 缺少关键接口、代码片段、测试或命令
-- 验收标准不可执行或不可判定真假
-- 与现有项目约定或工程约束冲突
-- 超出已批准设计范围
-
-只返回可执行发现，按严重程度排序，附文件/章节引用和建议修复方式。
-```
-
-如果修复不违背已批准设计，就直接应用到计划。若 reviewer 建议会改变设计文档、放宽验收标准或引入新范围，先问用户再改。修复后重新跑一遍计划自检，将 `Plan Review Status` 设为 `explore-reviewed`，然后结束计划阶段。默认到此为止，不要自动追加第二轮 explore 审核，除非用户明确要求多轮。
-
-`Plan Review Status: explore-reviewed` 只表示当前版本曾被这一轮 explore 审核覆盖。如果 explore 审核后又发生实质性修改，先把状态改回 `needs-review-after-changes`，并重新运行计划自检。默认不要自动再跑一轮 explore 审核；只有用户明确要求多轮审核时，才对修改后的版本再运行下一轮审核，审核通过并应用有效修复后，才能重新标记为 `explore-reviewed`。纯错别字或格式修正不需要重新审核。
+- `wave-commits`：每个 Wave 验证通过后由主 agent 创建恰好一个 commit。计划生成时 `Source Document Baseline` 写 `pending`；执行前，获批 spec（如有）和 plan 必须先形成独立、干净的文档基线。执行器随后把实际 baseline commit hash 写回计划，该元数据与计划勾选更新归入 Wave 1 commit。若不能安全建立基线，询问用户切换为 `no-commits`
+- `no-commits`：不创建任何实现或修复 commit。每个 Wave 必须从临时 pre-Wave 文件快照计算增量 patch，并将 patch 与验证记录写入 `docs/plans/<plan-name>-wave-evidence/Wave-N.{patch,md}`；记录 snapshot ID 和 SHA-256，后续 Wave 不得覆盖已有 evidence
 
 ## 范围检查
 
@@ -85,23 +63,27 @@ Explore 审核提示词模式：
 
 这个结构会影响任务拆分。每个任务都应该产生自洽、可独立理解的变更。
 
-## 并行任务拆分
+## 并行任务拆分与 Wave
 
-先根据代码库的实际工程特征判断哪些工作可以并行，而不是默认串行，也不是硬拆。探测：是否 monorepo、前后端是否分离、模块边界是否清晰、哪些文件会一起变化。只有边界真正独立时才拆并行。
+先根据代码库的实际工程特征建立任务依赖 DAG，再把任务组织成**最大安全并行**的拓扑 Wave。探测：是否 monorepo、前后端是否分离、模块边界是否清晰、哪些文件会一起变化。不要默认串行，也不要为了并行而硬拆。
 
-**用三阶段组织执行任务：**
+**Wave 定义：**
 
-1. **串行前置阶段** — 把并行所需的共享契约先定死：共享类型、接口、API schema、DB schema、路由约定、公共工具。所有并行分支都依赖它，所以必须在并行开始前完成。
-2. **并行阶段** — 把互不依赖的工作拆成多个并行 Task，每个 Task 是一个能独立实现和验证的工作单元（下文也称“并行分支”，指独立工作线，不是 git branch），适合分派给独立执行者（如 subagent）。并行的粒度是 Task 级；单个 Task 内部仍然遵循小步 TDD，不打乱顺序。
-3. **串行集成阶段** — 并行分支汇合：接线、跨边界联调、端到端验收。它依赖所有并行 Task 完成。
+1. 每个 Task 必须且只能属于一个 `Wave N`；即使整个计划只有一个 Task，也必须有 `Wave 1`。
+2. `Wave 1` 包含所有无依赖且可安全并行的 Task；后续 Wave 包含其全部依赖均已位于更早 Wave 的 Task。
+3. 同一 Wave 的 Task 必须一次性并行派发给独立的 `general` workers；单 Task Wave 也按同一委派协议执行。
+4. 共享契约、接线和端到端集成也必须是明确 Task，并放入符合依赖关系的 Wave；不要保留由主 agent 直接编码的隐式“串行阶段”。
+5. 每个 Wave 完成后形成事务边界：主 agent 回收结果、检查范围和冲突、运行 Wave 验证并更新计划。`wave-commits` 时为该 Wave 创建恰好一个 commit；`no-commits` 时持久化该 Wave 的 patch 和验证证据。`general` worker 永远不提交。
 
-**判断能否并行的三条硬前提，全部满足才可并行：**
+**最大安全并行不是可选优化：** 在满足安全前提时，必须把 Task 放入最早可执行的 Wave。不得因为书写方便或习惯而把互不依赖的 Task 排进连续的单任务 Wave。如果本次只能串行，必须写明阻止并行的具体文件冲突或数据依赖。
 
-- **契约先行**：共享类型/接口/schema 已在串行前置阶段定死，并行分支只依赖契约、不依赖彼此的实现
-- **文件隔离**：并行 Task 不会编辑同一个文件，避免冲突
+**同一 Wave 的安全前提，全部满足才可并行：**
+
+- **契约先行**：共享类型/接口/schema 已由更早 Wave 的 Task 定死，同波 Task 只依赖契约、不依赖彼此实现
+- **文件所有权隔离**：同波 Task 的新建、修改和测试文件集合不重叠；无法隔离时必须拆到不同 Wave
 - **无数据依赖**：一个 Task 不需要另一个 Task 的运行结果或产出
 
-**必须有汇合点**：并行阶段之后一定要有串行集成任务，把分支接起来并做端到端验证。没有汇合点的并行是不完整的。
+**必须有显式汇合点**：需要接线、跨边界联调或端到端代码修改时，把它写成后续集成 Task，并委派给 `general`；纯验证性质的 Wave 级集成检查由主 agent 执行。不要让主 agent 临时补写计划外集成代码。
 
 **常见可并行场景（结合工程结构判断，不要生搬）：**
 
@@ -113,11 +95,11 @@ Explore 审核提示词模式：
 **不可并行，必须串行：**
 
 - TDD 单元内的“写测试 → 确认失败 → 写实现 → 确认通过”是顺序的，不要拆到不同并行 Task
-- 共享契约定义（属于串行前置阶段）
-- 最终集成与端到端验收（属于串行集成阶段）
+- 依赖尚未确定的共享契约定义与其消费者不能同波
+- 最终集成代码与其所集成的实现 Task 不能同波
 - 有明确顺序或数据依赖的任务链
 
-如果工程结构决定这次改动本质是串行的（例如全部集中在一个文件、或强顺序依赖），就老实用单一串行阶段，并在实现摘要里说明为什么不并行。不要为了并行而制造人为拆分。
+如果工程结构决定这次改动本质是串行的（例如全部集中在一个文件或存在强顺序依赖），就使用连续的单 Task Wave，并在实现摘要里逐项说明为什么不能合并到同一 Wave。不要为了并行而制造人为拆分。
 
 ## 设计与决策映射
 
@@ -137,13 +119,13 @@ Explore 审核提示词模式：
 
 ## 小步任务粒度
 
-**每一步只做一个动作，理想情况下 2-5 分钟完成：**
+每一步只做一个可独立验证的动作；不要用机械的分钟目标拆出大量无意义步骤：
 
 - “写失败测试”是一步
 - “运行测试确认它失败”是一步
 - “写最小实现让测试通过”是一步
 - “运行测试确认通过”是一步
-- “提交（如果用户要求或项目流程需要）”是一步
+- Task 内不包含 commit；是否提交由主 agent 在整个 Wave 验证通过后按 `Commit Policy` 处理
 
 ## 计划文档头部
 
@@ -151,7 +133,7 @@ Explore 审核提示词模式：
 
 状态字段必须写入单个实际值，不要在最终计划中保留多个候选值或条件说明。
 
-如果来源设计文档已经写入 `Workflow Review Mode` 和 `Spec Review Status`，这里必须复制它们的实际值，不要重置回模板默认值。
+`Workflow Review Mode` 写按优先级计算出的 effective mode；`Spec Review Status` 原样复制来源事实。
 
 ```markdown
 # [功能名称] 执行计划
@@ -166,11 +148,19 @@ Explore 审核提示词模式：
 
 **来源设计文档：** [`docs/specs/YYYY-MM-DD-topic-design.md`]
 
-**工作流审核模式（Workflow Review Mode）：** `<从来源设计文档复制实际值；无来源则询问用户后填写，默认 lightweight>`
+**工作流审核模式（Workflow Review Mode）：** `<effective mode：当前用户明确指定 > 设计文档记录 > lightweight>`
 
 **规格审核状态（Spec Review Status）：** `<从来源设计文档复制实际值；无来源设计文档时写 not recorded>`
 
-**计划审核状态（Plan Review Status）：** `<本阶段初值 lightweight；explore-review 审核通过后改为 explore-reviewed>`
+**计划审核状态（Plan Review Status）：** `<lightweight 模式写 lightweight；explore-review 模式初始写 explore-pending>`
+
+**提交策略（Commit Policy）：** `<wave-commits 或 no-commits；记录决定来源>`
+
+**源文档基线（Source Document Baseline）：** `<wave-commits：pending，执行时写回 commit hash；no-commits：not-applicable>`
+
+**Wave 证据目录（Wave Evidence Directory）：** `<no-commits：docs/plans/<plan-name>-wave-evidence/；wave-commits：不适用>`
+
+**实现 Worker：** 所有 Task 均由独立的 `general` worker（`subagent_type=general`）执行
 
 **主要验收标准：**
 - [ ] [必须成立的具体用户可见行为或系统行为]
@@ -186,7 +176,13 @@ Explore 审核提示词模式：
 
 ```markdown
 ## 实现摘要
-[简要说明实现策略和执行阶段顺序，以及并行分组：串行前置 → 并行阶段（列出各并行 Task/分支）→ 串行集成。如果本次为纯串行，说明原因。]
+[简要说明实现策略、依赖 DAG 和 Wave 顺序。列出每个 Wave 的 Task、可并行理由和汇合点；如果全部是单 Task Wave，说明阻止并行的具体原因。]
+
+## 实现依据（无 spec 时必需）
+[用户明确跳过 spec 时，记录已确认需求、假设、设计决策、范围和验收标准；有 spec 时删除本章节。]
+
+## Wave 执行总览
+[用表格列出 Wave、Task、前置依赖、同波文件所有权、验证命令，以及 `wave-commits` 下的 commit message 或 `no-commits` 下的 evidence 文件路径。]
 
 ## 设计决策到任务的映射
 [用表格把设计决策/需求映射到任务和验证方式。]
@@ -198,7 +194,7 @@ Explore 审核提示词模式：
 [核心类型、函数签名、组件 props、API 合约、数据模型，以及后续任务必须遵循的代表性代码片段。]
 
 ## 执行任务
-[按执行阶段组织的详细复选框任务：串行前置阶段 → 并行阶段（多个互不依赖的 Task）→ 串行集成阶段。]
+[按 Wave 组织详细复选框 Task。同一 Wave 的所有 Task 必须可在一次并行 dispatch 中启动；每个 Task 都由独立的 `general` worker 执行。]
 
 ## 最终验收清单
 [严格、可执行的检查，用于证明整个计划完成。]
@@ -215,18 +211,18 @@ Explore 审核提示词模式：
 - 一个代表性的 happy-path 测试，以及一个重要失败/边界场景测试
 - 容易写错的迁移、配置、路由、命令或集成点
 
-如果完整代码太冗长，给出最小但足够明确的代表性片段和精确的上下文说明。改代码步骤必须包含核心接口、签名、关键控制流或代表性测试，确保实现者不需要发明核心结构。避免使用 `// ...` 这类占位，除非省略的是已有且不变的代码，并且计划明确说明这一点。
+共享接口和代表性代码在本章节定义一次，作为后续 Task 的 canonical 来源。每个 Task 可引用这里的精确小节，并只补任务特有代码；不要复制同一接口到多个 Task。避免使用 `// ...` 这类占位，除非省略的是已有且不变的代码，并明确说明。
 
 ## 任务结构
 
 ````markdown
 ### 任务 N：[组件名称]
 
-**执行阶段：** [串行前置 / 并行阶段 / 串行集成]
+**执行波次：** Wave W
 
-**并行分组：** [并行阶段的 Task 标注分组与可并行对象，例如“并行组 B：前端，可与并行组 A（后端）并行”；串行阶段写“不适用”]
+**可并行对象：** [同一 Wave 内可同时派发的其他 Task；没有则写“无（单 Task Wave：具体原因）”]
 
-**依赖：** [必须先完成的任务编号，例如“任务 1（契约）”；无依赖写“无”]
+**依赖：** [必须位于更早 Wave 的任务编号，例如“任务 1（契约）”；无依赖写“无”]
 
 **文件：**
 - 新建：`exact/path/to/file.py`
@@ -269,12 +265,9 @@ def function(input):
 运行：`[精确命令或人工检查]`
 期望：`[严格的预期结果，包括输出/状态/UI 状态]`
 
-- [ ] **步骤 6：提交（如果被要求）**
+- [ ] **步骤 6：向主 agent 回传结果**
 
-```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
-```
+回传：修改文件、验收标准状态、运行命令及结果、遗留风险。禁止 worker 创建 commit。
 ````
 
 ## 禁止占位
@@ -284,24 +277,15 @@ git commit -m "feat: add specific feature"
 - “TBD”、“TODO”、“后续实现”、“补充细节”
 - “添加适当错误处理” / “添加校验” / “处理边界情况”
 - “为上面内容写测试”，但没有实际测试代码
-- “类似任务 N”，要重复写出代码，因为工程师可能非顺序阅读任务
+- “类似任务 N”这类含糊引用；可以引用“关键接口与代码形态”的精确小节，但必须补齐当前 Task 特有内容
 - 只描述要做什么但不展示怎么做的步骤。涉及代码的步骤必须有足够明确的代码块，至少覆盖关键接口、签名、控制流或代表性测试
 - 引用了任何任务中都没有定义的类型、函数或方法
 - 验收标准写“正常工作”“处理错误”“测试通过”，但没有具体行为、命令和预期结果
 - 关键实现决策只隐含在设计文档中，没有映射到任务
 
-## 记住
-
-- 始终写精确文件路径
-- 改代码步骤要展示足够明确的关键代码片段；如果改动短小且关键，直接给出完整代码
-- 命令要精确，并写出预期输出
-- 在相关任务前或任务中给出关键代码片段，尤其是接口和高风险逻辑
-- 每个任务和最终计划都要有严格验收标准
-- 坚持 DRY、YAGNI、TDD 和按需频繁提交
-
 ## 自检
 
-写完整份计划后，换个视角重新看设计文档，并对照检查计划。这是你自己执行的清单，不是 subagent 派发。
+写完整份计划后，换个视角重新看设计文档，并对照检查计划。这是主 agent 自检，不是 subagent 审核。
 
 **1. 设计覆盖：** 快速浏览设计文档的每个章节/需求。每个需求能否指向一个实现任务？列出缺口。
 
@@ -315,14 +299,20 @@ git commit -m "feat: add specific feature"
 
 **6. 验收严格性：** 验收标准是否可执行、可判定真假？把含糊检查替换成精确命令、预期输出、UI 状态、API 响应或文件 diff。
 
-**7. 并行安全性：** 标为并行阶段的 Task 是否真的互不依赖？逐条核对：共享契约是否已在串行前置阶段定死、并行 Task 是否会改同一文件、是否存在隐藏的数据/顺序依赖、并行之后是否有串行集成任务做汇合与端到端验收。任何一条不满足，就把该 Task 移出并行阶段或调整分组。
+**7. DAG 合法性：** 每个 Task 是否恰好属于一个 Wave？所有依赖是否位于更早 Wave？是否存在循环依赖、同波依赖或遗漏依赖？发现后调整 DAG 和 Wave。
 
-如果发现问题，直接在计划中修复；自检修复本身不需要额外运行 subagent review。如果发现某个设计需求没有任务，就添加任务。但如果计划已经标记为 `Plan Review Status: explore-reviewed` 后又发生实质性修改，按前文状态规则处理：默认只把状态改为 `needs-review-after-changes` 并完成自检，不自动再派新的审核轮次；除非用户明确要求多轮。
+**8. 最大安全并行：** 对每个 Task 判断它是否已经位于依赖允许的最早 Wave。逐条核对同波共享契约、完整文件所有权和隐藏数据依赖。若两个 Task 安全且互不依赖，却被无理由拆成连续 Wave，计划自检失败，必须合并。
+
+**9. 汇合完整性：** 并行实现后需要的接线和集成代码是否成为后续 `general` Task？Wave 级验证是否覆盖跨边界和端到端行为？不要把代码集成隐式留给主 agent。
+
+**10. 边界策略：** 计划头部是否记录实际 `Commit Policy`、决定来源、Source Document Baseline 和 Wave Evidence Directory？`wave-commits` 下每个 Wave 是否有唯一 commit message，且 Task 内没有 commit？`no-commits` 下是否为每个 Wave 指定不可覆盖的 `.patch` 和 `.md` evidence 路径？
+
+发现问题时直接修复并重新自检；设计需求没有任务时补充任务。若计划已是 `explore-reviewed`，本轮结束后的实质修改必须改为 `needs-review-after-changes`；默认不再派第二轮审核。
 
 ## 完成
 
 保存计划后，告诉用户：
 
-**“计划已完成并保存到 `docs/plans/<filename>.md`。请审核。准备实现时，使用 executing-plans skill 按已批准设计文档和验收标准执行计划。如果 `Workflow Review Mode` 是 `explore-review`，executing-plans 会自动运行实现审核。”**
+**“计划已完成并保存到 `docs/plans/<filename>.md`。请审核。准备实现时，使用 executing-plans skill；它会按 Wave 委派 `general` workers、验证并建立 commit/evidence 边界，最后统一运行一次 explore 实现审核。”**
 
 计划阶段到此结束。建议 `executing-plans` 作为自然下一步，但不要自动调用它；由用户决定什么时候开始实现。
