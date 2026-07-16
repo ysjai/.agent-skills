@@ -7,8 +7,9 @@
 **派发时机：** 所有 Wave workers 已回收、每个 Wave 已按 `Commit Policy` 完成 commit 或 evidence 边界、且最终验收通过之后，由主 agent 统一派发一次。任何 worker 都不得调用本提示词。
 
 ```
-Task tool（explore subagent，默认只审核一轮）：
+Task tool（`[REVIEW_SUBAGENT_TYPE]` subagent，默认只审核一轮；优先遵循宿主/项目审核代理配置，未指定时使用 `explore`）：
   description: "Review implementation"
+  subagent_type: [REVIEW_SUBAGENT_TYPE]
   prompt: |
     你是实现 reviewer。请对照已批准设计文档和执行计划，审核已完成的实现。不要编辑文件，只返回可执行发现。
 
@@ -38,6 +39,8 @@ Task tool（explore subagent，默认只审核一轮）：
     偏离设计、未满足的验收标准、bug/回归、证据不足，这些是问题。
     小的措辞、风格偏好和“锦上添花”的建议，不要作为问题。
 
+    为每个问题标记路由类别：`implementation` 表示只需修代码/测试，`plan` 表示计划本身遗漏或错误，`design` 表示设计、范围或验收依据需要改变。不要把上游文档问题伪装成 implementation 修复。
+
     除非存在严重缺口，否则批准。
 
     ## 输出格式
@@ -47,7 +50,7 @@ Task tool（explore subagent，默认只审核一轮）：
     **状态：** 通过 | 发现问题
 
     **问题（如有）：**
-    - [文件:行号 或 任务 X]：[具体问题] - [为什么影响正确性/验收]
+    - [implementation | plan | design] [文件:行号 或 任务 X]：[具体问题] - [为什么影响正确性/验收]
 
     **建议（仅建议，不阻塞批准）：**
     - [改进建议]

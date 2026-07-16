@@ -7,8 +7,9 @@
 **派发时机：** 完整计划写入之后。
 
 ```
-Task tool（explore subagent，默认只审核一轮）：
+Task tool（`[REVIEW_SUBAGENT_TYPE]` subagent，默认只审核一轮；优先遵循宿主/项目审核代理配置，未指定时使用 `explore`）：
   description: "Review plan document"
+  subagent_type: [REVIEW_SUBAGENT_TYPE]
   prompt: |
     你是执行计划 reviewer。请验证这份计划是否完整，并且已经准备好进入实现阶段。不要编辑文件，只返回可执行发现。
 
@@ -21,11 +22,14 @@ Task tool（explore subagent，默认只审核一轮）：
     |------|----------|
     | 完整性 | TODO、占位符、未完成任务、缺失步骤 |
     | 设计对齐 | 是否覆盖设计需求，是否有明显范围蔓延 |
+    | 阶段门禁 | 计划中的 spec 元数据是否与来源 spec 当前值一致；Spec Approval Revision 是否等于当前 Spec Revision；Plan Approval Status/Revision 是否在用户审核前保持 pending/none；审核状态与用户批准状态是否分离 |
     | 决策可追溯 | 重要设计决策是否映射到具体任务和验证步骤 |
     | 任务拆分 | 任务边界是否清晰，步骤是否可执行；契约和集成代码是否也是明确 Task |
     | DAG 与 Wave | 每个 Task 是否恰好属于一个 Wave；依赖是否全在更早 Wave；是否存在循环、同波依赖或遗漏依赖 |
     | 最大安全并行 | 满足文件隔离且无数据依赖的 Task 是否位于最早可执行 Wave；是否无理由退化为串行 |
     | 文件所有权 | 同波 Task 的新建、修改和测试文件是否完整列出且互不重叠 |
+    | 运行资源 | 同波 Task 是否会争用端口、数据库、迁移、缓存、构建目录、lockfile 或全局命令；隔离方式是否明确 |
+    | 中断恢复 | 每个 Task 是否说明 started-but-incomplete 时如何恢复 owned files 和外部副作用；不可恢复时是否明确阻塞 |
     | 执行协议 | 计划是否全局声明所有 Task 使用 `general` worker；Task 内是否禁止 commit；是否明确 Commit Policy、源文档基线和 evidence 目录；每个 Wave 是否有验证及 commit/evidence 边界 |
     | 关键代码 | 是否包含核心接口、签名、代表性测试和高风险实现片段 |
     | 验收标准 | 每个任务和最终计划是否有严格、可执行或可直接观察的验收标准，并写明预期结果 |

@@ -59,6 +59,8 @@ if [[ -z "$URL_HOST" ]]; then
   fi
 fi
 
+STOP_TOKEN=$(node -e 'process.stdout.write(require("crypto").randomBytes(16).toString("hex"))')
+
 # Some environments reap detached/background processes. Auto-foreground when detected.
 if [[ -n "${CODEX_CI:-}" && "$FOREGROUND" != "true" && "$FORCE_BACKGROUND" != "true" ]]; then
   FOREGROUND="true"
@@ -87,14 +89,18 @@ STATE_DIR="${SESSION_DIR}/state"
 PID_FILE="${STATE_DIR}/server.pid"
 LOG_FILE="${STATE_DIR}/server.log"
 
-# Create fresh session directory with content and state peers
-mkdir -p "${SESSION_DIR}/content" "$STATE_DIR"
+# Create the unique session directory atomically; never reuse a collision.
+mkdir -p "$(dirname "$SESSION_DIR")"
+if ! mkdir "$SESSION_DIR"; then
+  echo '{"error": "session directory collision"}'
+  exit 1
+fi
+mkdir "${SESSION_DIR}/content" "$STATE_DIR"
 
-# Kill any existing server
+# A fresh session directory must never contain an existing PID file.
 if [[ -f "$PID_FILE" ]]; then
-  old_pid=$(cat "$PID_FILE")
-  kill "$old_pid" 2>/dev/null
-  rm -f "$PID_FILE"
+  echo '{"error": "session directory collision: existing server.pid"}'
+  exit 1
 fi
 
 cd "$SCRIPT_DIR"
@@ -110,13 +116,12 @@ fi
 # Foreground mode for environments that reap detached/background processes.
 if [[ "$FOREGROUND" == "true" ]]; then
   echo "$$" > "$PID_FILE"
-  env BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL_HOST="$URL_HOST" BRAINSTORM_OWNER_PID="$OWNER_PID" node server.cjs
-  exit $?
+  exec env BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL_HOST="$URL_HOST" BRAINSTORM_OWNER_PID="$OWNER_PID" BRAINSTORM_STOP_TOKEN="$STOP_TOKEN" node server.cjs
 fi
 
 # Start server, capturing output to log file
 # Use nohup to survive shell exit; disown to remove from job table
-nohup env BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL_HOST="$URL_HOST" BRAINSTORM_OWNER_PID="$OWNER_PID" node server.cjs > "$LOG_FILE" 2>&1 &
+nohup env BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL_HOST="$URL_HOST" BRAINSTORM_OWNER_PID="$OWNER_PID" BRAINSTORM_STOP_TOKEN="$STOP_TOKEN" node server.cjs > "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 disown "$SERVER_PID" 2>/dev/null
 echo "$SERVER_PID" > "$PID_FILE"

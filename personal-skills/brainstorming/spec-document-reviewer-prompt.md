@@ -4,11 +4,12 @@
 
 **目的：** 验证设计文档是否完整、一致，并且已经准备好进入实现计划阶段。
 
-**派发时机：** 设计文档写入 `docs/specs/` 之后。
+**派发时机：** 设计文档写入用户选择的实际路径之后。
 
 ```
-Task tool（explore subagent，默认只审核一轮）：
+Task tool（`[REVIEW_SUBAGENT_TYPE]` subagent，默认只审核一轮；优先遵循宿主/项目审核代理配置，未指定时使用 `explore`）：
   description: "Review spec document"
+  subagent_type: [REVIEW_SUBAGENT_TYPE]
   prompt: |
     你是设计文档 reviewer。请验证这份设计文档是否完整，并且已经准备好进入计划阶段。不要编辑文件，只返回可执行发现。
 

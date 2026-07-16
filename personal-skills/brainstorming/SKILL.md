@@ -29,10 +29,10 @@ description: "在创建功能、组件、能力或修改行为前使用。通过
 4. **探索方案** — 存在真实决策空间时提出 2-3 个方案并推荐；只有一个合理方案时说明原因，不虚构选项
 5. **展示设计** — 按复杂度分段展示，每段之后获取用户确认
 6. **确认工作流审核模式** — 除非用户更早已明确指定，否则在生成设计文档前让用户一次性选择文档审核强度：`lightweight`（默认）或 `explore-review`；该选择不改变后续固定实现协议
-7. **编写设计文档** — 保留可追溯的决策脉络，保存到 `docs/specs/YYYY-MM-DD-<topic>-design.md`
+7. **编写设计文档** — 保留可追溯的决策脉络，保存到 `docs/specs/YYYY-MM-DD-<topic>-design.md`，并把用户批准状态初始化为 `pending`
 8. **设计文档自检** — 快速检查占位符、矛盾、歧义和范围问题
-9. **按模式审核设计文档** — `explore-review` 时运行一轮 explore 审核，并按状态机处理发现
-10. **用户审核设计文档** — 请用户先审核设计文档，再进入下一步
+9. **按模式审核设计文档** — `explore-review` 时运行一轮独立 subagent 审核，并按状态机处理发现
+10. **用户审核设计文档** — 请用户先审核设计文档；明确批准后把批准状态持久化为 `approved`，再进入下一步
 11. **建议 writing-plans** — 建议用户使用 writing-plans skill 生成执行计划，由用户决定是否继续
 
 ## 具体流程
@@ -90,9 +90,17 @@ description: "在创建功能、组件、能力或修改行为前使用。通过
 ```markdown
 # [功能名称] 设计
 
-**工作流审核模式（Workflow Review Mode）：** `lightweight`
+**工作流审核模式（Workflow Review Mode）：** `<实际值：lightweight 或 explore-review>`
+
+**规格版本（Spec Revision）：** `1`
 
 **规格审核状态（Spec Review Status）：** `<lightweight 模式写 lightweight；explore-review 模式初始写 explore-pending>`
+
+**规格审核例外（Spec Review Exception）：** `none`
+
+**规格批准状态（Spec Approval Status）：** `pending`
+
+**规格批准版本（Spec Approval Revision）：** `none`
 
 ## 摘要
 [简要描述最终设计和用户可见结果。]
@@ -141,33 +149,39 @@ description: "在创建功能、组件、能力或修改行为前使用。通过
 直接修复发现的问题，不需要再单独 review 一遍。
 
 **工作流审核模式：**
-模式只控制设计文档和执行计划是否增加 explore 文档审核；不改变 executing-plans 的固定实现协议。优先级为：当前用户明确指定 > 默认 `lightweight`。在生成设计文档前确定并持久化，不要等写完再补选。用户说“不使用 subagent”时，先澄清是只跳过文档审核，还是禁止后续固定实现协议所需的 subagent。
+模式只控制设计文档和执行计划是否增加独立 subagent 文档审核；不改变 executing-plans 的固定实现协议。优先级为：当前用户明确指定 > 默认 `lightweight`。在生成设计文档前确定并持久化，不要等写完再补选。用户说“不使用 subagent”时，先澄清是只跳过文档审核，还是禁止后续固定实现协议所需的 subagent。
 
 建议话术：
 
-> “生成设计文档前先确认文档审核模式：默认 `lightweight`，设计文档和执行计划只做主 agent 自检；选择 `explore-review` 时，两份文档各增加一轮 explore 审核。实现阶段不受该选择影响。若不特别选择，我按 `lightweight` 继续。”
+> “生成设计文档前先确认文档审核模式：默认 `lightweight`，设计文档和执行计划只做主 agent 自检；选择 `explore-review` 时，两份文档各增加一轮独立 subagent 审核。实现阶段不受该选择影响。若不特别选择，我按 `lightweight` 继续。”
 
 模式行为：
 
 - `lightweight`：设计文档和执行计划只做主 agent 自检及用户审核；设计文档写 `Spec Review Status: lightweight`
-- `explore-review`：设计文档初始写 `explore-pending`；自检后按 `spec-document-reviewer-prompt.md` 派发一次 explore 审核。缺少 explore 能力时写 `review-blocked` 并停止，不得降级
+- `explore-review`：设计文档初始写 `explore-pending`；自检后按 `spec-document-reviewer-prompt.md` 派发一次独立审核。缺少可用审核 subagent 时写 `review-blocked` 并停止，不得降级
 - reviewer 的“问题”是阻塞发现：不改变已批准意图时由主 agent 修复并自检；需要新产品选择时写 `review-blocked` 并询问用户。“建议”默认只报告，不自动实施
 - 一轮审核的阻塞发现处理完并通过自检后写 `explore-reviewed`。它表示“一轮审核已完成，阻塞发现已修复并由主 agent 自检”，不表示 reviewer 再看过修复后的字面版本
-- 本轮流程结束后若又发生实质修改，写 `needs-review-after-changes`；纯格式修正不改变状态。默认不追加第二轮，除非用户明确要求
+- 本轮流程结束后若又发生实质修改：原状态为 `explore-reviewed` 时写 `needs-review-after-changes`，`lightweight` 保持 `lightweight`；纯格式修正不改变状态。默认不追加第二轮，除非用户明确要求
 - 一旦选择 `explore-review`，writing-plans 直接继承，不再主动询问，除非用户明确改模式
 
 `Spec Review Status` 可用值：`lightweight`、`explore-pending`、`explore-reviewed`、`review-blocked`、`needs-review-after-changes`、`not recorded`。`not recorded` 仅用于用户跳过 spec。
 
-派发审核时必须使用同目录的 canonical `spec-document-reviewer-prompt.md`，并提供设计文档路径和头脑风暴决策摘要。完整 reviewer 指令与输出格式只在该文件维护。
+`Spec Revision` 是从 `1` 开始递增的整数。初稿、自检和首次用户审核前的可选 reviewer 修正都属于 revision 1；第一次把文件交给用户审核之后，只要行为、范围、验收或设计决策发生实质修改就加一。纯格式和工作流元数据更新不递增。`Spec Review Exception` 只能写 `none`，或写明 `user-accepted`、当前 Spec Revision、日期和接受范围；成功补审后清回 `none`。
+
+`Spec Approval Status` 可用值：`pending`、`approved`。新文档和任何实质修改都必须写回 `pending`，同时把 `Spec Approval Revision` 清为 `none`；只有用户明确批准当前文件版本后才写 `approved`，并把 `Spec Approval Revision` 写为当前 `Spec Revision`。批准状态与 reviewer 状态彼此独立，不能用 `lightweight` 或 `explore-reviewed` 代替用户批准。
+
+派发审核时必须使用同目录的 canonical `spec-document-reviewer-prompt.md`，并提供设计文档路径和头脑风暴决策摘要。`REVIEW_SUBAGENT_TYPE` 优先使用当前宿主或项目指令明确指定的审核 subagent；未指定时才使用 `explore`。完整 reviewer 指令与输出格式只在该文件维护。
 
 **用户审核关口：**
 设计文档自检和可选审核通过后，请用户审核已写入文件的设计文档：
 
 > “设计文档已写入 `<path>`。请先审核，如果要改动，告诉我；确认后再进入下一步。”
 
-等待用户回复。如果用户要求修改，修改后重新运行设计文档自检。只有用户批准后才继续。
+等待用户回复。如果用户要求实质修改，先递增 `Spec Revision`，把 `Spec Approval Status`/`Spec Approval Revision` 写为 `pending`/`none`，清空旧 `Spec Review Exception`，修改后重新运行设计文档自检。修改发生在独立审核之后时，把 `Spec Review Status` 写为 `needs-review-after-changes`；`lightweight` 保持 `lightweight`。
 
-如果用户修改发生在 explore 审核之后，按上面的状态规则处理，确保最终设计文档的 `Spec Review Status` 不会声称覆盖了未经审核的实质改动。
+如果当前 `Spec Review Status` 为 `needs-review-after-changes`，在批准前让用户选择补审或接受当前 revision 的未复审风险；接受时把 revision、日期和范围写入 `Spec Review Exception`，下游不得再次询问同一 revision。只有用户明确批准当前文件版本后，才把 `Spec Approval Status`/`Spec Approval Revision` 写为 `approved`/当前 `Spec Revision` 并继续；这些元数据更新不改变 `Spec Review Status`。
+
+如果用户修改发生在独立审核之后，按上面的状态规则处理，确保最终设计文档的 `Spec Review Status` 不会声称覆盖了未经审核的实质改动。
 
 **下一步：**
 

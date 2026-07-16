@@ -77,9 +77,11 @@ const PORT = process.env.BRAINSTORM_PORT || (49152 + Math.floor(Math.random() * 
 const HOST = process.env.BRAINSTORM_HOST || '127.0.0.1';
 const URL_HOST = process.env.BRAINSTORM_URL_HOST || (HOST === '127.0.0.1' ? 'localhost' : HOST);
 const SESSION_DIR = process.env.BRAINSTORM_DIR || '/tmp/brainstorm';
+const STOP_TOKEN = process.env.BRAINSTORM_STOP_TOKEN || '';
 const CONTENT_DIR = path.join(SESSION_DIR, 'content');
 const STATE_DIR = path.join(SESSION_DIR, 'state');
 let ownerPid = process.env.BRAINSTORM_OWNER_PID ? Number(process.env.BRAINSTORM_OWNER_PID) : null;
+let requestShutdown = null;
 
 const MIME_TYPES = {
   '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
@@ -128,7 +130,17 @@ function getNewestScreen() {
 
 function handleRequest(req, res) {
   touchActivity();
-  if (req.method === 'GET' && req.url === '/') {
+  if (req.method === 'POST' && req.url === '/__stop') {
+    const token = req.headers['x-brainstorm-stop-token'];
+    if (!STOP_TOKEN || token !== STOP_TOKEN || !requestShutdown) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
+    res.writeHead(202);
+    res.end('Stopping');
+    setImmediate(() => requestShutdown('manual stop'));
+  } else if (req.method === 'GET' && req.url === '/') {
     const screenFile = getNewestScreen();
     let html = screenFile
       ? (raw => isFullDocument(raw) ? raw : wrapInFrame(raw))(fs.readFileSync(screenFile, 'utf-8'))
@@ -231,7 +243,7 @@ function handleMessage(text) {
   }
   touchActivity();
   console.log(JSON.stringify({ source: 'user-event', ...event }));
-  if (event.choice) {
+  if (Object.prototype.hasOwnProperty.call(event, 'choice')) {
     const eventsFile = path.join(STATE_DIR, 'events');
     fs.appendFileSync(eventsFile, JSON.stringify(event) + '\n');
   }
@@ -298,18 +310,47 @@ function startServer() {
   });
   watcher.on('error', (err) => console.error('fs.watch error:', err.message));
 
+  let shuttingDown = false;
+  let lifecycleCheck = null;
+
+  function finishShutdown() {
+    if (SESSION_DIR.startsWith('/tmp/brainstorm-')) {
+      fs.rmSync(SESSION_DIR, { recursive: true, force: true });
+    }
+    process.exit(0);
+  }
+
   function shutdown(reason) {
+    if (shuttingDown) return;
+    shuttingDown = true;
     console.log(JSON.stringify({ type: 'server-stopped', reason }));
     const infoFile = path.join(STATE_DIR, 'server-info');
+    const pidFile = path.join(STATE_DIR, 'server.pid');
     if (fs.existsSync(infoFile)) fs.unlinkSync(infoFile);
+    if (fs.existsSync(pidFile)) fs.unlinkSync(pidFile);
     fs.writeFileSync(
       path.join(STATE_DIR, 'server-stopped'),
       JSON.stringify({ reason, timestamp: Date.now() }) + '\n'
     );
     watcher.close();
-    clearInterval(lifecycleCheck);
-    server.close(() => process.exit(0));
+    for (const timer of debounceTimers.values()) clearTimeout(timer);
+    debounceTimers.clear();
+    if (lifecycleCheck) clearInterval(lifecycleCheck);
+    for (const socket of clients) socket.destroy();
+    clients.clear();
+
+    const forcedExit = setTimeout(finishShutdown, 1000);
+    forcedExit.unref();
+    server.close(() => {
+      clearTimeout(forcedExit);
+      finishShutdown();
+    });
   }
+
+  requestShutdown = shutdown;
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 
   function ownerAlive() {
     if (!ownerPid) return true;
@@ -317,7 +358,7 @@ function startServer() {
   }
 
   // Check every 60s: exit if owner process died or idle for 30 minutes
-  const lifecycleCheck = setInterval(() => {
+  lifecycleCheck = setInterval(() => {
     if (!ownerAlive()) shutdown('owner process exited');
     else if (Date.now() - lastActivity > IDLE_TIMEOUT_MS) shutdown('idle timeout');
   }, 60 * 1000);
@@ -337,13 +378,16 @@ function startServer() {
   }
 
   server.listen(PORT, HOST, () => {
-    const info = JSON.stringify({
-      type: 'server-started', port: Number(PORT), host: HOST,
+    const publicInfo = {
+      type: 'server-started', pid: process.pid, port: Number(PORT), host: HOST,
       url_host: URL_HOST, url: 'http://' + URL_HOST + ':' + PORT,
       screen_dir: CONTENT_DIR, state_dir: STATE_DIR
-    });
-    console.log(info);
-    fs.writeFileSync(path.join(STATE_DIR, 'server-info'), info + '\n');
+    };
+    console.log(JSON.stringify(publicInfo));
+    fs.writeFileSync(
+      path.join(STATE_DIR, 'server-info'),
+      JSON.stringify({ ...publicInfo, stop_token: STOP_TOKEN }) + '\n'
+    );
   });
 }
 
