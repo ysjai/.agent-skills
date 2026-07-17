@@ -1,357 +1,176 @@
 ---
 name: writing-plans
-description: 已有获批设计文档/spec，或用户明确要求跳过 spec、尚未进入实现时使用。生成按依赖 DAG 和最大安全并行度组织的 Wave 执行计划，并确定提交策略、验证边界和验收证据。
+description: 已有获批设计或明确需求、工作确实包含多个步骤、依赖或并行机会且尚未实现时使用。按连贯成果拆 Task，按场景选择测试驱动或验证驱动，再组织必要的依赖 Wave。
 ---
 
-# 编写执行计划
+# 编写可执行计划
 
-## 概览
+计划的作用是消除实现者必须猜测的关键内容，而不是把每个命令展开成流程仪式。先定义连贯成果和验收边界，再选择验证方式，最后才安排依赖和并行。
 
-编写无需执行者猜测核心决策的计划：明确设计依据、文件所有权、接口形态、任务依赖、测试命令和验收证据。把任务 DAG 组织成尽可能宽且安全的 Wave，并为每个已完成 Wave 定义可验证、可恢复的边界。
+计划默认保存到 `docs/plans/YYYY-MM-DD-<feature-name>.md`；用户指定路径时以用户为准。
 
-假设执行者是熟练开发者，但几乎不了解我们的工具链和业务领域。也假设他们不一定擅长测试设计。
+## 判断是否需要计划
 
-**开始时说明：** “我正在使用 writing-plans skill 创建执行计划。”
+以下情况通常需要计划：
 
-**计划保存到：** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+- 多个有依赖关系的实现步骤
+- 跨模块、跨服务或多类产物
+- 需要协调多个 worker、迁移或外部副作用
+- 用户明确要求书面计划
 
-- 如果用户指定其他计划路径，以用户偏好为准
+目标明确、局部、低风险且只有一个直接实现动作时，不要为了使用本 skill 强制生成计划。简要说明它不需要独立计划并返回实现即可；用户明确要求计划时，可以生成精简的单 Task 计划。
 
-## 必需输入
+## 输入与门禁
 
-执行计划应基于已批准的设计文档或 spec。优先使用用户本轮提供的精确路径，其次使用当前对话已明确生成/批准的路径，最后才搜索 `docs/specs/`；多个候选或自定义路径无法确定时询问用户，不得按最近修改时间猜测。读取 `Workflow Review Mode`、`Spec Revision`、`Spec Review Status`、`Spec Review Exception`、`Spec Approval Status` 和 `Spec Approval Revision`。有 spec 时只有 `Spec Approval Status: approved` 且 `Spec Approval Revision` 等于当前 `Spec Revision` 才能继续；字段缺失、`pending`、版本不匹配或未知值都必须停止，请用户审核当前文件版本并持久化结果，不能根据 reviewer 状态推断批准。
+优先使用用户给出的精确 spec 路径，其次使用当前对话明确批准的设计。存在 spec 时读取其 `Spec Revision` 和 `Spec Approval Revision`，只有二者相等才能基于它写计划；来源内容在计划批准前发生实质变化时重新生成受影响部分。
 
-如果用户只有需求描述、没有设计文档，默认建议先使用 `brainstorming`。只有用户明确要求跳过 spec 时才继续：计划头部写 `来源设计文档：无（用户明确跳过）`，并增加 `实现依据（无 spec）` 章节，记录已确认需求、假设、设计决策、范围和验收标准。该章节是后续 worker 与实现 reviewer 的 `SPEC_CONTEXT`，不得留空。
+没有 spec 时，只要需求、约束和验收已经明确，或用户明确选择跳过正式设计，就可以继续。在计划中写一个简短的“实现依据”章节，不要制造虚拟 spec 状态。
 
-入口状态处理：
+发现缺失的产品、UX、数据、安全或公共接口决策时，停止并返回 `brainstorming`；实现细节可以在不改变用户意图的前提下由计划确定。
 
-- `lightweight`、`explore-reviewed`、`not recorded`：可继续；`not recorded` 仅适用于用户明确跳过 spec
-- `explore-pending`、`review-blocked`：停止，先完成或解决上游审核
-- `needs-review-after-changes`：如果来源 spec 的 `Spec Review Exception` 已记录 `user-accepted` 且 revision 等于当前 `Spec Revision`，直接继续，不得重复询问；否则提示用户选择返回补审，或明确接受未复审风险继续，并把 revision、日期和范围先写回 spec 后再复制到计划，不得伪装成已审核
+## 提交策略
 
-## 工作流审核模式
+在计划完成前确认一次 `Commit Policy`：
 
-有效审核模式优先级为：**当前用户明确指定 > 设计文档记录 > 默认 `lightweight`**。计划头部写入该 effective mode；`Spec Review Status` 原样复制，二者不得混淆。模式只控制当前计划文档是否增加独立 subagent 审核，不改变 executing-plans 的固定实现协议。当前用户只改变计划阶段模式时，不得借此改写或绕过 spec 的审核状态；如果用户要改变整个工作流模式，返回 brainstorming 更新 spec 元数据、自检并重新取得用户批准。
+- 用户明确要求不提交：使用 `no-commits`，不再询问
+- 用户明确要求提交：使用 `wave-commits`，不再询问
+- 用户未表态：询问一次，默认选项为 `wave-commits`
 
-- `lightweight`：计划只做主 agent 自检，写 `Plan Review Status: lightweight`
-- `explore-review`：计划初始写 `explore-pending`；自检后按 canonical `plan-document-reviewer-prompt.md` 派发一次独立审核。缺少可用审核 subagent 时写 `review-blocked` 并停止，不得降级
-- reviewer 的“问题”由主 agent 在不改变设计时修复并自检；发现需要改变设计、范围或验收时写 `review-blocked` 并返回 brainstorming 更新 spec、重新自检和取得用户批准，不得只改计划。“建议”默认只报告，不自动实施
-- 阻塞发现处理完并通过自检后写 `explore-reviewed`，含义与 spec 阶段一致：一轮审核完成、发现已修复并由主 agent 自检，不表示 reviewer 再看过修复版本
-- 本轮结束后发生实质修改：原状态为 `explore-reviewed` 时写 `needs-review-after-changes`，`lightweight` 保持 `lightweight`；默认不追加第二轮，除非用户明确要求
+只有针对该提交问题的明确回复才算确认；用户在看到选项后直接回复“继续”或“按默认”，可视为选择默认。把选择和来源写入计划。
 
-`Plan Review Status` 可用值：`lightweight`、`explore-pending`、`explore-reviewed`、`review-blocked`、`needs-review-after-changes`。派发审核时，`REVIEW_SUBAGENT_TYPE` 优先使用当前宿主或项目指令明确指定的审核 subagent；未指定时才使用 `explore`。完整 reviewer 指令和输出格式只在 `plan-document-reviewer-prompt.md` 维护。
+- `wave-commits`：主 agent 在验证通过的 Wave 边界提交连贯改动。通常每 Wave 一个 commit；一个 Wave 含多个明显独立成果时可以拆成多个逻辑 commit，并在计划中写明。无需单独创建文档基线 commit 或只包含状态的 finalization commit
+- `no-commits`：不创建 commit，也不生成 patch、evidence 或 boundary 替代工件
 
-`Plan Revision` 是从 `1` 开始递增的整数。初稿、自检和首次用户审核前的可选 reviewer 修正都属于 revision 1；第一次把文件交给用户审核之后，只要来源 Spec Revision/状态副本、DAG、Wave、Task、文件所有权、资源隔离、验证、验收或行为发生实质修改就加一。提交策略的用户选择、执行状态、复选框和其他运行时元数据不递增。`Plan Review Exception` 只能写 `none`，或写明 `user-accepted`、当前 Plan Revision、日期和接受范围；成功补审后清回 `none`。`Plan Approval Revision` 必须在用户批准时写为当前 Plan Revision。
+Wave 是依赖和调度边界，不应为了满足提交数量反向改变 Task 拆分。
 
-修订已有计划时，重新读取来源 spec 的当前 revision、审核、例外和批准字段，并与计划头部副本逐项比较。任何不一致都表示计划仍绑定旧 spec：即使 Task 和验收最终无需变化，也必须同步字段、递增 Plan Revision、把 Plan Approval Status/Revision 写为 `pending`/`none` 并重新取得批准；原 Plan Review Status 为 `explore-reviewed` 时写 `needs-review-after-changes`，为 `lightweight` 时保持 `lightweight`；`wave-commits` 时把 Source Document Baseline 重置为 `pending`。
+## Task 拆分顺序
 
-## 提交策略与源文档基线
+严格按以下顺序思考：
 
-在编写依赖提交策略的计划字段前确定 `Commit Policy`：
+1. **定义连贯成果**：一个 Task 交付一个可以独立解释、独立验收的结果。
+2. **选择验证策略**：根据风险和产物决定测试驱动、验证驱动、混合验证或探索验证。
+3. **建立依赖 DAG**：只记录真实的数据、契约或产物依赖。
+4. **安排 Wave**：多个 Task 时，把依赖已满足且并行有净收益的 Task 放在同一 Wave。
+5. **选择执行方式**：简单串行 Task 可由主 agent 实现；真正独立、上下文边界清楚或适合并行的 Task 才委派 `general` worker。
 
-- 用户已明确要求不提交：使用 `no-commits`，不要重复询问
-- 用户已明确要求提交：使用 `wave-commits`，不要重复询问
-- 用户未表态：询问一次并等待回复，默认选项为 `wave-commits`。明确回复“继续”“按默认”或等价表达即表示授权；选择“不提交”时使用 `no-commits`
+不要为了增加并行宽度拆碎一个连贯改动，也不要把同一 TDD 循环的测试和实现拆成不同 Task。共享文件不等于一定不能并行，但并行任务必须能避免互相覆盖，并且验证命令不能读取另一个尚未完成的中间状态。
 
-询问时说明：`wave-commits` 会先建立获批文档基线，在每个 Wave 验证通过后创建一个 commit，并在最终审核后创建一个承接修复和计划完成状态的 finalization commit；`no-commits` 不创建 commit。把实际选择及来源记录在计划头部。执行阶段不重复询问；只有旧计划没有明确来源且用户当前也未表态时才补问。
+## 按场景选择验证策略
 
-- `wave-commits`：每个 Wave 验证通过后由主 agent 创建恰好一个 commit；最终审核及必要修复完成后再创建一个 finalization commit，包含修复（如有）、最终验收勾选和完成状态。计划生成时 `Source Document Baseline` 写 `pending`；执行前，获批 spec（如有）和 plan 必须先形成独立、干净的文档基线。执行器随后把实际 baseline commit hash 写回计划，该元数据与计划勾选更新归入 Wave 1 commit。若不能安全建立基线，询问用户是否切换为 `no-commits`
-- `no-commits`：不创建任何实现或修复 commit，也不生成逐 Wave patch、evidence 或 boundary 文件。当前 Wave 执行期间只在 `Execution State Directory` 保留临时 snapshot 和 worker 状态；该 Wave 验证完成后清理，阻塞或中断时保留以便对账。整个流程只额外保留一份临时运行基线，最终完成后删除
+TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 
-## 范围检查
+| 场景 | 默认策略 | 计划中应写的证据 |
+|------|----------|------------------|
+| 业务逻辑、算法、可复现 bug | 测试驱动 | 能因目标行为而失败的聚焦测试、实现后通过、相关回归 |
+| Parser、校验、稳定 API 合约 | 测试驱动或契约测试 | 输入输出、错误边界和回归测试 |
+| UI 交互逻辑 | 混合验证 | 组件/E2E 测试，加浏览器和可访问性检查 |
+| 纯样式、布局、视觉调整 | 验证驱动 | 浏览器视口、截图或人工视觉检查，不强制制造失败测试 |
+| 配置、CI、IaC | 验证驱动 | schema、lint、dry-run、构建或 smoke test |
+| 文档 | 验证驱动 | 文档构建、链接、示例、渲染和内容检查 |
+| 数据迁移 | 验证驱动 | 隔离环境中的迁移前后断言、重跑、rollback 或 forward-fix |
+| 机械重构、rename、依赖升级 | 回归驱动 | 修改前基线、搜索、typecheck、构建和既有回归；通常不新增人为 red |
+| 外部服务集成 | 混合验证 | mock/contract 测试，加 sandbox/canary smoke 和清理步骤 |
+| 缺少测试设施 | 验证驱动 | 定向复现、构建、静态检查和人工 smoke；建设测试设施作为单独范围决策 |
+| 方案或可行性未知 | 探索验证 | 时间盒、假设、实验结果和决策门；结论产生后再计划依赖它的实现 |
 
-如果设计文档覆盖多个独立子系统，头脑风暴阶段本应拆成多个子项目规格。如果没有拆，建议拆成多份计划，每个子系统一份。每份计划都应该独立产出可运行、可测试的软件。
+选择测试驱动时，失败必须来自目标行为尚未满足，而不是故意制造语法错误或不存在的符号。Red、Green 和必要重构属于同一 Task 的内部过程，不需要分别成为计划复选框。
 
-## 文件结构
+## 并行与 Wave
 
-在定义任务前，先梳理要创建或修改哪些文件，以及每个文件负责什么。这一步锁定拆分决策。
+多 Task 计划才需要 Wave。`Wave 1` 包含没有未满足依赖、并且并行收益高于协调成本的 Task；后续 Wave 依此类推。
 
-- 设计边界清晰、接口明确的单元。每个文件应该只有一个明确职责
-- 你更擅长处理能放进上下文的小段代码；文件职责集中时，编辑更可靠。优先使用小而聚焦的文件，避免一个大文件承担太多职责
-- 会一起变化的文件应该放在一起。按职责拆分，而不是机械地按技术层拆分
-- 在现有代码库中，遵循既有模式。如果代码库本来就是大文件风格，不要单方面重构；但如果你要修改的文件已经明显臃肿，把拆分纳入计划是合理的
+同一 Wave 并行前检查：
 
-这个结构会影响任务拆分。每个任务都应该产生自洽、可独立理解的变更。
+- 写入文件或符号范围不会互相覆盖
+- 一个 Task 不依赖另一个 Task 的中间实现
+- 测试、构建、formatter、端口、数据库、缓存和生成目录可以隔离
+- 所需共享契约已经稳定
+- 并行节省的时间值得额外上下文和集成成本
 
-## 并行任务拆分与 Wave
+无法满足时可以有意串行，不需要把“没有最大并行”视为计划错误。需要跨 Task 接线时，优先把接线归入拥有该连贯成果的 Task；只有它本身形成清晰成果和验收边界时才创建独立集成 Task。
 
-先根据代码库的实际工程特征建立任务依赖 DAG，再把任务组织成**最大安全并行**的拓扑 Wave。探测：是否 monorepo、前后端是否分离、模块边界是否清晰、哪些文件会一起变化。不要默认串行，也不要为了并行而硬拆。
-
-**Wave 定义：**
-
-1. 每个 Task 必须且只能属于一个 `Wave N`；即使整个计划只有一个 Task，也必须有 `Wave 1`。
-2. `Wave 1` 包含所有无依赖且可安全并行的 Task；后续 Wave 包含其全部依赖均已位于更早 Wave 的 Task。
-3. 同一 Wave 的 Task 必须先在一次并行调用中派发给独立的 `general` workers；单 Task Wave 也按同一委派协议执行。只有宿主明确拒绝该调用或只启动部分 worker 时，执行器才可把未启动 Task 作为同一逻辑 Wave 的 transport retry batches，不得借此改变依赖或退化为主 agent 实现。
-4. 共享契约、接线和端到端集成也必须是明确 Task，并放入符合依赖关系的 Wave；不要保留由主 agent 直接编码的隐式“串行阶段”。
-5. 每个 Wave 完成后，主 agent 回收结果、检查范围和冲突、运行 Wave 验证并更新计划。`wave-commits` 时为该 Wave 创建恰好一个 commit；`no-commits` 时不创建边界工件，状态不确定时重跑验证。`general` worker 永远不提交。
-
-**最大安全并行不是可选优化：** 在满足安全前提时，必须把 Task 放入最早可执行的 Wave。不得因为书写方便或习惯而把互不依赖的 Task 排进连续的单任务 Wave。如果本次只能串行，必须写明阻止并行的具体文件冲突或数据依赖。
-
-**同一 Wave 的安全前提，全部满足才可并行：**
-
-- **契约先行**：共享类型/接口/schema 已由更早 Wave 的 Task 定死，同波 Task 只依赖契约、不依赖彼此实现
-- **文件所有权隔离**：同波 Task 的新建、修改和测试文件集合不重叠；无法隔离时必须拆到不同 Wave
-- **无数据依赖**：一个 Task 不需要另一个 Task 的运行结果或产出
-- **运行资源隔离**：并发命令不会争用端口、测试数据库、迁移状态、缓存、构建/生成目录、lockfile、全局 formatter 或其他可变共享资源；能用独立命名空间可靠隔离时，在 Task 中写清隔离方式
-
-**必须有显式汇合点**：需要接线、跨边界联调或端到端代码修改时，把它写成后续集成 Task，并委派给 `general`；纯验证性质的 Wave 级集成检查由主 agent 执行。不要让主 agent 临时补写计划外集成代码。
-
-**常见可并行场景（结合工程结构判断，不要生搬）：**
-
-- 文档 vs 代码；配置/基础设施（CI、Dockerfile、IaC）vs 应用代码；i18n/翻译、种子/mock 数据 vs 功能代码
-- 前端 vs 后端；monorepo 里多个独立 package；多个微服务；SDK 多语言实现、多端实现，共享同一 spec
-- 多个互不依赖的功能模块；多个独立 endpoint/handler（只共享路由注册）；组件库里多个独立组件；无交叉外键的多个数据模型；共享同一接口的多个插件/适配器
-- 一个计划里打包的多个独立 bug 修复；对多文件做同一机械改动（rename、import 迁移）可分片
-
-**不可并行，必须串行：**
-
-- TDD 单元内的“写测试 → 确认失败 → 写实现 → 确认通过”是顺序的，不要拆到不同并行 Task
-- 依赖尚未确定的共享契约定义与其消费者不能同波
-- 最终集成代码与其所集成的实现 Task 不能同波
-- 有明确顺序或数据依赖的任务链
-
-如果工程结构决定这次改动本质是串行的（例如全部集中在一个文件或存在强顺序依赖），就使用连续的单 Task Wave，并在实现摘要里逐项说明为什么不能合并到同一 Wave。不要为了并行而制造人为拆分。
-
-## 设计与决策映射
-
-写任务前，先从设计文档中提取与实现相关的决策。好的计划能追溯到设计：每个重要需求或决策都应该指向一个或多个具体任务。
-
-在计划中包含这个映射：
-
-```markdown
-## 设计决策到任务的映射
-
-| 设计需求/决策 | 实现任务 | 验证方式 |
-|---------------|----------|----------|
-| [设计文档中的决策] | 任务 N | [测试、命令、UI 检查或人工验收步骤] |
-```
-
-如果设计文档中存在阻塞计划的缺失或矛盾决策，停下来询问澄清，不要自行编造细节。
-
-## 小步任务粒度
-
-每一步只做一个可独立验证的动作；不要用机械的分钟目标拆出大量无意义步骤：
-
-- “写失败测试”是一步
-- “运行测试确认它失败”是一步
-- “写最小实现让测试通过”是一步
-- “运行测试确认通过”是一步
-- Task 内不包含 commit；是否提交由主 agent 在整个 Wave 验证通过后按 `Commit Policy` 处理
-
-## 计划文档头部
-
-**每份计划都必须以这个头部开始：**
-
-状态字段必须写入单个实际值，不要在最终计划中保留多个候选值或条件说明。
-
-`Workflow Review Mode` 写按优先级计算出的 effective mode；`Spec Review Status` 原样复制来源事实。
+## 计划头部
 
 ```markdown
 # [功能名称] 执行计划
 
-> 步骤使用复选框（`- [ ]`）语法，便于跟踪进度。
-
-**目标：** [一句话说明要构建什么]
-
-**架构：** [2-3 句话说明实现思路]
-
-**技术栈：** [关键技术/库]
-
-**来源设计文档：** [`<actual-spec-path>`]
-
-**工作流审核模式（Workflow Review Mode）：** `<effective mode：当前用户明确指定 > 设计文档记录 > lightweight>`
-
-**规格版本（Spec Revision）：** `<从来源设计文档复制；无来源设计文档时写 not-applicable>`
-
-**规格审核状态（Spec Review Status）：** `<从来源设计文档复制实际值；无来源设计文档时写 not recorded>`
-
-**规格批准状态（Spec Approval Status）：** `<从来源设计文档复制 approved；无来源设计文档时写 not-applicable>`
-
-**规格批准版本（Spec Approval Revision）：** `<从来源设计文档复制且必须等于 Spec Revision；无来源设计文档时写 not-applicable>`
-
-**规格审核例外（Spec Review Exception）：** `<无则写 none；接受 needs-review-after-changes 风险时记录 user-accepted、当前 Spec Revision、日期和范围>`
-
+**目标：** [一句话说明可见结果]
+**来源设计：** [`path`，revision N；无正式 spec 时写“无，见实现依据”]
 **计划版本（Plan Revision）：** `1`
-
-**计划审核状态（Plan Review Status）：** `<lightweight 模式写 lightweight；explore-review 模式初始写 explore-pending>`
-
-**计划批准状态（Plan Approval Status）：** `pending`
-
 **计划批准版本（Plan Approval Revision）：** `none`
+**独立审核（Independent Review）：** `not-requested`
+**提交策略（Commit Policy）：** `[wave-commits | no-commits]，来源：[用户明确选择 | 用户确认默认]`
 
-**计划审核例外（Plan Review Exception）：** `none`
-
-**提交策略（Commit Policy）：** `<wave-commits 或 no-commits；记录用户明确选择、用户确认默认，或用户明确要求不提交>`
-
-**源文档基线（Source Document Baseline）：** `<wave-commits：pending，执行时写回 commit hash；no-commits：not-applicable>`
-
-**执行状态目录（Execution State Directory）：** `<运行 git rev-parse --git-path agent-plan-state/<plan-name> 后写入实际路径>`
-
-**执行状态（Execution State）：** `not-started`
-
-**执行阻塞原因（Execution Blocker）：** `none`
-
-**恢复点（Resume Point）：** `Wave 1`
-
-**实现 Worker：** 所有 Task 均由独立的 `general` worker（`subagent_type=general`）执行
-
-**主要验收标准：**
-- [ ] [必须成立的具体用户可见行为或系统行为]
-- [ ] [具体集成或回归要求]
-- [ ] [具体测试/构建/lint 期望]
-
----
+**最终验收：**
+- [ ] [可执行、可判定的用户或系统行为]
 ```
 
-## 必备计划章节
+计划只保存稳定设计和任务信息，不保存 `Execution State`、`Resume Point`、`Execution Blocker`、临时目录或 worker lease。运行时进度由执行器维护；Task 复选框只在对应实现和验证完成后更新。
 
-每份计划在任务列表前都必须包含这些章节：
+`Independent Review` 使用 `not-requested`、`passed revision N` 或 `skipped-by-user revision N`。任何改变 Task、依赖、验收或行为的修改都递增 `Plan Revision` 并把批准版本清为 `none`。格式、复选框和提交结果更新不递增 revision。
+
+## 必备章节
 
 ```markdown
-## 实现摘要
-[简要说明实现策略、依赖 DAG 和 Wave 顺序。列出每个 Wave 的 Task、可并行理由和汇合点；如果全部是单 Task Wave，说明阻止并行的具体原因。]
+## 实现依据
+[来源 spec 的关键约束；没有 spec 时写已确认需求、范围和验收。]
 
-## 实现依据（无 spec 时必需）
-[用户明确跳过 spec 时，记录已确认需求、假设、设计决策、范围和验收标准；有 spec 时删除本章节。]
+## 实现策略
+[文件/模块边界、关键接口和总体顺序。只写实现者无法从现有代码直接推导的内容。]
 
-## Wave 执行总览
-[用表格列出 Wave、Task、前置依赖、同波文件所有权、共享运行资源/隔离方式、验证命令，以及 `wave-commits` 下的 commit message；`no-commits` 明确写“不提交，不生成边界工件”。]
-
-## 设计决策到任务的映射
-[用表格把设计决策/需求映射到任务和验证方式。]
-
-## 文件结构
-[要创建/修改的文件、职责和重要接口。]
-
-## 关键接口与代码形态
-[核心类型、函数签名、组件 props、API 合约、数据模型，以及后续任务必须遵循的代表性代码片段。]
+## 任务与依赖
+[多 Task 时用表格列出 Task、依赖、Wave、建议执行方式和并行理由；单 Task 可省略 Wave 表。]
 
 ## 执行任务
-[按 Wave 组织详细复选框 Task。同一 Wave 的所有 Task 必须可在一次并行 dispatch 中启动；每个 Task 都由独立的 `general` worker 执行。]
+[按依赖顺序写 Task。]
 
-## 最终验收清单
-[严格、可执行的检查，用于证明整个计划完成。]
+## 最终验收
+[完整命令、预期结果和必要人工检查。]
 ```
 
-## 关键代码片段
+## Task 模板
 
-计划不应该用大段伪代码替代实现，但必须包含足够的代码形态，让实现者不需要猜核心结构。
+只保留有信息量的字段。不相关的字段直接省略，不要填一串“无”。
 
-包括这些片段：
+```markdown
+### [ ] Task N：[连贯成果]
 
-- 核心类型、schema、接口、组件 props、API 合约或数据模型
-- 主要控制流或编排函数
-- 一个代表性的 happy-path 测试，以及一个重要失败/边界场景测试
-- 容易写错的迁移、配置、路由、命令或集成点
+**目标与范围：** [完成后成立什么，不做什么]
+**涉及文件/符号：** [精确路径加符号/章节；行号仅作可选提示]
+**依赖：** [Task ID 或无]
+**建议执行方式：** [主 agent | 独立 general worker；说明并行对象时才写]
 
-共享接口和代表性代码在本章节定义一次，作为后续 Task 的 canonical 来源。每个 Task 可引用这里的精确小节，并只补任务特有代码；不要复制同一接口到多个 Task。避免使用 `// ...` 这类占位，除非省略的是已有且不变的代码，并明确说明。
-
-## 任务结构
-
-````markdown
-### 任务 N：[组件名称]
-
-**执行波次：** Wave W
-
-**可并行对象：** [同一 Wave 内可同时派发的其他 Task；没有则写“无（单 Task Wave：具体原因）”]
-
-**依赖：** [必须位于更早 Wave 的任务编号，例如“任务 1（契约）”；无依赖写“无”]
-
-**共享运行资源与副作用：** [端口、数据库、迁移、缓存、构建目录、lockfile、全局命令等；无则写“无”，可隔离时写明独立命名空间]
-
-**中断恢复策略：** [Task 在文件和外部资源上如何恢复到 pre-Wave 状态，或为什么操作天然幂等；无法安全恢复时明确写“中断后阻塞并询问用户”]
-
-**文件：**
-- 新建：`exact/path/to/file.py`
-- 修改：`exact/path/to/existing.py:123-145`
-- 测试：`tests/exact/path/to/test.py`
-
-**设计关联：** [此任务实现的需求/决策]
+**实施要点：**
+- [关键接口、控制流或变更顺序]
 
 **验收标准：**
-- [ ] [此任务的可执行或可直接观察标准]
-- [ ] [回归/边界场景标准]
+- [可判定结果]
 
-- [ ] **步骤 1：编写失败测试**
+**验证策略：** [测试驱动 | 验证驱动 | 混合验证 | 探索验证，以及选择理由]
+**验证：**
+- `[精确命令或人工步骤]`，预期 `[结果]`
 
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
+**副作用与恢复：** [仅迁移、外部系统或非幂等操作需要；说明清理、回滚、forward-fix 或中断后阻塞]
 ```
 
-- [ ] **步骤 2：运行测试，确认它失败**
+只有公共接口、复杂算法、迁移、高风险配置或实现者容易猜错时，才加入代表性签名、schema 或小段代码。不要强制每个 Task 提供完整实现代码、测试文件和 happy/failure 示例。
 
-运行：`pytest tests/path/test.py::test_name -v`
-期望：失败，错误信息包含 "function not defined"
+## 自检与可选审核
 
-- [ ] **步骤 3：编写最小实现**
+保存前检查：
 
-```python
-def function(input):
-    return expected
-```
+1. 每个需求是否映射到 Task 和验证，是否存在范围蔓延。
+2. Task 是否按连贯成果拆分，而不是按命令、文件或 TDD 步骤机械拆分。
+3. 每个 Task 的验证策略是否适合场景；不应有的 TDD 是否被移除。
+4. 依赖 DAG 是否无环，Wave 是否安全且有实际并行收益。
+5. 验收是否包含精确命令、可观察状态或人工步骤及预期结果。
+6. 只有存在真实外部副作用的 Task 才要求恢复策略。
+7. 提交策略是否已由用户确认，但没有反向支配 Task 边界。
 
-- [ ] **步骤 4：运行测试，确认通过**
+用户要求、计划涉及高风险迁移/安全边界，或确实要协调多个并行 worker 时，使用 `plan-document-reviewer-prompt.md`。修复阻塞发现后，对相关修改做一次聚焦复审，才能记录 `passed revision N`。普通单 Task 或低风险计划只需主 agent 自检。
 
-运行：`pytest tests/path/test.py::test_name -v`
-期望：通过
+## 批准与交接
 
-- [ ] **步骤 5：验证任务验收标准**
+让用户审核实际计划文件。用户明确批准当前 revision 后，把 `Plan Approval Revision` 写成当前 `Plan Revision`。
 
-运行：`[精确命令或人工检查]`
-期望：`[严格的预期结果，包括输出/状态/UI 状态]`
-
-- [ ] **步骤 6：向主 agent 回传结果**
-
-回传：修改文件、验收标准状态、运行命令及结果、遗留风险。禁止 worker 创建 commit。
-````
-
-## 禁止占位
-
-每一步都必须包含工程师需要的实际内容。下面这些都是**计划失败**，不要写：
-
-- “TBD”、“TODO”、“后续实现”、“补充细节”
-- “添加适当错误处理” / “添加校验” / “处理边界情况”
-- “为上面内容写测试”，但没有实际测试代码
-- “类似任务 N”这类含糊引用；可以引用“关键接口与代码形态”的精确小节，但必须补齐当前 Task 特有内容
-- 只描述要做什么但不展示怎么做的步骤。涉及代码的步骤必须有足够明确的代码块，至少覆盖关键接口、签名、控制流或代表性测试
-- 引用了任何任务中都没有定义的类型、函数或方法
-- 验收标准写“正常工作”“处理错误”“测试通过”，但没有具体行为、命令和预期结果
-- 关键实现决策只隐含在设计文档中，没有映射到任务
-
-## 自检
-
-写完整份计划后，换个视角重新看设计文档，并对照检查计划。这是主 agent 自检，不是 subagent 审核。
-
-**1. 设计覆盖：** 快速浏览设计文档的每个章节/需求。每个需求能否指向一个实现任务？列出缺口。
-
-**2. 占位符扫描：** 搜索计划中的红旗，例如“禁止占位”章节中的所有模式。修复它们。
-
-**3. 类型一致性：** 后续任务中使用的类型、方法签名、属性名是否和前面定义一致？任务 3 叫 `clearLayers()`，任务 7 叫 `clearFullLayers()`，这就是 bug。
-
-**4. 决策可追溯：** 每个重要设计决策是否出现在“设计决策到任务的映射”里，并且都有验证方式？补齐缺口。
-
-**5. 代码充分性：** 实现者能否依靠包含的片段、签名和示例写出预期方案，而不用发明核心接口？补上缺失片段。
-
-**6. 验收严格性：** 验收标准是否可执行、可判定真假？把含糊检查替换成精确命令、预期输出、UI 状态、API 响应或文件 diff。
-
-**7. DAG 合法性：** 每个 Task 是否恰好属于一个 Wave？所有依赖是否位于更早 Wave？是否存在循环依赖、同波依赖或遗漏依赖？发现后调整 DAG 和 Wave。
-
-**8. 最大安全并行：** 对每个 Task 判断它是否已经位于依赖允许的最早 Wave。逐条核对同波共享契约、完整文件所有权、隐藏数据依赖和运行资源/副作用。若两个 Task 安全且互不依赖，却被无理由拆成连续 Wave，计划自检失败，必须合并。不要编造宿主未暴露的数值并发上限；执行器按一次并行 dispatch 尝试整个 Wave，并按宿主实际拒绝结果处理传输层分批。
-
-**9. 汇合完整性：** 并行实现后需要的接线和集成代码是否成为后续 `general` Task？Wave 级验证是否覆盖跨边界和端到端行为？不要把代码集成隐式留给主 agent。
-
-**10. 提交与恢复策略：** 计划头部是否记录实际 `Commit Policy`、决定来源、Source Document Baseline、Execution State Directory、Execution State、Execution Blocker 和 Resume Point？未提前表态时是否已询问用户并记录其确认？Execution State Directory 是否来自 `git rev-parse --git-path` 的实际结果？`wave-commits` 下每个 Wave 是否有唯一 commit message、最终有 finalization commit，且 Task 内没有 commit？`no-commits` 下是否明确不生成逐 Wave patch、evidence 或 boundary 文件，并只在执行期间保留临时恢复状态？
-
-发现问题时直接修复并重新自检；设计需求没有任务时补充任务。若计划已是 `explore-reviewed`，本轮结束后的实质修改必须改为 `needs-review-after-changes`；默认不再派第二轮审核。
-
-## 完成
-
-保存计划后，保持 `Plan Approval Status: pending` 并告诉用户：
-
-**“计划已完成并保存到 `<actual-plan-path>`。请审核当前文件版本；明确批准后，我会记录批准状态。准备实现时，使用 executing-plans skill；它会按 Wave 委派 `general` workers、验证并按已确认的策略提交或保留未提交改动，最后统一运行一次实现审核。”**
-
-等待用户回复。任何改变 DAG、Wave、Task、文件所有权、资源隔离、验证、验收或行为的修改都递增 `Plan Revision`，把 `Plan Approval Status`/`Plan Approval Revision` 写回 `pending`/`none`，清空旧 `Plan Review Exception`；`wave-commits` 时同时把 `Source Document Baseline` 重置为 `pending`。修改后重新自检：原状态为 `explore-reviewed` 时写 `needs-review-after-changes`，原状态为 `lightweight` 时保持 `lightweight`。执行尚未开始时保持 `Execution State`/`Execution Blocker`/`Resume Point` 为 `not-started`/`none`/`Wave 1`。从 executing-plans 返回修订计划时，只有 blocker 明确记录 `dispatch_started: no` 才能修改 DAG、Wave 或 Task；若为 `yes`，停止并先返回 executing-plans 终止/恢复当前 Wave，不能把旧临时状态套到新计划。允许修订时保留 `Execution State: blocked` 和原 Execution Blocker，把 Resume Point 调整为最早新增或未完成 Wave（没有新增 Task 时保持 `final-validation`）；计划重新批准后由 executing-plans 根据 blocker 中的 `origin_state` 对账并解除，不得由 writing-plans 无条件改成 `ready`。若当前状态为 `needs-review-after-changes`，让用户选择补审或接受当前 revision 的未复审风险；接受时把当前 Plan Revision、日期和范围写入 `Plan Review Exception`。只有用户明确批准当前文件版本后，才把 `Plan Approval Status`/`Plan Approval Revision` 写为 `approved`/当前 `Plan Revision`；该元数据更新不改变 `Plan Review Status`。
-
-计划阶段到此结束。批准后建议 `executing-plans` 作为自然下一步，但不要自动调用它；由用户决定什么时候开始实现。
+计划批准后，建议使用 `executing-plans`。不要自动开始实现；由用户决定何时继续。

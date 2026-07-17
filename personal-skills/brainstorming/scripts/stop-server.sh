@@ -13,6 +13,22 @@ if [[ -z "$SESSION_DIR" ]]; then
   exit 1
 fi
 
+SESSION_DIR=$(node -e 'process.stdout.write(require("path").resolve(process.argv[1]))' "$SESSION_DIR" 2>/dev/null)
+if [[ -z "$SESSION_DIR" ]]; then
+  echo '{"status": "failed", "error": "invalid session directory"}'
+  exit 1
+fi
+
+if [[ ! -e "$SESSION_DIR" ]]; then
+  echo '{"status": "not_running"}'
+  exit 0
+fi
+
+if [[ ! -f "${SESSION_DIR}/.brainstorm-session" ]]; then
+  echo '{"status": "failed", "error": "directory is not a brainstorm session"}'
+  exit 1
+fi
+
 STATE_DIR="${SESSION_DIR}/state"
 PID_FILE="${STATE_DIR}/server.pid"
 INFO_FILE="${STATE_DIR}/server-info"
@@ -77,14 +93,15 @@ if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
 fi
 
 if [[ -d "$STATE_DIR" ]]; then
-  rm -f "$PID_FILE" "${STATE_DIR}/server.log" "$INFO_FILE"
-  if [[ ! -f "${STATE_DIR}/server-stopped" ]]; then
-    printf '{"reason":"manual stop","timestamp":%s}\n' "$(($(date +%s) * 1000))" > "${STATE_DIR}/server-stopped"
-  fi
+  rm -f "$PID_FILE" "${STATE_DIR}/server.log" "$INFO_FILE" \
+    "${STATE_DIR}/events" "${STATE_DIR}/server-stopped"
+  rmdir "$STATE_DIR" 2>/dev/null || true
 fi
 
-if [[ "$SESSION_DIR" == /tmp/brainstorm-* ]]; then
-  rm -rf "$SESSION_DIR"
+SESSION_PARENT=$(dirname "$SESSION_DIR")
+SESSION_NAME=$(basename "$SESSION_DIR")
+if [[ "$SESSION_PARENT" == "/tmp" && "$SESSION_NAME" =~ ^brainstorm-[A-Za-z0-9._-]+$ ]]; then
+  rm -rf -- "$SESSION_DIR"
 fi
 
 if [[ "$stop_requested" == "true" ]]; then

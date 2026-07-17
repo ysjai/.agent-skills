@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Start the brainstorm server and output connection info
-# Usage: start-server.sh [--project-dir <path>] [--host <bind-host>] [--url-host <display-host>] [--foreground] [--background]
+# Usage: start-server.sh [--project-dir <path>] [--foreground] [--background]
 #
 # Starts server on a random high port, outputs JSON with URL.
 # Each session gets its own directory to avoid conflicts.
@@ -8,9 +8,8 @@
 # Options:
 #   --project-dir <path>  Store session files under <path>/.brainstorm/
 #                         instead of /tmp. Files persist after server stops.
-#   --host <bind-host>    Host/interface to bind (default: 127.0.0.1).
-#                         Use 0.0.0.0 in remote/containerized environments.
-#   --url-host <host>     Hostname shown in returned URL JSON.
+#   --host <bind-host>    Loopback host only (127.0.0.1 or localhost).
+#   --url-host <host>     Loopback hostname shown in returned URL JSON.
 #   --foreground          Run server in the current terminal (no backgrounding).
 #   --background          Force background mode (overrides Codex auto-foreground).
 
@@ -25,14 +24,26 @@ URL_HOST=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project-dir)
+      if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
+        echo '{"error": "--project-dir requires a path"}'
+        exit 1
+      fi
       PROJECT_DIR="$2"
       shift 2
       ;;
     --host)
+      if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
+        echo '{"error": "--host requires a value"}'
+        exit 1
+      fi
       BIND_HOST="$2"
       shift 2
       ;;
     --url-host)
+      if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
+        echo '{"error": "--url-host requires a value"}'
+        exit 1
+      fi
       URL_HOST="$2"
       shift 2
       ;;
@@ -51,6 +62,21 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ "$BIND_HOST" != "127.0.0.1" && "$BIND_HOST" != "localhost" ]]; then
+  echo '{"error": "brainstorm server only supports loopback; use port forwarding for remote access"}'
+  exit 1
+fi
+
+if [[ -n "$URL_HOST" && "$URL_HOST" != "127.0.0.1" && "$URL_HOST" != "localhost" ]]; then
+  echo '{"error": "--url-host must be 127.0.0.1 or localhost"}'
+  exit 1
+fi
+
+if [[ -n "$PROJECT_DIR" && ! -d "$PROJECT_DIR" ]]; then
+  echo '{"error": "--project-dir must reference an existing directory"}'
+  exit 1
+fi
+
 if [[ -z "$URL_HOST" ]]; then
   if [[ "$BIND_HOST" == "127.0.0.1" || "$BIND_HOST" == "localhost" ]]; then
     URL_HOST="localhost"
@@ -59,7 +85,16 @@ if [[ -z "$URL_HOST" ]]; then
   fi
 fi
 
+if ! command -v node >/dev/null 2>&1; then
+  echo '{"error": "node is required"}'
+  exit 1
+fi
+
 STOP_TOKEN=$(node -e 'process.stdout.write(require("crypto").randomBytes(16).toString("hex"))')
+if [[ -z "$STOP_TOKEN" ]]; then
+  echo '{"error": "failed to generate stop token"}'
+  exit 1
+fi
 
 # Some environments reap detached/background processes. Auto-foreground when detected.
 if [[ -n "${CODEX_CI:-}" && "$FOREGROUND" != "true" && "$FORCE_BACKGROUND" != "true" ]]; then
@@ -80,6 +115,7 @@ fi
 SESSION_ID="$$-$(date +%s)"
 
 if [[ -n "$PROJECT_DIR" ]]; then
+  PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
   SESSION_DIR="${PROJECT_DIR}/.brainstorm/${SESSION_ID}"
 else
   SESSION_DIR="/tmp/brainstorm-${SESSION_ID}"
@@ -96,6 +132,15 @@ if ! mkdir "$SESSION_DIR"; then
   exit 1
 fi
 mkdir "${SESSION_DIR}/content" "$STATE_DIR"
+printf 'brainstorm-session\n' > "${SESSION_DIR}/.brainstorm-session"
+
+cleanup_failed_start() {
+  status=$?
+  if [[ $status -ne 0 && -n "${SESSION_DIR:-}" && -f "${SESSION_DIR}/.brainstorm-session" ]]; then
+    rm -rf -- "$SESSION_DIR"
+  fi
+}
+trap cleanup_failed_start EXIT
 
 # A fresh session directory must never contain an existing PID file.
 if [[ -f "$PID_FILE" ]]; then
@@ -116,6 +161,7 @@ fi
 # Foreground mode for environments that reap detached/background processes.
 if [[ "$FOREGROUND" == "true" ]]; then
   echo "$$" > "$PID_FILE"
+  trap - EXIT
   exec env BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL_HOST="$URL_HOST" BRAINSTORM_OWNER_PID="$OWNER_PID" BRAINSTORM_STOP_TOKEN="$STOP_TOKEN" node server.cjs
 fi
 
@@ -142,7 +188,14 @@ for i in {1..50}; do
       echo "{\"error\": \"Server started but was killed. Retry in a persistent terminal with: $SCRIPT_DIR/start-server.sh${PROJECT_DIR:+ --project-dir $PROJECT_DIR} --host $BIND_HOST --url-host $URL_HOST --foreground\"}"
       exit 1
     fi
-    grep "server-started" "$LOG_FILE" | head -1
+    node -e '
+      const fs = require("fs");
+      const lines = fs.readFileSync(process.argv[1], "utf8").split("\n");
+      const line = lines.find((item) => item.includes("server-started"));
+      if (!line) process.exit(1);
+      process.stdout.write(line + "\n");
+    ' "$LOG_FILE"
+    trap - EXIT
     exit 0
   fi
   sleep 0.1

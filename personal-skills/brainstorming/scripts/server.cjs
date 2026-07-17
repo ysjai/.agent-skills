@@ -7,6 +7,7 @@ const path = require('path');
 
 const OPCODES = { TEXT: 0x01, CLOSE: 0x08, PING: 0x09, PONG: 0x0A };
 const WS_MAGIC = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+const MAX_FRAME_SIZE = 64 * 1024;
 
 function computeAcceptKey(clientKey) {
   return crypto.createHash('sha1').update(clientKey + WS_MAGIC).digest('base64');
@@ -27,10 +28,7 @@ function encodeFrame(opcode, payload) {
     header[1] = 126;
     header.writeUInt16BE(len, 2);
   } else {
-    header = Buffer.alloc(10);
-    header[0] = fin | opcode;
-    header[1] = 127;
-    header.writeBigUInt64BE(BigInt(len), 2);
+    throw new Error('WebSocket frame exceeds 64 KiB limit');
   }
 
   return Buffer.concat([header, payload]);
@@ -52,10 +50,10 @@ function decodeFrame(buffer) {
     payloadLen = buffer.readUInt16BE(2);
     offset = 4;
   } else if (payloadLen === 127) {
-    if (buffer.length < 10) return null;
-    payloadLen = Number(buffer.readBigUInt64BE(2));
-    offset = 10;
+    throw new Error('WebSocket frame exceeds 64 KiB limit');
   }
+
+  if (payloadLen > MAX_FRAME_SIZE) throw new Error('WebSocket frame exceeds 64 KiB limit');
 
   const maskOffset = offset;
   const dataOffset = offset + 4;
@@ -82,6 +80,10 @@ const CONTENT_DIR = path.join(SESSION_DIR, 'content');
 const STATE_DIR = path.join(SESSION_DIR, 'state');
 let ownerPid = process.env.BRAINSTORM_OWNER_PID ? Number(process.env.BRAINSTORM_OWNER_PID) : null;
 let requestShutdown = null;
+
+if (HOST !== '127.0.0.1' && HOST !== 'localhost') {
+  throw new Error('Brainstorm server only supports loopback hosts');
+}
 
 const MIME_TYPES = {
   '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
@@ -178,7 +180,12 @@ const clients = new Set();
 
 function handleUpgrade(req, socket) {
   const key = req.headers['sec-websocket-key'];
-  if (!key) { socket.destroy(); return; }
+  const origin = req.headers.origin;
+  const expectedOrigin = req.headers.host ? 'http://' + req.headers.host : null;
+  if (!key || req.url !== '/' || !origin || origin !== expectedOrigin) {
+    socket.destroy();
+    return;
+  }
 
   const accept = computeAcceptKey(key);
   socket.write(
@@ -192,6 +199,11 @@ function handleUpgrade(req, socket) {
   clients.add(socket);
 
   socket.on('data', (chunk) => {
+    if (buffer.length + chunk.length > MAX_FRAME_SIZE + 14) {
+      socket.destroy();
+      clients.delete(socket);
+      return;
+    }
     buffer = Buffer.concat([buffer, chunk]);
     while (buffer.length > 0) {
       let result;
@@ -241,12 +253,22 @@ function handleMessage(text) {
     console.error('Failed to parse WebSocket message:', e.message);
     return;
   }
+  if (!event || typeof event !== 'object' || typeof event.choice !== 'string') return;
+  if (event.choice.length === 0 || event.choice.length > 256) return;
+
+  const record = {
+    type: event.type === 'click' ? 'click' : 'choice',
+    choice: event.choice,
+    text: typeof event.text === 'string' ? event.text.slice(0, 1000) : undefined,
+    id: typeof event.id === 'string' ? event.id.slice(0, 256) : null,
+    selected: typeof event.selected === 'boolean' ? event.selected : undefined,
+    timestamp: Date.now()
+  };
+
   touchActivity();
-  console.log(JSON.stringify({ source: 'user-event', ...event }));
-  if (Object.prototype.hasOwnProperty.call(event, 'choice')) {
-    const eventsFile = path.join(STATE_DIR, 'events');
-    fs.appendFileSync(eventsFile, JSON.stringify(event) + '\n');
-  }
+  const eventsFile = path.join(STATE_DIR, 'events');
+  fs.appendFileSync(eventsFile, JSON.stringify(record) + '\n');
+  console.log(JSON.stringify({ type: 'user-event-recorded' }));
 }
 
 function broadcast(msg) {
@@ -296,10 +318,11 @@ function startServer() {
       if (!fs.existsSync(filePath)) return; // file was deleted
       touchActivity();
 
+      const eventsFile = path.join(STATE_DIR, 'events');
+      if (fs.existsSync(eventsFile)) fs.unlinkSync(eventsFile);
+
       if (!knownFiles.has(filename)) {
         knownFiles.add(filename);
-        const eventsFile = path.join(STATE_DIR, 'events');
-        if (fs.existsSync(eventsFile)) fs.unlinkSync(eventsFile);
         console.log(JSON.stringify({ type: 'screen-added', file: filePath }));
       } else {
         console.log(JSON.stringify({ type: 'screen-updated', file: filePath }));
@@ -314,8 +337,19 @@ function startServer() {
   let lifecycleCheck = null;
 
   function finishShutdown() {
-    if (SESSION_DIR.startsWith('/tmp/brainstorm-')) {
-      fs.rmSync(SESSION_DIR, { recursive: true, force: true });
+    const resolvedSession = path.resolve(SESSION_DIR);
+    const sessionName = path.basename(resolvedSession);
+    const isEphemeral = path.dirname(resolvedSession) === '/tmp' &&
+      /^brainstorm-[A-Za-z0-9._-]+$/.test(sessionName) &&
+      fs.existsSync(path.join(resolvedSession, '.brainstorm-session'));
+    if (isEphemeral) {
+      fs.rmSync(resolvedSession, { recursive: true, force: true });
+    } else {
+      for (const name of ['events', 'server.log', 'server-stopped']) {
+        const file = path.join(STATE_DIR, name);
+        try { fs.rmSync(file, { force: true }); } catch (error) { /* best-effort cleanup */ }
+      }
+      try { fs.rmdirSync(STATE_DIR); } catch (error) { /* preserve unexpected state */ }
     }
     process.exit(0);
   }
@@ -328,10 +362,6 @@ function startServer() {
     const pidFile = path.join(STATE_DIR, 'server.pid');
     if (fs.existsSync(infoFile)) fs.unlinkSync(infoFile);
     if (fs.existsSync(pidFile)) fs.unlinkSync(pidFile);
-    fs.writeFileSync(
-      path.join(STATE_DIR, 'server-stopped'),
-      JSON.stringify({ reason, timestamp: Date.now() }) + '\n'
-    );
     watcher.close();
     for (const timer of debounceTimers.values()) clearTimeout(timer);
     debounceTimers.clear();
@@ -381,7 +411,7 @@ function startServer() {
     const publicInfo = {
       type: 'server-started', pid: process.pid, port: Number(PORT), host: HOST,
       url_host: URL_HOST, url: 'http://' + URL_HOST + ':' + PORT,
-      screen_dir: CONTENT_DIR, state_dir: STATE_DIR
+      session_dir: SESSION_DIR, screen_dir: CONTENT_DIR, state_dir: STATE_DIR
     };
     console.log(JSON.stringify(publicInfo));
     fs.writeFileSync(
