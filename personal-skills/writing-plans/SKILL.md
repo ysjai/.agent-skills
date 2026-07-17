@@ -41,16 +41,22 @@ description: 已有获批设计文档/spec，或用户明确要求跳过 spec、
 
 `Plan Review Status` 可用值：`lightweight`、`explore-pending`、`explore-reviewed`、`review-blocked`、`needs-review-after-changes`。派发审核时，`REVIEW_SUBAGENT_TYPE` 优先使用当前宿主或项目指令明确指定的审核 subagent；未指定时才使用 `explore`。完整 reviewer 指令和输出格式只在 `plan-document-reviewer-prompt.md` 维护。
 
-`Plan Revision` 是从 `1` 开始递增的整数。初稿、自检和首次用户审核前的可选 reviewer 修正都属于 revision 1；第一次把文件交给用户审核之后，只要来源 Spec Revision/状态副本、DAG、Wave、Task、文件所有权、资源隔离、验证、验收或行为发生实质修改就加一。执行状态、边界、复选框和其他运行时元数据不递增。`Plan Review Exception` 只能写 `none`，或写明 `user-accepted`、当前 Plan Revision、日期和接受范围；成功补审后清回 `none`。`Plan Approval Revision` 必须在用户批准时写为当前 Plan Revision。
+`Plan Revision` 是从 `1` 开始递增的整数。初稿、自检和首次用户审核前的可选 reviewer 修正都属于 revision 1；第一次把文件交给用户审核之后，只要来源 Spec Revision/状态副本、DAG、Wave、Task、文件所有权、资源隔离、验证、验收或行为发生实质修改就加一。提交策略的用户选择、执行状态、复选框和其他运行时元数据不递增。`Plan Review Exception` 只能写 `none`，或写明 `user-accepted`、当前 Plan Revision、日期和接受范围；成功补审后清回 `none`。`Plan Approval Revision` 必须在用户批准时写为当前 Plan Revision。
 
 修订已有计划时，重新读取来源 spec 的当前 revision、审核、例外和批准字段，并与计划头部副本逐项比较。任何不一致都表示计划仍绑定旧 spec：即使 Task 和验收最终无需变化，也必须同步字段、递增 Plan Revision、把 Plan Approval Status/Revision 写为 `pending`/`none` 并重新取得批准；原 Plan Review Status 为 `explore-reviewed` 时写 `needs-review-after-changes`，为 `lightweight` 时保持 `lightweight`；`wave-commits` 时把 Source Document Baseline 重置为 `pending`。
 
 ## 提交策略与源文档基线
 
-`Commit Policy` 优先级为：**当前用户明确授权提交 > 默认 `no-commits`**。项目流程可以触发询问，但不能代替当前用户授权；没有明确授权时不得创建 commit。
+在编写依赖提交策略的计划字段前确定 `Commit Policy`：
 
-- `wave-commits`：仅在当前用户明确授权提交时使用。每个 Wave 验证通过后由主 agent 创建恰好一个 commit。计划生成时 `Source Document Baseline` 写 `pending`；执行前，获批 spec（如有）和 plan 必须先形成独立、干净的文档基线。执行器随后把实际 baseline commit hash 写回计划，该元数据与计划勾选更新归入 Wave 1 commit。若不能安全建立基线，询问用户切换为 `no-commits`
-- `no-commits`：不创建任何实现或修复 commit。每个 Wave 必须从 `Execution State Directory` 中的 durable pre-Wave snapshot 计算增量 patch，并将 patch 与验证记录写入 `docs/plans/<plan-name>-wave-evidence/Wave-N.{patch,md}`；记录 snapshot ID 和 SHA-256，后续 Wave 不得覆盖已有 evidence
+- 用户已明确要求不提交：使用 `no-commits`，不要重复询问
+- 用户已明确要求提交：使用 `wave-commits`，不要重复询问
+- 用户未表态：询问一次并等待回复，默认选项为 `wave-commits`。明确回复“继续”“按默认”或等价表达即表示授权；选择“不提交”时使用 `no-commits`
+
+询问时说明：`wave-commits` 会先建立获批文档基线，在每个 Wave 验证通过后创建一个 commit，并在最终审核后创建一个承接修复和计划完成状态的 finalization commit；`no-commits` 不创建 commit。把实际选择及来源记录在计划头部。执行阶段不重复询问；只有旧计划没有明确来源且用户当前也未表态时才补问。
+
+- `wave-commits`：每个 Wave 验证通过后由主 agent 创建恰好一个 commit；最终审核及必要修复完成后再创建一个 finalization commit，包含修复（如有）、最终验收勾选和完成状态。计划生成时 `Source Document Baseline` 写 `pending`；执行前，获批 spec（如有）和 plan 必须先形成独立、干净的文档基线。执行器随后把实际 baseline commit hash 写回计划，该元数据与计划勾选更新归入 Wave 1 commit。若不能安全建立基线，询问用户是否切换为 `no-commits`
+- `no-commits`：不创建任何实现或修复 commit，也不生成逐 Wave patch、evidence 或 boundary 文件。当前 Wave 执行期间只在 `Execution State Directory` 保留临时 snapshot 和 worker 状态；该 Wave 验证完成后清理，阻塞或中断时保留以便对账。整个流程只额外保留一份临时运行基线，最终完成后删除
 
 ## 范围检查
 
@@ -77,7 +83,7 @@ description: 已有获批设计文档/spec，或用户明确要求跳过 spec、
 2. `Wave 1` 包含所有无依赖且可安全并行的 Task；后续 Wave 包含其全部依赖均已位于更早 Wave 的 Task。
 3. 同一 Wave 的 Task 必须先在一次并行调用中派发给独立的 `general` workers；单 Task Wave 也按同一委派协议执行。只有宿主明确拒绝该调用或只启动部分 worker 时，执行器才可把未启动 Task 作为同一逻辑 Wave 的 transport retry batches，不得借此改变依赖或退化为主 agent 实现。
 4. 共享契约、接线和端到端集成也必须是明确 Task，并放入符合依赖关系的 Wave；不要保留由主 agent 直接编码的隐式“串行阶段”。
-5. 每个 Wave 完成后形成事务边界：主 agent 回收结果、检查范围和冲突、运行 Wave 验证并更新计划。`wave-commits` 时为该 Wave 创建恰好一个 commit；`no-commits` 时持久化该 Wave 的 patch 和验证证据。`general` worker 永远不提交。
+5. 每个 Wave 完成后，主 agent 回收结果、检查范围和冲突、运行 Wave 验证并更新计划。`wave-commits` 时为该 Wave 创建恰好一个 commit；`no-commits` 时不创建边界工件，状态不确定时重跑验证。`general` worker 永远不提交。
 
 **最大安全并行不是可选优化：** 在满足安全前提时，必须把 Task 放入最早可执行的 Wave。不得因为书写方便或习惯而把互不依赖的 Task 排进连续的单任务 Wave。如果本次只能串行，必须写明阻止并行的具体文件冲突或数据依赖。
 
@@ -175,11 +181,9 @@ description: 已有获批设计文档/spec，或用户明确要求跳过 spec、
 
 **计划审核例外（Plan Review Exception）：** `none`
 
-**提交策略（Commit Policy）：** `<wave-commits 或 no-commits；记录决定来源>`
+**提交策略（Commit Policy）：** `<wave-commits 或 no-commits；记录用户明确选择、用户确认默认，或用户明确要求不提交>`
 
 **源文档基线（Source Document Baseline）：** `<wave-commits：pending，执行时写回 commit hash；no-commits：not-applicable>`
-
-**Wave 证据目录（Wave Evidence Directory）：** `<no-commits：docs/plans/<plan-name>-wave-evidence/；wave-commits：not-applicable>`
 
 **执行状态目录（Execution State Directory）：** `<运行 git rev-parse --git-path agent-plan-state/<plan-name> 后写入实际路径>`
 
@@ -188,8 +192,6 @@ description: 已有获批设计文档/spec，或用户明确要求跳过 spec、
 **执行阻塞原因（Execution Blocker）：** `none`
 
 **恢复点（Resume Point）：** `Wave 1`
-
-**最后完成边界（Last Completed Boundary）：** `none`
 
 **实现 Worker：** 所有 Task 均由独立的 `general` worker（`subagent_type=general`）执行
 
@@ -213,7 +215,7 @@ description: 已有获批设计文档/spec，或用户明确要求跳过 spec、
 [用户明确跳过 spec 时，记录已确认需求、假设、设计决策、范围和验收标准；有 spec 时删除本章节。]
 
 ## Wave 执行总览
-[用表格列出 Wave、Task、前置依赖、同波文件所有权、共享运行资源/隔离方式、验证命令，以及 `wave-commits` 下的 commit message 或 `no-commits` 下的 evidence 文件路径。]
+[用表格列出 Wave、Task、前置依赖、同波文件所有权、共享运行资源/隔离方式、验证命令，以及 `wave-commits` 下的 commit message；`no-commits` 明确写“不提交，不生成边界工件”。]
 
 ## 设计决策到任务的映射
 [用表格把设计决策/需求映射到任务和验证方式。]
@@ -340,7 +342,7 @@ def function(input):
 
 **9. 汇合完整性：** 并行实现后需要的接线和集成代码是否成为后续 `general` Task？Wave 级验证是否覆盖跨边界和端到端行为？不要把代码集成隐式留给主 agent。
 
-**10. 边界与恢复策略：** 计划头部是否记录实际 `Commit Policy`、决定来源、Source Document Baseline、Wave Evidence Directory、Execution State Directory、Execution State、Execution Blocker、Resume Point 和 Last Completed Boundary？Execution State Directory 是否来自 `git rev-parse --git-path` 的实际结果？`wave-commits` 下每个 Wave 是否有唯一 commit message，且 Task 内没有 commit？`no-commits` 下是否为每个 Wave 指定不可覆盖的 `.patch` 和 `.md` evidence 路径？
+**10. 提交与恢复策略：** 计划头部是否记录实际 `Commit Policy`、决定来源、Source Document Baseline、Execution State Directory、Execution State、Execution Blocker 和 Resume Point？未提前表态时是否已询问用户并记录其确认？Execution State Directory 是否来自 `git rev-parse --git-path` 的实际结果？`wave-commits` 下每个 Wave 是否有唯一 commit message、最终有 finalization commit，且 Task 内没有 commit？`no-commits` 下是否明确不生成逐 Wave patch、evidence 或 boundary 文件，并只在执行期间保留临时恢复状态？
 
 发现问题时直接修复并重新自检；设计需求没有任务时补充任务。若计划已是 `explore-reviewed`，本轮结束后的实质修改必须改为 `needs-review-after-changes`；默认不再派第二轮审核。
 
@@ -348,8 +350,8 @@ def function(input):
 
 保存计划后，保持 `Plan Approval Status: pending` 并告诉用户：
 
-**“计划已完成并保存到 `<actual-plan-path>`。请审核当前文件版本；明确批准后，我会记录批准状态。准备实现时，使用 executing-plans skill；它会按 Wave 委派 `general` workers、验证并建立 commit/evidence 边界，最后统一运行一次实现审核。”**
+**“计划已完成并保存到 `<actual-plan-path>`。请审核当前文件版本；明确批准后，我会记录批准状态。准备实现时，使用 executing-plans skill；它会按 Wave 委派 `general` workers、验证并按已确认的策略提交或保留未提交改动，最后统一运行一次实现审核。”**
 
-等待用户回复。任何改变 DAG、Wave、Task、文件所有权、资源隔离、验证、验收或行为的修改都递增 `Plan Revision`，把 `Plan Approval Status`/`Plan Approval Revision` 写回 `pending`/`none`，清空旧 `Plan Review Exception`；`wave-commits` 时同时把 `Source Document Baseline` 重置为 `pending`。修改后重新自检：原状态为 `explore-reviewed` 时写 `needs-review-after-changes`，原状态为 `lightweight` 时保持 `lightweight`。执行尚未开始时保持 `Execution State`/`Execution Blocker`/`Resume Point` 为 `not-started`/`none`/`Wave 1`；从 executing-plans 返回后修订计划时清空 Execution Blocker，有新增或未完成 Task 就写 `ready: Wave N`/最早新增或未完成 Wave，没有新增 Task 就写 `final-validation`/`final-validation`。若当前状态为 `needs-review-after-changes`，让用户选择补审或接受风险；接受时把当前 Plan Revision、日期和范围写入 `Plan Review Exception`。只有用户明确批准当前文件版本后，才把 `Plan Approval Status`/`Plan Approval Revision` 写为 `approved`/当前 `Plan Revision`；该元数据更新不改变 `Plan Review Status`。
+等待用户回复。任何改变 DAG、Wave、Task、文件所有权、资源隔离、验证、验收或行为的修改都递增 `Plan Revision`，把 `Plan Approval Status`/`Plan Approval Revision` 写回 `pending`/`none`，清空旧 `Plan Review Exception`；`wave-commits` 时同时把 `Source Document Baseline` 重置为 `pending`。修改后重新自检：原状态为 `explore-reviewed` 时写 `needs-review-after-changes`，原状态为 `lightweight` 时保持 `lightweight`。执行尚未开始时保持 `Execution State`/`Execution Blocker`/`Resume Point` 为 `not-started`/`none`/`Wave 1`。从 executing-plans 返回修订计划时，只有 blocker 明确记录 `dispatch_started: no` 才能修改 DAG、Wave 或 Task；若为 `yes`，停止并先返回 executing-plans 终止/恢复当前 Wave，不能把旧临时状态套到新计划。允许修订时保留 `Execution State: blocked` 和原 Execution Blocker，把 Resume Point 调整为最早新增或未完成 Wave（没有新增 Task 时保持 `final-validation`）；计划重新批准后由 executing-plans 根据 blocker 中的 `origin_state` 对账并解除，不得由 writing-plans 无条件改成 `ready`。若当前状态为 `needs-review-after-changes`，让用户选择补审或接受当前 revision 的未复审风险；接受时把当前 Plan Revision、日期和范围写入 `Plan Review Exception`。只有用户明确批准当前文件版本后，才把 `Plan Approval Status`/`Plan Approval Revision` 写为 `approved`/当前 `Plan Revision`；该元数据更新不改变 `Plan Review Status`。
 
 计划阶段到此结束。批准后建议 `executing-plans` 作为自然下一步，但不要自动调用它；由用户决定什么时候开始实现。

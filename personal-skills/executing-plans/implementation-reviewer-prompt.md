@@ -4,7 +4,7 @@
 
 **目的：** 验证实现是否忠实于设计与计划、验收标准是否真正满足、有无 bug/回归或多余改动。
 
-**派发时机：** 所有 Wave workers 已回收、每个 Wave 已按 `Commit Policy` 完成 commit 或 evidence 边界、且最终验收通过之后，由主 agent 统一派发一次。任何 worker 都不得调用本提示词。
+**派发时机：** 所有 Wave workers 已回收、每个 Wave 验证通过、`wave-commits` 下对应 commit 已完成，且最终验收通过之后，由主 agent 统一派发一次。任何 worker 都不得调用本提示词。
 
 ```
 Task tool（`[REVIEW_SUBAGENT_TYPE]` subagent，默认只审核一轮；优先遵循宿主/项目审核代理配置，未指定时使用 `explore`）：
@@ -18,7 +18,9 @@ Task tool（`[REVIEW_SUBAGENT_TYPE]` subagent，默认只审核一轮；优先�
     **实现 diff：** [提供从实现开始前基线到全部 Wave 结果的相关 diff]
     **验证证据：** [已运行命令及结果]
     **提交策略：** [wave-commits 或 no-commits]
-    **Wave 边界：** [wave-commits：每个 Wave 的 commit hash、Task 和验证结果；no-commits：每个 Wave 的 evidence 路径、patch SHA-256、Task 和验证结果]
+    **提交策略来源：** [用户明确选择、用户确认默认 wave-commits，或用户明确要求不提交]
+    **Git 状态与提交摘要：** [流程开始前基线、当前 status，以及本次创建的 commit 列表]
+    **提交结果：** [wave-commits：每个 Wave 的 commit hash、Task 和验证结果；no-commits：未提交，无替代边界工件]
 
     注意：只审核本次实现相关的 diff。若审核上下文中标注了无关改动，不要把它们计入本次实现的问题。
 
@@ -31,7 +33,7 @@ Task tool（`[REVIEW_SUBAGENT_TYPE]` subagent，默认只审核一轮；优先�
     | 正确性 | bug、回归、边界处理、缺失测试或验证证据不足 |
     | 工程约定 | 是否违反项目既有架构、命名、错误处理、测试风格 |
     | 范围克制 | 是否引入不必要的范围、依赖、抽象或大范围重构 |
-    | Wave 完整性 | 每个计划 Task 是否由对应 Wave 落地；Wave commit 或 no-commits evidence 边界、串行集成、跨边界联调和端到端验收是否完整 |
+    | Wave 完整性 | 每个计划 Task 是否由对应 Wave 落地；提交策略是否有有效用户确认来源；wave-commits 下提交是否完整；no-commits 下是否未创建 commit 或替代边界工件；串行集成、跨 Wave 联调和端到端验收是否完整 |
 
     ## 判断标准
 

@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: 已有经 brainstorming/writing-plans 生成的获批计划，或获批的无 spec 计划并准备实现时使用。按 Wave 委派 `general` workers，实现、验证并建立边界；全部完成后统一进行独立实现审核和修复。
+description: 已有经 brainstorming/writing-plans 生成的获批计划，或获批的无 spec 计划并准备实现时使用。按 Wave 委派 `general` workers，实现、验证并按用户确认的策略提交；全部完成后统一进行独立实现审核和修复。
 ---
 
 # 执行计划落地
@@ -24,7 +24,7 @@ description: 已有经 brainstorming/writing-plans 生成的获批计划，或�
 `Workflow Review Mode` 只记录上游文档审核强度；`lightweight` 和 `explore-review` 的实现行为完全相同：
 
 1. 每个计划 Task 都交给独立的 `general` worker（`subagent_type=general`），包括契约、接线和集成 Task；单 Task Wave 也必须委派。
-2. 同一 Wave 的全部 Task 先在一次并行 dispatch 中启动；只有宿主明确拒绝调用并由主 agent 把对应 lease 标记为 `not-started` 时，这些 Task 才能作为同一逻辑 Wave 的 transport retry batches 继续派发。`dispatching` lease 表示 worker 可能已启动，未确认终止前禁止重派。全部回收后，主 agent 检查范围和冲突、运行 Wave 验证，并按 `Commit Policy` 建立边界。
+2. 同一 Wave 的全部 Task 先在一次并行 dispatch 中启动；只有宿主明确拒绝调用并由主 agent 把对应 lease 标记为 `not-started` 时，这些 Task 才能作为同一逻辑 Wave 的 transport retry batches 继续派发。`dispatching` lease 表示 worker 可能已启动，未确认终止前禁止重派。全部回收后，主 agent 检查范围和冲突、运行 Wave 验证，并按 `Commit Policy` 提交或保留未提交改动。
 3. 全部 Wave 和最终验收完成后，主 agent 使用 canonical `implementation-reviewer-prompt.md` 统一派发一次独立实现审核。
 4. reviewer 的“问题”先由主 agent 分类：代码问题进入 Review-Fix，计划或设计问题返回对应上游阶段；“建议”默认只报告，不实施。默认不运行第二轮审核，除非用户明确要求。
 
@@ -41,9 +41,15 @@ description: 已有经 brainstorming/writing-plans 生成的获批计划，或�
 
 如果有多个可能的计划，问一个澄清问题。来源设计文档路径不存在、与计划记录不一致或无法读取时阻塞。
 
-同时读取 `Workflow Review Mode`、`Spec Revision`、`Spec Review Status`、`Spec Approval Status`、`Spec Approval Revision`、`Spec Review Exception`、`Plan Revision`、`Plan Review Status`、`Plan Approval Status`、`Plan Approval Revision`、`Plan Review Exception`、`Commit Policy`、`Source Document Baseline`、`Wave Evidence Directory`、`Execution State Directory`、`Execution State`、`Execution Blocker`、`Resume Point` 和 `Last Completed Boundary`。有 spec 时，从来源文件重新读取当前 Spec Revision、Review Status、Review Exception、Approval Status 和 Approval Revision，并要求与计划副本逐项一致；不一致时把计划批准状态/版本清为 `pending`/`none`，写 `Execution State: blocked` 和具体 Execution Blocker，返回 writing-plans 同步来源并重新批准，禁止按旧计划执行。提交策略优先级为：当前用户明确指令 > 计划中有明确用户授权来源的记录 > 默认 `no-commits`；旧计划仅记录“默认 wave-commits”不构成授权，必须切换为 `no-commits`。如果当前指令改变策略，必须在派发前重新物化并自检所有派生字段和每 Wave 边界：`wave-commits` 需要 baseline、每 Wave commit message、Evidence Directory=`not-applicable`；`no-commits` 需要 Baseline=`not-applicable`、可写 evidence 目录和每 Wave evidence 路径。旧策略值不得保留；`wave-commits` 的 `pending` baseline 必须在建立基线步骤解析为 commit hash 后才能派发 worker。`Execution State Directory` 必须是计划生成时通过 `git rev-parse --git-path` 解析的实际路径，不得假设 `.git` 是目录。
+同时读取 `Workflow Review Mode`、`Spec Revision`、`Spec Review Status`、`Spec Approval Status`、`Spec Approval Revision`、`Spec Review Exception`、`Plan Revision`、`Plan Review Status`、`Plan Approval Status`、`Plan Approval Revision`、`Plan Review Exception`、`Commit Policy`、`Source Document Baseline`、`Execution State Directory`、`Execution State`、`Execution Blocker` 和 `Resume Point`。有 spec 时，从来源文件重新读取当前 Spec Revision、Review Status、Review Exception、Approval Status 和 Approval Revision，并要求与计划副本逐项一致；不一致时把计划批准状态/版本清为 `pending`/`none`，写 `Execution State: blocked` 和具体 Execution Blocker，返回 writing-plans 同步来源并重新批准，禁止按旧计划执行。
 
-分别校验状态值：`Spec Review Status` 只允许 `lightweight|explore-pending|explore-reviewed|review-blocked|needs-review-after-changes|not recorded`；`Plan Review Status` 只允许前五项，不允许 `not recorded`；有 spec 时 `Spec Approval Status` 必须为 `approved` 且 `Spec Approval Revision` 必须等于当前 `Spec Revision`，无 spec 时 Spec Revision、Spec Approval Status、Spec Approval Revision 必须为 `not-applicable` 且 Spec Review Exception 必须为 `none`；`Plan Approval Status` 必须为 `approved` 且 `Plan Approval Revision` 必须等于当前 `Plan Revision`；`Execution State` 只允许 `not-started`、`ready: Wave N`、`in-progress: Wave N`、`final-validation`、`review-fix`、`blocked`、`completed`；Resume Point 只允许 `Wave N|final-validation|review-fix|completed`；Execution Blocker 在非 blocked 状态必须为 `none`，blocked 时必须是具体原因。批准字段缺失、`pending`、版本不匹配或未知值一律阻塞，不能从 reviewer 状态或用户启动本 skill 的动作推断批准。执行状态、Execution Blocker、Resume Point 或 Last Completed Boundary 缺失/未知时同样阻塞，不得猜测恢复点。
+创建任何文档基线 commit、流程运行基线或派发 worker 前，提交策略优先级为：当前用户明确指令 > 计划中已记录来源的用户确认。用户当前明确要求不提交时使用 `no-commits`；明确要求提交时使用 `wave-commits`。用户未表态且计划没有可信的确认来源时，必须询问并等待，默认选项为 `wave-commits`；“继续”“按默认”或等价表达即表示授权。执行器不得把启动本 skill 本身当作确认，也不得静默选择 `no-commits`。任一基线或 Wave 已创建/开始后策略即固定；用户要求切换时阻塞并说明无法安全重建或撤销既有历史，不得机械切换。
+
+策略锁定前改变选择时，机械更新并自检派生字段：`wave-commits` 需要 `Source Document Baseline` 和每 Wave commit message；`no-commits` 需要 Baseline=`not-applicable`，并明确不生成逐 Wave 边界工件。尚未开始的旧计划若包含 `Wave Evidence Directory`、`Last Completed Boundary`、`.patch`、`.md` evidence 或 boundary record 路径，直接移除这些废弃运行时字段，不改变 Plan Revision 或批准状态。旧计划已经完成时保持原样，不删除既有字段或实体文件；旧计划处于其他执行状态时阻塞，当前协议不继续生成旧 evidence，必须由用户决定从已知干净基线重新开始或手动处理，不得自动迁移或混用两套协议。`wave-commits` 的 `pending` baseline 必须在建立基线步骤解析为 commit hash 后才能派发 worker。`Execution State Directory` 必须是计划生成时通过 `git rev-parse --git-path` 解析的实际路径，不得假设 `.git` 是目录。
+
+分别校验状态值：`Spec Review Status` 只允许 `lightweight|explore-pending|explore-reviewed|review-blocked|needs-review-after-changes|not recorded`；`Plan Review Status` 只允许前五项，不允许 `not recorded`；有 spec 时 `Spec Approval Status` 必须为 `approved` 且 `Spec Approval Revision` 必须等于当前 `Spec Revision`，无 spec 时 Spec Revision、Spec Approval Status、Spec Approval Revision 必须为 `not-applicable` 且 Spec Review Exception 必须为 `none`；`Plan Approval Status` 必须为 `approved` 且 `Plan Approval Revision` 必须等于当前 `Plan Revision`；`Execution State` 只允许 `not-started`、`ready: Wave N`、`in-progress: Wave N`、`final-validation`、`review-fix`、`blocked`、`completed`；Resume Point 只允许 `Wave N|final-validation|review-fix|completed`；Execution Blocker 在非 blocked 状态必须为 `none`，blocked 时必须是具体原因。批准字段缺失、`pending`、版本不匹配或未知值一律阻塞，不能从 reviewer 状态或用户启动本 skill 的动作推断批准。执行状态、Execution Blocker 或 Resume Point 缺失/未知时同样阻塞，不得猜测恢复点。
+
+状态组合也必须一致：`not-started` 只匹配 `Wave 1`；`ready: Wave N` 和 `in-progress: Wave N` 必须匹配同一个 `Wave N`；`final-validation`、`review-fix`、`completed` 必须分别匹配同名 Resume Point；`blocked` 只保留发生阻塞时的 `Wave N|final-validation|review-fix`。任何其他组合都阻塞，不得选择其中一个值覆盖另一个。进入 `blocked` 时，Execution Blocker 必须同时记录 `origin_state` 和 `dispatch_started: yes|no`。
 
 状态处理：
 
@@ -54,11 +60,11 @@ description: 已有经 brainstorming/writing-plans 生成的获批计划，或�
 执行状态恢复分支：
 
 - `not-started` 或 `ready: Wave N`：从 Resume Point 指向的 Wave 开始，派发前再建立 snapshot
-- `in-progress: Wave N`：按 durable snapshot 和 worker evidence/lease 状态恢复；`completed` 跳过，`not-started` 可重派，`started`/`blocked` 必须先执行 Task 的中断恢复策略，`dispatching` 必须等待原 worker 更新状态或确认其已终止，缺失/损坏 evidence 一律阻塞
+- `in-progress: Wave N`：按 durable snapshot 和 worker state/lease 恢复；`completed` 跳过，`not-started` 可重派；`dispatching` 和 `started` 都必须先等待原 worker 更新为终态，或取得宿主确认其已终止，确认终止后的 `started` 与终态 `blocked` 再执行 Task 的中断恢复策略。缺失或损坏的临时状态一律阻塞
 - `final-validation`：重跑最终验收后重新派发只读实现审核；审核调用中断时允许重跑，因为它不修改文件
-- `review-fix`：按 Review-Fix snapshot、Task evidence 和中断恢复策略对账，再补齐未完成修复
-- `blocked`：保留 Execution Blocker；只有 blocker 已解决且批准 revision 重新匹配时，清空 blocker，并按 Resume Point 转成对应 `ready: Wave N`、`final-validation` 或 `review-fix`
-- `completed`：验证最终边界和验收记录后直接报告，不重新派发 worker 或 reviewer
+- `review-fix`：按 Review-Fix snapshot、Worker 状态和中断恢复策略对账，再补齐未完成修复
+- `blocked`：保留 Execution Blocker；只有 blocker 已解决且批准 revision 重新匹配时才继续。`origin_state: not-started`、`dispatch_started: no` 且 Resume Point=`Wave 1` 时转回 `not-started`；其他未派发状态按当前 Resume Point 转为对应 `ready: Wave N`、`final-validation` 或 `review-fix`，以便计划修订后从新的最早未完成位置继续。`dispatch_started: yes` 时必须转回 `in-progress: Wave N` 并先恢复对账，临时状态缺失则继续阻塞并请求人工处理。恢复转换时清空 Execution Blocker
+- `completed`：确认最终验收已记录后不再派发 worker 或 reviewer。`wave-commits` 还必须核验 finalization commit 已存在，且包含当前计划的 completed 状态和全部最终修复；无法证明时不得报告完成或删除临时状态，改为 `blocked`/`final-validation` 并处理结果未知的提交。`no-commits` 或核验通过后，若临时执行状态目录仍存在则安全删除
 
 ## 硬门槛
 
@@ -68,7 +74,7 @@ description: 已有经 brainstorming/writing-plans 生成的获批计划，或�
 - 不要添加无关重构、清理、抽象、依赖或行为
 - 实现和验证未通过前，不要把计划复选框标记为完成
 - 主 agent 不直接编写计划中的实现代码；所有代码修改 Task 都交给 `general` worker。主 agent 只负责编排、上下文准备、范围与冲突检查、Wave/最终验证、进度更新、提交和最终审核
-- `general` worker 禁止创建 commit；主 agent 必须在每个 Wave 验证通过后按 `Commit Policy` 创建恰好一个 Wave commit 或持久化 no-commits evidence
+- `general` worker 禁止创建 commit；主 agent 仅在 `wave-commits` 下于每个 Wave 验证通过后创建恰好一个 Wave commit；`no-commits` 不创建替代边界工件
 - 任一 Wave 未完整返回、存在文件冲突或验证失败时，不提交，也不进入下一 Wave
 
 如果设计文档和执行计划冲突，停下来说明冲突。推荐最小修正，但除非用户已经明确优先级，不要自行判断哪份文档优先。
@@ -77,25 +83,25 @@ description: 已有经 brainstorming/writing-plans 生成的获批计划，或�
 
 每次都按这个顺序执行：
 
-1. **加载并验证输入** — 先定位计划，再按计划记录定位设计依据；读取 revision、批准/审核状态、例外、Wave、验收标准、执行状态和边界策略；按入口状态规则决定继续或阻塞。
-2. **恢复对账并验证 Wave 计划** — 检查每个 Task 恰属一个 Wave、依赖均在更早 Wave、同波文件所有权不重叠、共享运行资源可隔离，且没有遗漏明显可并行任务。读取 `Execution State`、`Resume Point` 和 `Last Completed Boundary`：已完成边界必须用 commit hash 或 evidence SHA-256 验证后跳过。恢复 in-progress/review-fix 时，evidence=`completed` 且 owned-file hash 有效的 Task 视为已返回；`not-started` Task 可作为 transport retry；`started|blocked` Task 可能已有部分文件或外部副作用，先从 snapshot 恢复该 Task 独占文件，并执行计划记录的中断恢复策略，只有恢复证据通过后才创建 `Recovery-<Wave>-<Task>`；`dispatching` 表示旧 worker 可能仍在运行，必须等待它写 `started|completed|blocked`，或从宿主获得已终止/未启动的确定证据后才能转成 `not-started`，不得基于超时猜测；缺失或损坏 evidence、snapshot 缺失或无法证明状态时一律写 `Execution State: blocked`、把具体原因写入 Execution Blocker、保留 Resume Point 并询问用户。只有不改变 DAG、Wave、Task、文件所有权、资源隔离、验证或验收的机械修正可直接应用。其他修改先写 `Execution State: blocked` 和具体 Execution Blocker、保留当前 Resume Point，再把 Plan Approval Status/Revision 写为 `pending`/`none`；原 Plan Review Status 为 `explore-reviewed` 时写 `needs-review-after-changes`，为 `lightweight` 时保持 `lightweight`，然后停止并返回 writing-plans；Plan Revision 只在 writing-plans 实际修改计划内容时递增。用户明确切换 Commit Policy 后的派生字段重物化属于已授权机械更新。
-3. **建立基线** — 计划合法且批准门禁通过后，记录当前 `HEAD`、status、staged/unstaged diff。`wave-commits` 且 Baseline=`pending` 时，只暂存获批 spec（如有）和 plan 的精确路径并创建独立文档基线 commit；提交前后确认无关 staged diff 不变、实际 commit 只含源文档、`HEAD` 按预期变化。hook 修改文档时重新运行对应文档自检；实质修改必须迁移审核和批准状态并重新取得用户批准后才能重试。禁止 `--no-verify`。成功后把 commit hash 写回计划；这项元数据更新不改变 Plan Review Status 或 Plan Approval Status，并归入 Wave 1 commit。若无法安全隔离，询问切换 `no-commits`。`no-commits` 下确认 evidence 目录可写。
-4. **派发当前 Wave** — 派发前在 `Execution State Directory` 为当前 Wave 持久化 pre-Wave snapshot：记录 `HEAD`、staged/unstaged 状态与 SHA-256、完整 owned-files 与计划文件清单、每个文件内容或不存在标记及 SHA-256，并把计划的 `Execution State`/`Execution Blocker`/`Resume Point` 更新为 `in-progress: Wave N`/`none`/`Wave N`。预先创建 worker evidence 父目录，为每个 Task 生成唯一 Dispatch ID 和 Worker Evidence Path，并由主 agent 在调用 Task tool 之前原子写入 `{status: dispatching, dispatch_id, task, wave, timestamp}` lease。worker 启动后必须在任何文件修改、外部副作用或验证命令之前把同一 lease 原子更新为 `started`，完成或阻塞时再替换为完整报告。然后先在一次并行工具调用中启动全波 workers；宿主明确返回“未启动”的 Task 由主 agent 把 lease 更新为 `not-started`，只有这些 Task 可作为同一逻辑 Wave 的 transport retry batches；调用结果不确定或会话中断时保留 `dispatching`，禁止重复派发。
-5. **回收并验证** — 等待全波返回，逐个读取 durable worker evidence，检查范围、owned-file hash、冲突和验证结果，再由主 agent 运行 Wave 验证。需要集成代码时必须由计划中的后续 Task 完成，主 agent 不临时编码。
-6. **处理 Wave 失败** — 验证失败时生成 synthetic `Remediation-<Wave>-<N>` Tasks，并按依赖组织成一个或多个 Remediation Waves。每个 synthetic Task 都必须重新声明完整文件所有权、共享运行资源/隔离约束、中断恢复策略和 Worker Evidence Path，并满足与普通 Wave 相同的文件隔离、资源安全、durable snapshot 和 dispatch 规则；修复后重跑完整原 Wave 验证，未通过前不建立边界、不进入下一 Wave。
-7. **建立 Wave 边界** — 验证通过后更新计划复选框。`wave-commits` 创建恰好一个 Wave commit；`no-commits` 从 durable pre-Wave snapshot 计算增量，写入计划指定的 `Wave-N.patch` 和 `Wave-N.md`，记录 Task、snapshot ID/SHA-256、路径、patch SHA-256、验证结果和结束状态。生成 patch 和后续 diff 时排除 evidence 和 execution-state 目录。边界建立后把 `Last Completed Boundary` 更新为 Wave、commit/evidence 标识及 SHA-256；还有后续 Wave 时把 `Execution State`/`Resume Point` 写为 `ready: Wave N+1`/`Wave N+1`，此状态不要求下一 Wave snapshot；否则写为 `final-validation`/`final-validation`。
-8. **最终验收与审核** — 所有 Wave 完成后运行最终验收，再向配置的审核 subagent 提供本次相关 diff、每 Wave commit/evidence 和验证证据。
-9. **分类并处理审核问题** — 主 agent 先分类每个阻塞发现。实现偏离、bug 或缺失测试属于代码修复：持久化 pre-Review-Fix snapshot，把 `Execution State`/`Execution Blocker`/`Resume Point` 写为 `review-fix`/`none`/`review-fix`，再创建 synthetic Tasks；每个 Task 必须声明文件所有权、资源隔离、中断恢复策略和 Worker Evidence Path，并遵循普通 Wave 的安全/dispatch 规则。计划遗漏 Task、验证或边界时，把 `Execution State`/`Execution Blocker`/`Resume Point` 写为 `blocked`/具体计划缺陷/`final-validation`，按步骤 2 的 revision/approval/review 状态迁移返回 writing-plans；writing-plans 修订后应把 Resume Point 改为最早新增或未完成 Wave。设计、范围或验收依据需要改变时，同样写 `blocked`/具体设计缺陷/`final-validation`，把 Spec Approval Status/Revision 清为 `pending`/`none` 并返回 brainstorming，之后必须经过 writing-plans 同步计划和恢复点。不得把上游文档缺陷派给禁止改设计的 worker。代码修复全部完成后重跑受影响检查和最终验收。
-10. **建立最终修复边界并报告** — 有实际修复时，`wave-commits` 创建一个独立最终修复 commit；`no-commits` 从 durable pre-Review-Fix snapshot 生成 `Review-Fix.patch` 和 `Review-Fix.md`，记录 snapshot/patch SHA-256、路径、修复 Task、验证结果和结束状态，并排除 evidence 和 execution-state 目录。无修复时不创建空边界。全部验收和审核流程结束后把 `Execution State`/`Execution Blocker`/`Resume Point` 写为 `completed`/`none`/`completed`；阻塞退出时写精确值 `Execution State: blocked`，把原因写入 `Execution Blocker` 并保留恢复点。汇总 commits/evidence、验收、审核和偏离。
+1. **加载并验证输入** — 先定位计划，再按计划记录定位设计依据；读取 revision、批准/审核状态、例外、Wave、验收标准、执行状态和提交策略；按入口状态规则决定继续或阻塞。
+2. **恢复对账并验证 Wave 计划** — 检查每个 Task 恰属一个 Wave、依赖均在更早 Wave、同波文件所有权不重叠、共享运行资源可隔离，且没有遗漏明显可并行任务。根据 `Execution State`、`Resume Point`、计划复选框和临时 worker report 对账：`ready: Wave N` 表示更早 Wave 已验证；`wave-commits` 同时核对对应提交，`no-commits` 若文件哈希或验证状态不确定则重跑上一 Wave 验证。恢复 in-progress/review-fix 时，worker report=`completed` 且 owned-file hash 有效的 Task 视为已返回；`not-started` Task 可作为 transport retry；`dispatching|started` 表示旧 worker 可能仍在运行，必须等待它写 `completed|blocked`，或从宿主取得已终止/未启动的确定证据，不得基于超时猜测。确认未启动的 `dispatching` 才能转成 `not-started`；确认已终止的 `started` 与终态 `blocked` 可能已有部分文件或外部副作用，先从 snapshot 恢复该 Task 独占文件并执行计划记录的中断恢复策略，恢复验证通过后把该 Worker 状态原子改为 `not-started`，下一次派发使用新的 Dispatch ID，不创建额外 Recovery 工件。in-progress/review-fix 状态下临时 worker report 或 snapshot 缺失、损坏且无法证明状态时，一律写 `Execution State: blocked`、把具体原因写入 Execution Blocker、保留 Resume Point 并询问用户。只有不改变 DAG、Wave、Task、文件所有权、资源隔离、验证或验收的机械修正可直接应用。需要返回上游实质修改计划且当前 Wave 已派发时，必须先确认所有 worker 终止，按 pre-Wave snapshot 和各 Task 恢复策略把整个 Wave 恢复到派发前状态，验证外部副作用已清理，再删除本 Wave 临时状态并把 blocker 记为 `dispatch_started: no`；无法完成时保持阻塞，不得进入 writing-plans。其他实质修改先写 `Execution State: blocked` 和具体 Execution Blocker、保留当前 Resume Point，再把 Plan Approval Status/Revision 写为 `pending`/`none`；原 Plan Review Status 为 `explore-reviewed` 时写 `needs-review-after-changes`，为 `lightweight` 时保持 `lightweight`，然后停止并返回 writing-plans；Plan Revision 只在 writing-plans 实际修改计划内容时递增。提交策略锁定前的用户切换及派生字段更新属于已授权机械更新。
+3. **建立基线** — 计划合法且批准门禁通过后，记录当前 `HEAD`、status、staged/unstaged diff。`wave-commits` 且 Baseline=`pending` 时，只暂存获批 spec（如有）和 plan 的精确路径并创建独立文档基线 commit；提交前后确认无关 staged diff 不变、实际 commit 只含源文档、`HEAD` 按预期变化。hook 修改文档时重新运行对应文档自检；实质修改必须迁移审核和批准状态并重新取得用户批准后才能重试。禁止 `--no-verify`。成功后把 commit hash 写回计划；这项元数据更新不改变 Plan Review Status 或 Plan Approval Status，并归入 Wave 1 commit。若无法安全隔离，询问是否切换为 `no-commits`，但文档基线 commit 一旦创建就不得再切换。提交策略锁定后，在 `Execution State Directory` 原子创建唯一流程运行基线，记录实现开始前的 `HEAD`、staged/unstaged 状态、相关 diff 和文件哈希；已存在时不得覆盖。`ready|in-progress|final-validation|review-fix` 状态下基线缺失或损坏一律阻塞。
+4. **派发当前 Wave** — 派发前在 `Execution State Directory` 为当前 Wave 持久化 pre-Wave snapshot：记录 `HEAD`、staged/unstaged 状态与 SHA-256、完整 owned-files 与计划文件清单、每个文件内容或不存在标记及 SHA-256，并把计划的 `Execution State`/`Execution Blocker`/`Resume Point` 更新为 `in-progress: Wave N`/`none`/`Wave N`。预先创建 worker 状态父目录，为每个 Task 生成唯一 Dispatch ID 和 Worker State Path，并由主 agent 在调用 Task tool 之前原子写入 lease；除 `status`、ID、Task、Wave 和时间外，lease 的 `task_manifest` 必须完整记录实际任务指令、依赖产物、owned files、共享资源与隔离约束、恢复策略、验收标准、验证命令和适用项目指令。worker 启动、完成或阻塞时更新同一文件并保留该 manifest。然后先在一次并行工具调用中启动全波 workers；宿主明确返回“未启动”的 Task 由主 agent 把 lease 更新为 `not-started`，只有这些 Task 可作为同一逻辑 Wave 的 transport retry batches；调用结果不确定或会话中断时保留 `dispatching`，禁止重复派发。
+5. **回收并验证** — 等待全波返回，逐个读取临时 worker report，检查范围、owned-file hash、冲突和验证结果，再由主 agent 运行 Wave 验证。需要集成代码时必须由计划中的后续 Task 完成，主 agent 不临时编码。
+6. **处理 Wave 失败** — 验证失败时生成 synthetic `Remediation-<Wave>-<N>` Tasks，并按依赖组织成一个或多个 Remediation Waves。每个 synthetic Task 都必须重新声明完整文件所有权、共享运行资源/隔离约束、中断恢复策略和 Worker State Path，并满足与普通 Wave 相同的文件隔离、资源安全、durable snapshot 和 dispatch 规则；修复后重跑完整原 Wave 验证，未通过前不标记完成、不进入下一 Wave。
+7. **完成当前 Wave** — 验证通过后更新计划复选框；还有后续 Wave 时把 `Execution State`/`Resume Point` 写为 `ready: Wave N+1`/`Wave N+1`，否则写为 `final-validation`/`final-validation`。`wave-commits` 把本 Wave 实现和这些计划更新放入恰好一个 commit，成功后才能继续；`no-commits` 不创建任何替代边界文件。状态更新持久化且 commit（如需）成功后，删除本 Wave 的 snapshot、lease 和 worker reports，只保留流程运行基线；若此前中断则保留临时状态供恢复对账。
+8. **最终验收与审核** — 所有 Wave 完成后运行最终验收，再向配置的审核 subagent 提供从流程运行基线计算的本次相关 diff、验证结果、提交策略及其确认来源、当前 Git 状态，以及 `wave-commits` 下的 Wave commit 列表。不要求保留已完成 Wave 的 worker reports。
+9. **分类并处理审核问题** — 主 agent 先分类每个阻塞发现。实现偏离、bug 或缺失测试属于代码修复：持久化 pre-Review-Fix snapshot，把 `Execution State`/`Execution Blocker`/`Resume Point` 写为 `review-fix`/`none`/`review-fix`，再创建 synthetic Tasks；每个 Task 必须声明文件所有权、资源隔离、中断恢复策略和 Worker State Path，并遵循普通 Wave 的安全/dispatch 规则。计划遗漏 Task、验证或提交策略时，把 `Execution State`/`Execution Blocker`/`Resume Point` 写为 `blocked`/具体计划缺陷/`final-validation`，按步骤 2 的 revision/approval/review 状态迁移返回 writing-plans；writing-plans 修订后应把 Resume Point 改为最早新增或未完成 Wave。设计、范围或验收依据需要改变时，同样写 `blocked`/具体设计缺陷/`final-validation`，把 Spec Approval Status/Revision 清为 `pending`/`none` 并返回 brainstorming，之后必须经过 writing-plans 同步计划和恢复点。不得把上游文档缺陷派给禁止改设计的 worker。代码修复全部完成后重跑受影响检查和最终验收。
+10. **完成并报告** — 全部验收、审核及必要修复通过后，先勾选最终验收项，并把 `Execution State`/`Execution Blocker`/`Resume Point` 写为 `completed`/`none`/`completed`。`wave-commits` 随后创建一个 finalization commit：有审核修复时同时包含修复，无修复时只包含最终计划状态；该 commit 成功后流程才算完成。`no-commits` 不创建 commit 或替代工件。汇总 commit（如有）、验收、审核和偏离，然后删除整个 `Execution State Directory`，包括流程运行基线、snapshot、lease 和 worker reports；若清理中断，后续看到 `completed` 状态时完成清理即可。finalization commit 失败时不得清理临时状态，把 `Execution State`/`Resume Point` 改写为 `blocked`/`final-validation`，并在 Execution Blocker 中记录原因、`origin_state: final-validation` 和 `dispatch_started: no` 后停止。其他阻塞退出同样记录原因、`origin_state` 和 `dispatch_started`，并保留恢复点和临时状态。
 
 ## Wave 提交与异常处理
 
-- **没有明确提交授权或用户明确要求不提交：** 使用 `no-commits` 和计划的 evidence 目录；跳过 commit，不跳过 Wave evidence、验证或最终审核
+- **提交策略确认：** 用户未表态且计划没有可信确认来源时先询问，默认选项为 `wave-commits`；用户明确要求不提交时使用 `no-commits`，不创建 commit 或替代边界工件，但仍执行验证和最终审核
 - **已有无关修改：** 实现开始前保存既有未暂存和已暂存基线。只暂存当前 Wave 产生的文件或可精确隔离的 hunk；存在预先 staged 改动时，使用显式 Wave 路径限定提交，并在提交前后确认无关 staged diff 保持不变、实际 commit 只包含当前 Wave。若本 Wave 与既有改动涉及同一文件、或无法证明安全隔离，暂停并询问；不得把无关改动带入 commit
 - **Git hook 失败：** 如果需要改代码，把修复委派给 `general` worker；如果 hook 自己修改了文件，也要重新检查范围。任何文件变化后都必须重新运行当前 Wave 的完整验证，再重试 commit。如果明确是无关既有问题导致，暂停并报告。禁止使用 `--no-verify`
 - **提交失败：** 不进入下一 Wave。先解决失败；无法安全解决时以阻塞报告结束
-- **Evidence 不可变性：** evidence 目录不属于实现 diff。普通 Wave 与 Review-Fix 的 `.patch`/`.md` 创建后均不得覆盖；同一文件跨 Wave 再修改时，后续 evidence 以自身 pre-Wave snapshot 记录增量
-- **中断恢复：** 恢复保证以已完成 Wave 边界为单位。已验证边界直接跳过；中断 Wave 必须先用 durable snapshot 对账。不得因会话重启重新执行已经有有效 commit/evidence 的 Wave，也不得在 snapshot 缺失时声称可以无损恢复
+- **临时状态生命周期：** snapshot、lease 和 worker report 只用于当前执行的并发协调与中断对账；成功完成后删除，阻塞或中断时保留。不得把它们复制到项目工作区作为长期 evidence
+- **中断恢复：** 中断 Wave 必须先用临时 snapshot 和 worker report 对账，不得重复派发可能仍在运行的 worker。`wave-commits` 可用已完成提交跳过 Wave；`no-commits` 不保证逐 Wave 历史恢复，状态不确定时检查当前 diff 和文件哈希并重跑验证
 
 ## 工程约束与规范
 
@@ -183,7 +189,7 @@ description: 已有经 brainstorming/writing-plans 生成的获批计划，或�
 - 阻塞、失败或未验证的项目保持未勾选，并在该项附近或最终报告中说明原因
 - 如果实现审核提出修复，修复和复验通过后，再勾选相关审核/修复/验收项
 - 两种模式下，最终验收清单的最终勾选必须以统一实现审核及其修复后的复验结果为准；如果审核修复打破了之前的通过状态，撤回或保持未勾选，直到重新验证通过
-- `Source Document Baseline`、`Execution State`、`Resume Point`、`Last Completed Boundary`、复选框和 evidence 标识等运行时元数据更新不递增 Plan Revision，也不改变 `Plan Review Status` 或 `Plan Approval Status`
+- `Commit Policy` 的用户选择、`Source Document Baseline`、`Execution State`、`Resume Point` 和复选框等运行时元数据更新不递增 Plan Revision，也不改变 `Plan Review Status` 或 `Plan Approval Status`
 - 只允许记录不改变 DAG、Wave、Task、文件所有权、资源隔离、验证或验收的机械修正；其他变化按步骤 2 返回 writing-plans
 
 ## 最终回复
@@ -206,9 +212,9 @@ description: 已有经 brainstorming/writing-plans 生成的获批计划，或�
 实现审核：
 - 已由主 agent 在全部 Wave 与最终验收后统一执行一轮独立实现审核
 
-Wave 边界：
-- [wave-commits：Wave commit 列表；no-commits：evidence 路径和 patch SHA-256]
-- 最终修复：[commit / evidence 路径 / 无修复]
+提交结果：
+- [wave-commits：Wave commit 列表；no-commits：未提交，无边界工件]
+- 最终化：[finalization commit / 未提交]
 
 与计划的偏离：
 - 无

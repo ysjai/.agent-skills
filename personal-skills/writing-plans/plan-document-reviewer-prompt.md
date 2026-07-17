@@ -30,7 +30,7 @@ Task tool（`[REVIEW_SUBAGENT_TYPE]` subagent，默认只审核一轮；优先�
     | 文件所有权 | 同波 Task 的新建、修改和测试文件是否完整列出且互不重叠 |
     | 运行资源 | 同波 Task 是否会争用端口、数据库、迁移、缓存、构建目录、lockfile 或全局命令；隔离方式是否明确 |
     | 中断恢复 | 每个 Task 是否说明 started-but-incomplete 时如何恢复 owned files 和外部副作用；不可恢复时是否明确阻塞 |
-    | 执行协议 | 计划是否全局声明所有 Task 使用 `general` worker；Task 内是否禁止 commit；是否明确 Commit Policy、源文档基线和 evidence 目录；每个 Wave 是否有验证及 commit/evidence 边界 |
+    | 执行协议 | 计划是否全局声明所有 Task 使用 `general` worker；Task 内是否禁止 commit；Commit Policy 是否已由用户选择或确认默认 `wave-commits` 并记录来源；是否明确源文档基线和临时执行状态目录；每个 Wave 是否有验证；wave-commits 是否包含最终 finalization commit；no-commits 是否不生成替代边界工件 |
     | 关键代码 | 是否包含核心接口、签名、代表性测试和高风险实现片段 |
     | 验收标准 | 每个任务和最终计划是否有严格、可执行或可直接观察的验收标准，并写明预期结果 |
     | 可构建性 | 工程师能否按这份计划执行而不被卡住 |
@@ -41,7 +41,7 @@ Task tool（`[REVIEW_SUBAGENT_TYPE]` subagent，默认只审核一轮；优先�
     会导致实现错误或让实现者卡住的，就是问题。
     小的措辞、风格偏好和“锦上添花”的建议，不要作为问题。
 
-    除非存在严重缺口，否则批准：例如遗漏设计需求、步骤矛盾、占位内容、缺少关键代码形态、验收标准含糊、未映射设计决策、DAG/Wave 非法、遗漏明显并行机会、同波文件冲突，或缺少 general/验证/提交边界。
+    除非存在严重缺口，否则批准：例如遗漏设计需求、步骤矛盾、占位内容、缺少关键代码形态、验收标准含糊、未映射设计决策、DAG/Wave 非法、遗漏明显并行机会、同波文件冲突，或缺少 general/验证/提交策略。
 
     ## 输出格式
 
