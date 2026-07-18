@@ -15,6 +15,8 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 4. 没有 spec 时，要求计划包含足以执行的“实现依据”。
 5. 检查 Task、依赖、验证策略和最终验收。发现产品、范围或公共接口缺口时返回 `brainstorming`；发现任务或验证缺口时返回 `writing-plans`。
 
+不要把多份计划自动解释成一个计划集、跨计划 DAG 或跨计划 Wave。存在多个候选时必须让用户明确指定；一次只执行当前明确指定且已批准的一份计划。用户要求统一编排相互依赖的多份计划时，返回 `writing-plans` 将它们合并为一份计划内的 Task、DAG 和 Wave；若它们应成为独立交付目标，则先返回 `brainstorming` 拆成各自的设计和验收。
+
 旧计划中的 `Workflow Review Mode`、`Execution State`、`Resume Point`、`Execution Blocker`、`Source Document Baseline`、evidence 和 boundary 字段均视为废弃元数据，不作为恢复或批准依据，也不要求迁移后才能执行。
 
 ## 提交策略
