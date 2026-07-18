@@ -141,7 +141,7 @@ Codex 当前推荐通过 `.agents/skills/`（项目级）和 `~/.agents/skills/`
 2. `writing-plans`：基于已批准的 spec 生成执行计划。
 3. `executing-plans`：按 spec 和 plan 实现，并验证验收标准。
 
-需要额外审核时，可在对应阶段启用 `explore-review`；不启用时默认走 `lightweight` 自审。
+开始时根据需求复杂度推荐 `review` 或 `no-review`，由用户选择并贯穿三个阶段。`review` 会分别审核设计文档、执行计划和最终实现；`no-review` 跳过 subagent 审核，只保留主 agent 自检和用户批准门禁。
 
 ## 目录结构
 

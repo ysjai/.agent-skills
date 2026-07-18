@@ -14,6 +14,7 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 3. 有来源 spec 时，从计划记录的精确路径读取当前 `Spec Revision` 和 `Spec Approval Revision`，要求二者相等，并确认计划记录的来源 revision 仍是当前版本。不要比较计划中遗留的整套 spec 状态副本。
 4. 没有 spec 时，要求计划包含足以执行的“实现依据”。
 5. 检查 Task、依赖、验证策略和最终验收。发现产品、范围或公共接口缺口时返回 `brainstorming`；发现任务或验证缺口时返回 `writing-plans`。
+6. 读取计划中的 `Review Mode`：`review` 执行最终 implementation review，`no-review` 跳过所有 subagent review；两种模式都保留主 agent 自检和用户批准门禁。
 
 不要把多份计划自动解释成一个计划集、跨计划 DAG 或跨计划 Wave。存在多个候选时必须让用户明确指定；一次只执行当前明确指定且已批准的一份计划。用户要求统一编排相互依赖的多份计划时，返回 `writing-plans` 将它们合并为一份计划内的 Task、DAG 和 Wave；若它们应成为独立交付目标，则先返回 `brainstorming` 拆成各自的设计和验收。
 
@@ -30,33 +31,23 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 
 在第一个实现 commit 前，用户可以改变策略。已有实现 commit 后不改写历史；如果用户改变后续提交意图，说明当前历史并确认后续处理方式。
 
-## 选择执行方式
+## 协调执行
 
-按 Task 的耦合度和协调收益选择，不要求所有 Task 都委派：
+多 Task、跨模块或包含 Wave 的计划默认由主 agent 协调，业务 Task 优先委派给 `general` worker。主 agent 负责调度、回收结果、更新 plan/TodoList/run state、Wave 验收和提交，不直接实现业务 Task；修复优先委派 repair worker。
 
-### 主 agent 直接执行
+Worker 的 Task DoD 必须包括：自查完整 diff 和 OWNED_SCOPE、逐项通过 Task 验收、运行计划中的验证命令并回传精确结果。主 agent 不重复执行 Task 级测试或逐行审 diff，只确认回传完整、changed paths 未越界，并执行必要的 Wave 级验证。
 
-适用于单一 Task、紧密耦合的连续任务、小范围修改，或委派成本高于收益的场景。主 agent 负责实现、验证、自检和进度更新。
+单 Task、`no-review`、无共享契约或外部副作用的 Wave，主 agent 可直接采信 worker DoD，不重跑测试或完整审 diff。`wave-commits` 仍须在提交前检查提交边界；`review` 仍按模式执行最终 implementation review。
 
-### 单 worker 执行
+Wave DoD：所有 Task worker 均完成且无 `blocked|unknown`，范围和依赖正确，跨 Task 验证通过。失败或异常时暂停并分类，不自动重复派发。
 
-适用于边界清晰、上下文可完整交付、让独立上下文实现有明显收益的 Task。使用 `general-worker-prompt.md`，主 agent 回收后检查完整 diff 并重跑必要验证。
+TodoList 只按 Wave 建项；Task 进度由 plan checkbox 和 run state 记录。Wave 完成后再更新 TodoList 和计划状态。
 
-### 并行 Wave
-
-只在至少两个 Task 真正独立时使用。并行前必须确认：
-
-- 写入文件或符号范围不重叠
-- 验证不会读取另一个 Task 尚未完成的中间状态
-- 端口、数据库、缓存、构建目录、lockfile 和 formatter 等资源可隔离
-- 共享契约已稳定
-- 节省的执行时间值得额外调度和集成成本
-
-逻辑上同一 Wave 不要求一次启动无限数量 worker；按宿主容量使用有界并行批次即可。无法证明隔离时串行执行，或使用独立 worktree/sandbox，而不是为了“最大并行”冒险共享工作树。
+单一低风险 Task 可由主 agent 直接执行；有清晰边界的 Task 使用单 worker；至少两个真正独立的 Task 才并行。并行前确认写入范围、共享契约和运行资源隔离；无法证明隔离时串行或使用独立 worktree/sandbox。
 
 ## 最小运行状态
 
-普通直接执行和单 worker 任务使用会话 Todo 与计划 Task 复选框即可，不创建额外状态目录。
+普通直接执行和单 worker 任务使用按 Wave 的会话 Todo 与计划 Task 复选框即可，不创建额外状态目录。
 
 只有并行 worker、长时间任务或非幂等外部副作用确实需要中断对账时，才在当前仓库解析出的 Git 元数据路径下创建一个临时 run 目录，例如：
 
@@ -64,11 +55,11 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 ```
 
-运行记录只保存：`run_id`、计划路径与 revision、`running|blocked|completed`、当前 Wave，以及每个 active dispatch 的 Task ID、宿主 task handle（如有）和状态。不要复制完整计划、文件内容、完整 task manifest 或每文件 hash。
+运行记录只保存：`run_id`、计划路径与 revision、`running|blocked|completed`、当前 Wave，以及每个 active dispatch 的 Task ID、宿主 task handle（如有）和 `planned|dispatched|completed|blocked|unknown` 状态。不要复制完整计划、文件内容、完整 task manifest 或每文件 hash。
 
 中断恢复规则：
 
-- 宿主能确认 worker 已完成：读取结果，检查 diff 和验证后继续
+- 宿主能确认 worker 已完成：读取结果，确认 Task DoD 和范围后继续；按 Wave 规则执行必要验证
 - 宿主能确认 worker 未启动或已终止：检查当前改动和外部副作用，再决定重派
 - worker 结果未知：不得依靠超时猜测或重复派发；保持 blocked，并要求宿主状态或人工确认
 - 文件内容与预期不一致：不要用旧 snapshot 自动覆盖，先区分 worker、用户和其他进程的改动；无法证明时阻塞
@@ -82,11 +73,11 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 2. **建立当前基线**：记录 `HEAD`、Git status 和本次相关 changed paths。发现 Task 涉及的路径已有无法区分的修改时询问用户，不尝试复杂的自动回滚。
 3. **选择执行方式**：按上节决定主 agent、单 worker 或有界并行；需要委派时提供完整 Task 内容和项目约束。
 4. **执行 Task**：只修改当前 Task 范围，采用计划指定的验证策略，不添加无关重构、抽象或依赖。
-5. **验证 Task**：检查完整 diff、范围和验收，运行聚焦验证；只有通过后才勾选 Task。
-6. **验证 Wave**：多 Task Wave 全部完成后运行跨 Task、构建或集成检查。失败时先分类根因，不自动生成 synthetic Remediation Waves。
+5. **回收 Task**：检查 worker DoD、回传结果和范围；单 Task `no-review` Wave 不重复 Task 验证，异常时阻塞。
+6. **验证 Wave**：多 Task 或有共享契约时运行跨 Task、构建或集成检查。失败时先分类根因，不自动生成 synthetic Remediation Waves。
 7. **提交边界**：`wave-commits` 下由主 agent 提交已验证的连贯改动；`no-commits` 保留工作树修改。提交失败时不进入下一 Wave。
-8. **最终验收**：运行计划中的完整最终检查，记录精确命令和结果。
-9. **按风险审核**：满足审核触发条件时运行独立实现审核；发现问题后分类、修复并聚焦复审。
+8. **审核实现**：`review` 模式在全部 Task 完成后运行一轮 implementation reviewer；主 agent 分类，implementation findings 委派 repair worker 修复并重跑受影响验证，plan/design findings 返回上游，不自动复审。`no-review` 模式跳过该步骤。
+9. **最终验收**：运行计划中的完整最终检查，记录精确命令和结果。
 10. **报告结果**：列出变更、验证、审核、提交和偏离；清理当前 run 临时状态。
 
 ## 测试与验证纪律
@@ -124,17 +115,17 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 
 ## 实现审核
 
-以下情况需要使用 `implementation-reviewer-prompt.md`：
+`Review Mode=review` 时，在全部 Task 完成后使用 `implementation-reviewer-prompt.md`：
 
-- 用户明确要求独立审核
-- 安全、权限、迁移、公共 API 或不可逆操作
-- 多个并行 worker 或较宽的跨模块 diff
+- 对当前实现做一轮独立审核
+- 主 agent 委派 repair worker 修复 findings，并重跑受影响验证
+- 修复后不自动派发复审
 
-普通低风险单 Task 可以由主 agent 做最终 diff 自检，不因缺少 subagent 阻塞。Reviewer 发现 implementation 问题时在原范围修复；修复后必须对 finding 和修复 diff 做一次聚焦复审。Plan 或 design 问题返回对应上游，不让实现 worker自行改变依据。
+`Review Mode=no-review` 时只做主 agent 的 Wave 范围和验收确认；单 Task Wave 不重跑测试或完整审 diff。Reviewer 发现 plan 或 design 问题时返回对应上游，不让实现 worker 自行改变依据。
 
 ## 进度与最终回复
 
-只在 Task 实现和验证通过后勾选 Task；多步骤内部过程不要求逐命令实时勾选。最终验收在所有修复和必要复审通过后勾选。
+只在 Task 实现和验证通过后勾选 Task；多步骤内部过程不要求逐命令实时勾选。最终验收在所有修复和必要验证通过后勾选。
 
 最终报告包括：
 
@@ -148,7 +139,7 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 - `command / 人工步骤`：PASS/FAIL 和关键结果
 
 审核：
-- [未触发，主 agent 自检 | 独立审核及聚焦复审结果]
+- [no-review：主 agent 协调验收 | review：一轮独立审核、主 agent 委派修复并重跑受影响验证，不复审]
 
 提交：
 - [commit 列表 | 未提交]
