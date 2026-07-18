@@ -3,6 +3,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+process.umask(0o077);
+
 // ========== WebSocket Protocol (RFC 6455) ==========
 
 const OPCODES = { TEXT: 0x01, CLOSE: 0x08, PING: 0x09, PONG: 0x0A };
@@ -126,6 +128,15 @@ function getNewestScreen() {
     })
     .sort((a, b) => b.mtime - a.mtime);
   return files.length > 0 ? files[0].path : null;
+}
+
+function ensurePrivateDirectory(directory) {
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  fs.chmodSync(directory, 0o700);
+}
+
+function ensurePrivateFile(filePath) {
+  fs.chmodSync(filePath, 0o600);
 }
 
 // ========== HTTP Request Handler ==========
@@ -268,6 +279,7 @@ function handleMessage(text) {
   touchActivity();
   const eventsFile = path.join(STATE_DIR, 'events');
   fs.appendFileSync(eventsFile, JSON.stringify(record) + '\n');
+  ensurePrivateFile(eventsFile);
   console.log(JSON.stringify({ type: 'user-event-recorded' }));
 }
 
@@ -294,8 +306,9 @@ const debounceTimers = new Map();
 // ========== Server Startup ==========
 
 function startServer() {
-  if (!fs.existsSync(CONTENT_DIR)) fs.mkdirSync(CONTENT_DIR, { recursive: true });
-  if (!fs.existsSync(STATE_DIR)) fs.mkdirSync(STATE_DIR, { recursive: true });
+  ensurePrivateDirectory(SESSION_DIR);
+  ensurePrivateDirectory(CONTENT_DIR);
+  ensurePrivateDirectory(STATE_DIR);
 
   // Track known files to distinguish new screens from updates.
   // macOS fs.watch reports 'rename' for both new files and overwrites,
@@ -414,10 +427,9 @@ function startServer() {
       session_dir: SESSION_DIR, screen_dir: CONTENT_DIR, state_dir: STATE_DIR
     };
     console.log(JSON.stringify(publicInfo));
-    fs.writeFileSync(
-      path.join(STATE_DIR, 'server-info'),
-      JSON.stringify({ ...publicInfo, stop_token: STOP_TOKEN }) + '\n'
-    );
+    const infoFile = path.join(STATE_DIR, 'server-info');
+    fs.writeFileSync(infoFile, JSON.stringify({ ...publicInfo, stop_token: STOP_TOKEN }) + '\n', { mode: 0o600 });
+    ensurePrivateFile(infoFile);
   });
 }
 

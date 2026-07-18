@@ -35,9 +35,9 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 - 推荐 `no-review`：目标明确、局部、低风险、易回滚，不涉及跨模块、公共契约、数据、权限、安全或迁移。
 - 推荐 `review`：新功能、跨模块或服务、公共 API、数据模型、权限、安全、迁移、不可逆副作用，或需要并行 worker。
 
-`review` 模式在设计文档和执行计划写入后各派发一轮 reviewer，由主 agent 根据审核结果修复；全部执行任务完成后再派发一轮 implementation reviewer，由主 agent 修复并重跑受影响验证。修复后不自动复审。
+`review` 模式在设计文档和执行计划写入后各派发一轮 reviewer，由主 agent 根据审核结果修复；全部执行任务完成后再派发一轮 implementation reviewer，由主 agent 修复并重跑受影响验证。修复后不自动复审。审核状态必须覆盖当前 revision。
 
-`no-review` 模式不派发 subagent reviewer，直接按三个阶段推进，但不跳过用户对 spec 和 plan 的批准门禁。把选择写入 spec，并由后续 plan 和 execution 继承。
+`no-review` 模式不派发 subagent reviewer，直接按三个阶段推进，但不跳过用户对 spec 和 plan 的批准门禁。把选择写入 spec，并由后续 plan 和 execution 原样继承；`review` 模式在审核未完成或未获用户明确跳过前不得进入下一阶段。
 
 <FORMAL-DESIGN-GATE>
 正式设计路径中，在用户批准当前设计前，不要编写生产代码、搭建项目或执行不可逆实现动作。可以读取项目、做只读调查，也可以在用户同意后创建临时 mockup、图示或小型探索工件；这些不是生产实现。
@@ -75,7 +75,7 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 **规格版本（Spec Revision）：** `1`
 **规格批准版本（Spec Approval Revision）：** `none`
 **审核模式（Review Mode）：** `review | no-review`
-**独立审核（Independent Review）：** `not-requested`
+**独立审核（Independent Review）：** `not-requested`（`review`）或 `not-required`（`no-review`）
 
 ## 目标与范围
 [要解决的问题、用户可见结果和明确不做的内容。]
@@ -96,10 +96,11 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 `Independent Review` 使用以下实际值之一：
 
 - `not-requested`
+- `not-required`
 - `reviewed revision N`
 - `skipped-by-user revision N`
 
-`reviewed revision N` 只表示 reviewer 看过该 revision，不表示主 agent 修复后的 revision 已被复审。`Spec Approval Revision` 为 `none` 或用户明确批准的当前 `Spec Revision`。设计语义、范围或验收发生变化时递增 `Spec Revision`，把批准版本清为 `none`；旧审核记录自然只覆盖旧 revision。格式修正和批准元数据更新不递增 revision。
+`reviewed revision N` 只表示 reviewer 看过该 revision，不表示主 agent 修复后的 revision 已被复审。`review` 模式批准前必须是 `reviewed revision N` 或 `skipped-by-user revision N`，且 N 等于当前 `Spec Revision`；`no-review` 模式使用 `not-required`。`Spec Approval Revision` 为 `none` 或用户明确批准的当前 `Spec Revision`。设计语义、范围或验收发生变化时递增 `Spec Revision`，把批准版本清为 `none` 并将审核状态重置为 `not-requested`；旧审核记录自然只覆盖旧 revision。格式修正和批准元数据更新不递增 revision。
 
 ## 自检与独立审核
 
@@ -111,11 +112,11 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 4. 范围是否适合放入到单个执行计划内；不适合时先停止并与用户确认是否拆成独立子项目及独立 spec，不要直接从当前 spec 自动生成多份计划。
 5. 只读本文档的人是否无需重新猜测产品意图。
 
-`review` 模式使用同目录的 `spec-document-reviewer-prompt.md` 做一轮审核。主 agent 根据问题修正文档并重新自检，不自动派发复审；缺少可用 reviewer 时说明限制，由用户决定稍后审核或记录 `skipped-by-user revision N`，不要构造复杂的异常状态机。
+`review` 模式使用同目录的 `spec-document-reviewer-prompt.md` 做一轮审核。主 agent 根据问题修正文档并重新自检，审核完成后写入当前 revision 的 `Independent Review`，不自动派发复审；若修复改变语义，递增 revision 并按用户决定重新审核或记录 `skipped-by-user revision N`。缺少可用 reviewer 时说明限制，由用户明确决定稍后审核或记录 `skipped-by-user revision N`，不得自行跳过。
 
 ## 用户批准
 
-文档完成后请用户审核实际文件。用户明确批准当前 revision 后，把 `Spec Approval Revision` 写成当前 `Spec Revision`。用户要求实质修改时，先递增 revision、清空批准版本，再修改和自检。
+文档完成后请用户审核实际文件。`review` 模式先满足当前 revision 的审核门禁，再让用户批准；用户明确批准当前 revision 后，把 `Spec Approval Revision` 写成当前 `Spec Revision`。用户要求实质修改时，先递增 revision、清空批准版本并将审核状态重置为 `not-requested`，再修改和自检。
 
 ## 可视化伴侣
 

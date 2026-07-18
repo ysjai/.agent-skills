@@ -13,6 +13,9 @@
 #   --foreground          Run server in the current terminal (no backgrounding).
 #   --background          Force background mode (overrides Codex auto-foreground).
 
+# Session contents include the stop token and user events.
+umask 077
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Parse arguments
@@ -127,11 +130,12 @@ LOG_FILE="${STATE_DIR}/server.log"
 
 # Create the unique session directory atomically; never reuse a collision.
 mkdir -p "$(dirname "$SESSION_DIR")"
-if ! mkdir "$SESSION_DIR"; then
+if ! mkdir -m 700 "$SESSION_DIR"; then
   echo '{"error": "session directory collision"}'
   exit 1
 fi
-mkdir "${SESSION_DIR}/content" "$STATE_DIR"
+mkdir -m 700 "${SESSION_DIR}/content" "$STATE_DIR"
+chmod 700 "$SESSION_DIR" "${SESSION_DIR}/content" "$STATE_DIR"
 printf 'brainstorm-session\n' > "${SESSION_DIR}/.brainstorm-session"
 
 cleanup_failed_start() {

@@ -22,9 +22,9 @@ description: 已有获批设计或明确需求、工作确实包含多个步骤�
 
 ## 输入与门禁
 
-优先使用用户给出的精确 spec 路径，其次使用当前对话明确批准的设计。存在 spec 时读取其 `Spec Revision`、`Spec Approval Revision` 和 `Review Mode`，只有批准版本相等才能基于它写计划；来源内容在计划批准前发生实质变化时重新生成受影响部分。
+优先使用用户给出的精确 spec 路径，其次使用当前对话明确批准的设计。存在 spec 时读取其 `Spec Revision`、`Spec Approval Revision` 和 `Review Mode`，只有批准版本相等才能基于它写计划；`review` 模式还要求 `Independent Review` 为当前 revision 的 `reviewed revision N` 或用户明确的 `skipped-by-user revision N`，`no-review` 模式要求 `not-required`。计划必须原样复制 spec 的 `Review Mode`，不得在计划中另行选择。来源内容在计划批准前发生实质变化时重新生成受影响部分。
 
-没有 spec 时，只要需求、约束和验收已经明确，或用户明确选择跳过正式设计，就可以继续。在当前对话尚未确定 `Review Mode` 时，先按复杂度推荐 `review` 或 `no-review`，让用户选择后再写计划。在计划中写一个简短的“实现依据”章节，不要制造虚拟 spec 状态。
+没有 spec 时，只要需求、约束和验收已经明确，或用户明确选择跳过正式设计，就可以继续。在当前对话尚未确定 `Review Mode` 时，先按复杂度推荐 `review` 或 `no-review`，让用户选择后再写计划。在计划中写一个简短的“实现依据”章节，不要制造虚拟 spec 状态；无 spec 路径也必须在计划中持久化用户选择。
 
 发现缺失的产品、UX、数据、安全或公共接口决策时，停止并返回 `brainstorming`；实现细节可以在不改变用户意图的前提下由计划确定。
 
@@ -44,7 +44,7 @@ description: 已有获批设计或明确需求、工作确实包含多个步骤�
 
 只有针对该提交问题的明确回复才算确认；用户在看到选项后直接回复“继续”或“按默认”，可视为选择默认。把选择和来源写入计划。
 
-- `wave-commits`：主 agent 在验证通过的 Wave 边界提交连贯改动。通常每 Wave 一个 commit；一个 Wave 含多个明显独立成果时可以拆成多个逻辑 commit，并在计划中写明。无需单独创建文档基线 commit 或只包含状态的 finalization commit
+- `wave-commits`：主 agent 在验证通过的 Wave 边界提交连贯改动。通常每 Wave 一个 commit；最后一个 Wave 的提交延迟到 implementation review、repair 和最终验收之后。实现审核后的代码修复使用 `repair-commit`，最终验收状态写入运行状态；不创建只包含状态的 finalization commit
 - `no-commits`：不创建 commit，也不生成 patch、evidence 或 boundary 替代工件
 
 Wave 是依赖和调度边界，不应为了满足提交数量反向改变 Task 拆分。
@@ -60,7 +60,7 @@ Wave 是依赖和调度边界，不应为了满足提交数量反向改变 Task 
 5. **安排 Wave**：把依赖已满足、边界可隔离且有并行净收益的 Task 放在同一 Wave。
 6. **记录执行建议**：标注建议执行方式和并行理由；实际调度由 `executing-plans` 决定。
 
-需要相同上下文、属于同一验证闭环或不能独立验收的修改应合并。不要按文件、命令或 TDD 步骤拆分；只有并行收益足以覆盖上下文加载、委派和集成成本时才拆分。并行 Task 必须避免写入覆盖和共享资源冲突，也不能读取另一个 Task 尚未完成的中间状态。
+需要相同上下文、属于同一验证闭环或不能独立验收的修改应合并。不要按文件、命令或 TDD 步骤拆分；只有并行收益足以覆盖上下文加载、委派和集成成本时才拆分。并行 Task 必须避免写入覆盖和共享资源冲突，也不能读取另一个 Task 尚未完成的中间状态。在共享工作树中以文件为最小写入所有权边界；同一文件只能由一个 active worker 修改。符号级拆分只有在独立 worktree/sandbox 中才允许。
 
 ## 按场景选择验证策略
 
@@ -84,11 +84,11 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 
 ## 并行与 Wave
 
-多 Task 计划才需要 Wave。`Wave 1` 包含没有未满足依赖、并且并行收益高于协调成本的 Task；后续 Wave 依此类推。
+多 Task 计划才需要在文档中列出 Wave。单 Task 在执行语义上等同于隐式 `Wave 1`。`Wave 1` 包含没有未满足依赖、并且并行收益高于协调成本的 Task；后续 Wave 依此类推。
 
 同一 Wave 并行前检查：
 
-- 写入文件或符号范围不会互相覆盖
+- 写入文件范围不会互相覆盖；共享工作树禁止两个 Task 修改同一文件
 - 一个 Task 不依赖另一个 Task 的中间实现
 - 测试、构建、formatter、端口、数据库、缓存和生成目录可以隔离
 - 所需共享契约已经稳定
@@ -106,7 +106,7 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 **计划版本（Plan Revision）：** `1`
 **计划批准版本（Plan Approval Revision）：** `none`
 **审核模式（Review Mode）：** `review | no-review`
-**独立审核（Independent Review）：** `not-requested`
+**独立审核（Independent Review）：** `not-requested`（`review`）或 `not-required`（`no-review`）
 **提交策略（Commit Policy）：** `[wave-commits | no-commits]，来源：[用户明确选择 | 用户确认默认]`
 
 **最终验收：**
@@ -115,7 +115,7 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 
 计划只保存稳定设计和任务信息，不保存 `Execution State`、`Resume Point`、`Execution Blocker`、临时目录或 worker lease。运行时进度由执行器维护；Task 复选框只在对应实现和验证完成后更新。
 
-`Independent Review` 使用 `not-requested`、`reviewed revision N` 或 `skipped-by-user revision N`。`reviewed revision N` 只表示 reviewer 看过该 revision，不表示主 agent 修复后的 revision 已被复审。任何改变 Task、依赖、验收或行为的修改都递增 `Plan Revision` 并把批准版本清为 `none`。格式、复选框和提交结果更新不递增 revision。
+`Independent Review` 使用 `not-required`、`reviewed revision N` 或 `skipped-by-user revision N`；旧计划的 `not-requested` 只可作为未完成的 `review` 状态。`reviewed revision N` 只表示 reviewer 看过该 revision，不表示主 agent 修复后的 revision 已被复审。`review` 模式批准前必须满足当前 revision 的审核门禁。任何改变 Task、依赖、验收或行为的修改都递增 `Plan Revision` 并把批准版本清为 `none`；受影响 Task、所有依赖后继和最终验收必须重置为未完成，并记录 `valid-for-plan-revision: N`。对已产生的非幂等副作用优先增加纠正 Task，不自动重跑原 Task。格式、复选框和提交结果更新不递增 revision。
 
 ## 必备章节
 
@@ -144,7 +144,7 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 ### [ ] Task N：[连贯成果]
 
 **目标与范围：** [完成后成立什么，不做什么]
-**涉及文件/符号：** [精确路径加符号/章节；行号仅作可选提示]
+**涉及文件：** [精确路径加章节；共享工作树中的文件级独占范围]
 **依赖：** [Task ID 或无]
 **建议执行方式：** [主 agent 直接执行 | 独立 worker；只有存在并行对象或协调理由时才写]
 **并行边界：** [可并行 Task、稳定契约和隔离资源；仅准备并行时写]
@@ -158,6 +158,7 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 **验证策略：** [测试驱动 | 验证驱动 | 混合验证 | 探索验证，以及选择理由]
 **验证：**
 - `[精确命令或人工步骤]`，预期 `[结果]`
+**完成版本：** [已完成 Task 填写 `Plan Revision N`，未完成省略]
 
 **副作用与恢复：** [仅迁移、外部系统或非幂等操作需要；说明清理、回滚、forward-fix 或中断后阻塞]
 ```
@@ -176,10 +177,10 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 6. 只有存在真实外部副作用的 Task 才要求恢复策略。
 7. 提交策略是否已由用户确认，但没有反向支配 Task 边界。
 
-`review` 模式使用 `plan-document-reviewer-prompt.md` 做一轮审核，由主 agent 根据审核结果修复并自检；不自动派发复审。`no-review` 模式只做主 agent 自检。普通单 Task 或低风险计划通常推荐 `no-review`。
+`review` 模式使用 `plan-document-reviewer-prompt.md` 做一轮审核，由主 agent 根据审核结果修复并自检；不自动派发复审。审核完成后把当前 `Plan Revision` 写入 `Independent Review`；若 reviewer 不可用，必须由用户明确选择稍后审核或 `skipped-by-user revision N`。`no-review` 模式只做主 agent 自检并写 `not-required`。普通单 Task 或低风险计划通常推荐 `no-review`。
 
 ## 批准与交接
 
-让用户审核实际计划文件。用户明确批准当前 revision 后，把 `Plan Approval Revision` 写成当前 `Plan Revision`。
+让用户审核实际计划文件。`review` 模式先满足当前 revision 的审核门禁；用户明确批准当前 revision 后，把 `Plan Approval Revision` 写成当前 `Plan Revision`。用户要求实质修改时，递增 revision、清空批准版本并重置受影响 Task。
 
 计划批准后，建议使用 `executing-plans`。不要自动开始实现；由用户决定何时继续。

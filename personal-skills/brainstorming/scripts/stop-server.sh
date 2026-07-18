@@ -6,6 +6,8 @@
 # under /tmp (ephemeral). Persistent directories (.brainstorm/) are
 # kept so mockups can be reviewed later.
 
+umask 077
+
 SESSION_DIR="$1"
 
 if [[ -z "$SESSION_DIR" ]]; then

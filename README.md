@@ -137,8 +137,8 @@ Codex 当前推荐通过 `.agents/skills/`（项目级）和 `~/.agents/skills/`
 
 `personal-skills/` 里的核心工作流分成三个阶段，按顺序衔接：
 
-1. `brainstorming`：把需求整理成设计文档（spec）。
-2. `writing-plans`：基于已批准的 spec 生成执行计划。
+1. `brainstorming`：按风险把需求整理成设计文档（spec），低风险单一任务可走快速路径。
+2. `writing-plans`：基于已批准的 spec，或基于明确且获用户确认的无 spec 实现依据，生成执行计划。
 3. `executing-plans`：按 spec 和 plan 实现，并验证验收标准。
 
 开始时根据需求复杂度推荐 `review` 或 `no-review`，由用户选择并贯穿三个阶段。`review` 会分别审核设计文档、执行计划和最终实现；`no-review` 跳过 subagent 审核，只保留主 agent 自检和用户批准门禁。

@@ -11,8 +11,8 @@
 ## 当前内容
 
 - `brainstorming/`：把需求和想法梳理成设计文档。
-- `writing-plans/`：根据已批准设计文档生成详细执行计划。
-- `executing-plans/`：按设计文档和执行计划落地实现并验证验收标准。
+- `writing-plans/`：根据已批准设计文档或明确确认的无 spec 实现依据生成执行计划。
+- `executing-plans/`：按设计文档和执行计划落地实现并验证验收标准；低风险单一任务可使用快速路径。
 - `xiaomi-financial-tracker/`：小米财务跟踪相关 skill。
 
 其中 `brainstorming/`、`writing-plans/`、`executing-plans/` 是基于 `git-repo-skills/superpowers` 的本地定制版本。

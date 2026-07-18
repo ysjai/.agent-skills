@@ -31,6 +31,8 @@ scripts/start-server.sh
 
 保存 `session_dir`、`screen_dir` 和 `state_dir`，只在首次启动或服务重启时告诉用户 URL。
 
+会话目录及其内容只允许当前用户访问：目录使用 `0700`，`server-info`、events、PID 和日志使用 `0600`。`server-info` 含有用于停止服务的 `stop_token`，不得放宽这些权限。
+
 如果用户明确要求保留 mockup，可以使用：
 
 ```bash
