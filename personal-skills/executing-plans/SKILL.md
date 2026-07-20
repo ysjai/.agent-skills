@@ -33,7 +33,7 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 
 ## 协调执行
 
-多 Task、跨模块或包含 Wave 的计划默认由主 agent 协调，业务 Task 优先委派给 `general` worker。主 agent 负责调度、回收结果、更新 plan/TodoList/run state、Wave 验收和提交，不直接实现业务 Task；修复优先委派 repair worker。repair worker 使用同一 `general` 类型，但必须带 `finding_id`、关联 Task、文件级 OWNED_SCOPE、允许/禁止修改范围、验收标准和验证命令。
+多 Task、跨模块或包含 Wave 的计划默认由主 agent 协调，业务 Task 优先委派给 `general` worker。主 agent 负责调度、回收结果、更新 plan/TodoList/run state、多 worker Wave 的跨 Task 验证和提交，不直接实现业务 Task；单 worker Wave 的 Task 与 Wave 验证由该 worker 完成。修复优先委派 repair worker。repair worker 使用同一 `general` 类型，但必须带 `finding_id`、关联 Task、文件级 OWNED_SCOPE、允许/禁止修改范围、验收标准和验证命令。
 
 每次 dispatch 前，主 agent 从计划和当前项目规则生成一个自包含的 **Task Packet**。不要只传 Task ID 或让 worker 自行在长计划中寻找共享约束。Task Packet 至少包含：
 
@@ -45,19 +45,20 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 - Task 的实施要点、关键代码骨架和副作用与恢复规则
 - 已完成依赖及其稳定输出、当前 Task 的实施顺序和跨模块接线点
 - 代表性正常与失败/边界案例、验收标准、验证策略、精确命令和预期结果
+- Wave 中的实际 worker 数量；单 worker 时内联完整 Wave 验证，多 worker 时只内联当前 Task 验证并明确由主 agent 执行的跨 Task 检查
 - 禁止偏离项、共享资源与隔离要求；repair dispatch 再加入 finding 约束
 
 共享契约在计划中定义一次，但必须在每个引用它的 Task Packet 中完整内联。可从明确锚点唯一推导的普通样板代码无需复制；若 Packet 因缺少高熵信息而无法自包含，停止并返回 `writing-plans`。
 
-Worker 的 Task DoD 必须包括：自查完整 diff 和 OWNED_SCOPE、逐项通过 Task 验收、运行计划中的验证命令并回传精确结果。主 agent 不重复执行 Task 级测试或逐行审 diff，只确认回传完整、changed paths 未越界，并执行必要的 Wave 级验证。
+Worker 的 Task DoD 必须包括：自查完整 diff 和 OWNED_SCOPE、逐项通过 Task 验收、运行分配给它的验证命令并回传精确结果。单 worker Wave 的 worker 还必须运行该 Wave 的完整验证；多 worker Wave 中各 worker 只运行 Task 级验证，主 agent 在全部结果回收后运行跨 Task 接线、构建或集成检查。主 agent 不重复执行 worker 已完成的命令或逐行审 diff。
 
-单 Task 在执行语义上等同于隐式 `Wave 1`。单 Task、`no-review`、无共享契约或外部副作用的 Wave，主 agent 可直接采信 worker DoD，不重跑测试或完整审 diff。`wave-commits` 仍须在提交前检查提交边界；`review` 仍按模式执行最终 implementation review。
+单 Task 在执行语义上等同于隐式 `Wave 1`，但不因此强制委派。若由单 worker 执行，主 agent 在其 Task 与 Wave 验证全部通过后直接采信 DoD，不重跑测试或完整审 diff；共享契约和外部副作用应体现在分配给 worker 的验证与恢复规则中，不构成机械重跑理由。`wave-commits` 仍须在提交前检查提交边界；`review` 仍按模式执行最终 implementation review。
 
-Wave DoD：所有 Task worker 均完成且无 `blocked|unknown`，范围和依赖正确，跨 Task 验证通过。失败或异常时暂停并分类，不自动重复派发。
+Wave DoD：单 worker Wave 要求该 worker 的 Task 与 Wave 验证全部通过；多 worker Wave 要求所有 worker 均完成且无 `blocked|unknown`、范围和依赖正确、主 agent 的跨 Task 验证通过。失败或异常时暂停并分类，不自动重复派发。
 
 TodoList 只按 Wave 建项；Task 进度由 plan checkbox 和 run state 记录。Wave 完成后再更新 TodoList 和计划状态。
 
-单一低风险 Task 可由主 agent 直接执行；有清晰边界的 Task 使用单 worker；至少两个真正独立的 Task 才并行。共享工作树中以文件为最小写入边界，同一文件不得由两个 active worker 修改；符号级所有权只适用于独立 worktree/sandbox。并行前确认写入范围、共享契约和运行资源隔离；无法证明隔离时串行或使用独立 worktree/sandbox。
+单一低风险 Task 可由主 agent 直接执行；只有当独立上下文、隔离或验收收益高于 Task Packet 与项目上下文的重复加载成本时才使用单 worker；至少两个真正独立且并行收益足够的 Task 才并行。相邻串行 Task 共享大量上下文时优先合并；不能合并且宿主支持续接 worker 会话时，复用同一 worker handle/session，而不是启动新 worker。共享工作树中以文件为最小写入边界，同一文件不得由两个 active worker 修改；符号级所有权只适用于独立 worktree/sandbox。并行前确认写入范围、共享契约和运行资源隔离；无法证明隔离时串行或使用独立 worktree/sandbox。
 
 ## 最小运行状态
 
@@ -89,11 +90,11 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 2. **建立当前基线**：记录 `HEAD`、Git status 和本次相关 changed paths。发现 Task 涉及的路径已有无法区分的修改时询问用户，不尝试复杂的自动回滚。
 3. **选择执行方式并物化 Task Packet**：按上节决定主 agent、单 worker 或有界并行；需要委派时展开引用契约、现有锚点、行为案例、实施要点和项目约束，确认 Packet 自包含且带上 dispatch revision 后再 dispatch。
 4. **执行 Task**：只修改当前 Task 范围，采用计划指定的验证策略，不添加无关重构、抽象或依赖。
-5. **回收 Task**：在接受结果前重新读取当前 Plan Revision；有来源 spec 时同时读取当前 Spec Revision。检查 worker DoD、回传结果、范围和 dispatch revision 是否一致；单 Task `no-review` Wave 不重复 Task 验证，revision 不一致时阻塞。
-6. **验证 Wave**：多 Task 或有共享契约时运行跨 Task、构建或集成检查。失败时先分类根因，不自动生成 synthetic Remediation Waves。
+5. **回收 Task**：在接受结果前重新读取当前 Plan Revision；有来源 spec 时同时读取当前 Spec Revision。检查 worker DoD、回传结果、范围和 dispatch revision 是否一致；单 worker Wave 确认其 Task 与 Wave 验证均已通过，不重复执行命令；revision 不一致时阻塞。
+6. **验证 Wave**：同一 Wave 有多个 worker 时，主 agent 只运行计划指定的跨 Task 接线、构建或集成检查；单 worker Wave 不再由主 agent重复验证。失败时先分类根因，不自动生成 synthetic Remediation Waves。
 7. **提交边界**：`wave-commits` 下由主 agent 提交已验证的连贯改动，最后一个 Wave 延迟提交；`no-commits` 保留工作树修改。提交失败时不进入下一 Wave。
 8. **审核实现**：`review` 模式在全部 Task 完成后运行一轮 implementation reviewer；若给定 `FOCUSED_SCOPE`，只能作为局部检查，不能替代整份 revision 的完整审核，必须覆盖全部本次 changed paths 及相关回归。reviewer 检查当前实现和已有证据，不要求尚未运行的最终验证。主 agent 分类，implementation findings 委派 repair worker 修复并重跑受影响验证，plan/design findings 返回上游，不自动复审。`no-review` 模式跳过该步骤。
-9. **最终验收**：在全部 repair 完成后运行计划中的完整最终检查，记录精确命令和结果；无 repair 时也必须运行，除非计划明确声明 Wave 验收与最终验收完全等价。
+9. **最终验收**：在全部 repair 完成后运行计划中的完整最终检查，记录精确命令和结果；无 repair 时也必须运行。只有整份计划为单 Task/单 Wave，且计划明确声明该 worker 已完成的 Wave 验证与最终验收完全等价时，才复用其结果而不重复执行；多 Wave 计划仍由主 agent 运行计划级最终验收。
 10. **最终状态**：最终验收通过后记录运行状态；最后一个 Wave 的计划 checkbox 可随最终代码 commit 一起更新，不能为 checkbox 单独创建提交；`wave-commits` 下必要的 repair 使用 `repair-commit`。
 11. **报告结果**：列出变更、验证、审核、提交和偏离；清理当前 run 临时状态。
 

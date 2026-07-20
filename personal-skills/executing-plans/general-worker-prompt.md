@@ -21,7 +21,8 @@ dispatch 来源 spec 版本：[DISPATCH_SPEC_REVISION；无 spec 时写 not-appl
 禁止偏离：[PROHIBITED_DEVIATIONS]
 副作用与恢复：[SIDE_EFFECTS_AND_RECOVERY]
 验收标准：[TASK_ACCEPTANCE_CRITERIA]
-验证策略和命令：[TASK_VERIFICATION]
+Wave 执行者数量：[WAVE_WORKER_COUNT]
+验证策略和命令：[单 worker 时为 TASK_AND_WAVE_VERIFICATION；多 worker 时为 TASK_VERIFICATION，并列出由主 agent 执行的 CROSS_TASK_VERIFICATION]
 共享资源与隔离要求：[SHARED_RESOURCES]
 运行/Dispatch ID：[RUN_AND_DISPATCH_ID；没有持久运行状态时可省略]
 项目局部指令：[PROJECT_INSTRUCTIONS]
@@ -39,12 +40,12 @@ dispatch 来源 spec 版本：[DISPATCH_SPEC_REVISION；无 spec 时写 not-appl
 - 禁止启动 subagent 或正式 reviewer；允许并且必须在回传前自查完整 diff、OWNED_SCOPE、验收标准和明显错误。
 - 禁止任何 Git 写操作，包括 add、restore、checkout、reset、stash、clean、switch 和 commit。只读 status、diff、show、log 可以使用。
 - 按 Task 选择的验证策略执行。只有标明测试驱动且场景适合时才走 red-green；不要为配置、文档、视觉或机械重构编造失败测试。
-- 运行要求的测试、lint、typecheck、build、dry-run、浏览器或人工检查，并记录精确结果。
+- 运行分配给你的测试、lint、typecheck、build、dry-run、浏览器或人工检查，并记录精确结果。若 `Wave 执行者数量=1`，必须完成 Task 与 Wave 的全部验证；若大于 1，不要抢跑标记为主 agent 负责的跨 Task 验证。
 
 回传：
 1. `status: completed` 或 `status: blocked`
 2. 修改文件和每个文件的改动摘要
 3. 验收标准逐项 PASS/FAIL/BLOCKED
-4. 已运行命令或人工检查及精确结果
+4. 已运行的 Task/Wave 验证命令或人工检查及精确结果；单 worker Wave 明确报告 Wave 验证是否 PASS
 5. 自查发现、遗留风险、越界需求或阻塞原因
 ```
