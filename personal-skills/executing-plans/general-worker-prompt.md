@@ -7,9 +7,19 @@
 
 设计依据：[SPEC_CONTEXT]
 执行计划：[PLAN_FILE_PATH]
-负责 Task：[TASK_ID_AND_FULL_TEXT]
+计划详细度：[PLAN_DETAIL_LEVEL]
+dispatch 计划版本：[DISPATCH_PLAN_REVISION]
+dispatch 来源 spec 版本：[DISPATCH_SPEC_REVISION；无 spec 时写 not-applicable]
+负责 Task：[TASK_ID_AND_GOAL_SCOPE]
+目标文件与符号：[OWNED_PATHS_AND_TARGET_SYMBOLS]
+必读上下文：[REQUIRED_CONTEXT_PATH_SYMBOL_AND_PURPOSE]
+关键实现契约：[INLINED_CONTRACTS；完整内联当前 Task 引用的签名/schema、行为规则、错误/状态、幂等/并发和接线位置，不只写契约 ID]
 已完成依赖：[DEPENDENCIES_AND_OUTPUTS]
 允许修改的文件范围：[OWNED_SCOPE；共享工作树按文件独占，不包含 plan、TodoList、run state 或 Git 提交]
+实施顺序与接线点：[IMPLEMENTATION_ORDER_AND_INTEGRATION_POINTS]
+行为与测试案例：[HAPPY_AND_FAILURE_OR_BOUNDARY_CASES]
+禁止偏离：[PROHIBITED_DEVIATIONS]
+副作用与恢复：[SIDE_EFFECTS_AND_RECOVERY]
 验收标准：[TASK_ACCEPTANCE_CRITERIA]
 验证策略和命令：[TASK_VERIFICATION]
 共享资源与隔离要求：[SHARED_RESOURCES]
@@ -24,6 +34,7 @@
 
 边界：
 - 只实现当前 Task，不扩大范围；发现需要改变设计、计划、依赖或验收时停止并报告。
+- Task Packet 是当前任务的直接实现依据。先读取其中列出的必读上下文并核实锚点；若文件、符号或契约与当前代码不一致，或仍需自行决定会影响行为的接口、分支、错误、状态转换、幂等/并发或接线位置，停止并报告，不要猜测。
 - 只能修改 OWNED_SCOPE 列出的文件；范围可以包含源代码、测试、文档、配置和必要的生成文件。共享工作树中以文件为最小写入边界，同一文件不得由其他 active worker 同时修改；符号级范围只有在独立 worktree/sandbox 中才允许。验证产生的缓存或临时输出应写入项目约定或隔离临时目录；新的持久生成文件必须先在范围中声明。
 - 禁止启动 subagent 或正式 reviewer；允许并且必须在回传前自查完整 diff、OWNED_SCOPE、验收标准和明显错误。
 - 禁止任何 Git 写操作，包括 add、restore、checkout、reset、stash、clean、switch 和 commit。只读 status、diff、show、log 可以使用。

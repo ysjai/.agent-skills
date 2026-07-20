@@ -11,14 +11,14 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 
 1. 定位用户指定或当前对话明确批准的计划；多个候选时询问，不按修改时间猜测。
 2. 读取 `Plan Revision` 和 `Plan Approval Revision`，要求二者相等。兼容旧计划中的 `Plan Approval Status`：若存在且不是 `approved`，同样停止。
-3. 有来源 spec 时，从计划记录的精确路径读取当前 `Spec Revision` 和 `Spec Approval Revision`，要求二者相等，并确认计划记录的来源 revision 仍是当前版本。不要比较计划中遗留的整套 spec 状态副本。
+3. 有来源 spec 时，从计划记录的精确路径读取当前 `Spec Revision` 和 `Spec Approval Revision`，要求二者相等，并确认计划记录的来源 revision 仍是当前版本。不要比较计划中遗留的整套 spec 状态副本。若计划没有来源 spec，只按计划自身的 `Review Mode`、`Plan Detail Level` 和 `Plan Revision` 继续，不要虚构 spec 元数据。
 4. 没有 spec 时，要求计划包含足以执行的“实现依据”。
-5. 检查 Task、依赖、验证策略和最终验收。发现产品、范围或公共接口缺口时返回 `brainstorming`；发现任务或验证缺口时返回 `writing-plans`。
-6. 读取计划中的 `Review Mode`：`review` 执行最终 implementation review，`no-review` 跳过所有 subagent review；两种模式都保留主 agent 自检和用户批准门禁。若有来源 spec，要求 plan 与 spec 的 `Review Mode` 完全相同；`review` 必须同时有当前 spec revision 和当前 plan revision 的 `Independent Review`（分别为 `reviewed revision N` 或用户明确的 `skipped-by-user revision N`），`no-review` 必须为 `not-required`。不满足时停止并返回上游阶段。
+5. 检查 `Plan Detail Level`、关键实现契约、Task、依赖、验证策略和最终验收。旧计划没有 `Plan Detail Level` 时按 `standard` 评估，不要求仅为元数据迁移而重写。发现产品、范围或公共接口缺口时返回 `brainstorming`；发现实现者仍需发明关键签名/schema、行为分支、错误语义、状态转换、幂等/并发规则、接线位置、代表性测试或验证方式时返回 `writing-plans`，不得让 worker 自行补设计。
+6. 读取计划中的 `Review Mode`：`review` 执行最终 implementation review，`no-review` 跳过所有 subagent review；两种模式都保留主 agent 自检和用户批准门禁。若计划有来源 spec，要求 plan 与 spec 的 `Review Mode` 完全相同；若计划无来源 spec，则只按计划自身的 `Review Mode`、`Plan Detail Level` 和 `Plan Revision` 继续。若旧计划只有 `Workflow Review Mode`，把 `explore-review` 映射为 `review`、`lightweight` 映射为 `no-review`；若新旧字段同时存在且冲突，以新字段为准。`review` 必须有与当前门禁相关的 `Independent Review`：有来源 spec 时，来源 spec 与 plan 的当前 revision 都要满足各自审查状态；无来源 spec 时只要求 plan 的当前 revision 满足审查状态。`no-review` 必须为 `not-required`。不满足时停止并返回上游阶段。
 
 不要把多份计划自动解释成一个计划集、跨计划 DAG 或跨计划 Wave。存在多个候选时必须让用户明确指定；一次只执行当前明确指定且已批准的一份计划。用户要求统一编排相互依赖的多份计划时，返回 `writing-plans` 将它们合并为一份计划内的 Task、DAG 和 Wave；若它们应成为独立交付目标，则先返回 `brainstorming` 拆成各自的设计和验收。
 
-旧计划中的 `Workflow Review Mode`、`Execution State`、`Resume Point`、`Execution Blocker`、`Source Document Baseline`、evidence 和 boundary 字段均视为废弃元数据，不作为恢复或批准依据，也不要求迁移后才能执行。
+旧计划中的 `Workflow Review Mode`、`Execution State`、`Resume Point`、`Execution Blocker`、`Source Document Baseline`、evidence 和 boundary 字段均视为旧元数据；其中 `Workflow Review Mode` 只在新字段缺失时按第 6 条的兼容映射读取，不作为新的持久化规范。其余旧字段不作为恢复或批准依据，也不要求迁移后才能执行。
 
 ## 提交策略
 
@@ -34,6 +34,20 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 ## 协调执行
 
 多 Task、跨模块或包含 Wave 的计划默认由主 agent 协调，业务 Task 优先委派给 `general` worker。主 agent 负责调度、回收结果、更新 plan/TodoList/run state、Wave 验收和提交，不直接实现业务 Task；修复优先委派 repair worker。repair worker 使用同一 `general` 类型，但必须带 `finding_id`、关联 Task、文件级 OWNED_SCOPE、允许/禁止修改范围、验收标准和验证命令。
+
+每次 dispatch 前，主 agent 从计划和当前项目规则生成一个自包含的 **Task Packet**。不要只传 Task ID 或让 worker 自行在长计划中寻找共享约束。Task Packet 至少包含：
+
+- Task 目标、范围外事项和 `Plan Detail Level`
+- dispatch 时的 `Plan Revision`；有来源 spec 时再加 `Spec Revision`，用于识别过期结果
+- 文件级 OWNED_SCOPE，以及目标符号或章节
+- 必读的精确 `path:symbol/section`、读取目的和必须沿用的现有模式
+- 当前 Task 引用的关键实现契约正文，包括签名/schema、行为规则、错误/状态、幂等/并发和接线位置
+- Task 的实施要点、关键代码骨架和副作用与恢复规则
+- 已完成依赖及其稳定输出、当前 Task 的实施顺序和跨模块接线点
+- 代表性正常与失败/边界案例、验收标准、验证策略、精确命令和预期结果
+- 禁止偏离项、共享资源与隔离要求；repair dispatch 再加入 finding 约束
+
+共享契约在计划中定义一次，但必须在每个引用它的 Task Packet 中完整内联。可从明确锚点唯一推导的普通样板代码无需复制；若 Packet 因缺少高熵信息而无法自包含，停止并返回 `writing-plans`。
 
 Worker 的 Task DoD 必须包括：自查完整 diff 和 OWNED_SCOPE、逐项通过 Task 验收、运行计划中的验证命令并回传精确结果。主 agent 不重复执行 Task 级测试或逐行审 diff，只确认回传完整、changed paths 未越界，并执行必要的 Wave 级验证。
 
@@ -55,7 +69,7 @@ TodoList 只按 Wave 建项；Task 进度由 plan checkbox 和 run state 记录�
 git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 ```
 
-运行记录只保存：`run_id`、计划路径与 revision、`running|blocked|completed`、当前阶段（`tasks|review|repair|final-verification`）、当前 Wave，以及每个 active dispatch 的 `kind: task|repair`、Task 或 finding ID、宿主 task handle（如有）和 `planned|dispatched|completed|blocked|unknown` 状态。不要复制完整计划、文件内容、完整 task manifest 或每文件 hash。
+运行记录只保存：`run_id`、计划路径与 revision、`running|blocked|completed`、当前阶段（`tasks|review|repair|final-verification`）、当前 Wave，以及每个 active dispatch 的 `kind: task|repair`、Task 或 finding ID、dispatch 时的 `plan_revision`、有来源 spec 时的 `spec_revision`、宿主 task handle（如有）和 `planned|dispatched|completed|blocked|unknown` 状态。不要复制完整计划、文件内容、完整 task manifest 或每文件 hash。
 
 中断恢复规则：
 
@@ -67,18 +81,18 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 
 运行完成后删除当前 `run_id` 子目录；不得删除其他 run 或根据计划中保存的旧绝对路径清理目录。
 
-计划 revision 变化后，不能直接信任旧 checkbox：只有定义、DoD 和依赖均未变化且 `valid-for-plan-revision` 匹配的 Task 才能保留完成；受影响 Task、所有依赖后继和最终验收重置为未完成。已提交实现优先通过纠正 Task 修复，不重跑无法证明幂等的原 Task；非幂等副作用无法确认安全时保持 blocked 并请求人工决定。
+计划 revision 变化后，不能直接信任旧 checkbox：只有定义、DoD 和依赖均未变化且 `完成版本` 匹配的 Task 才能保留完成；受影响 Task、所有依赖后继和最终验收重置为未完成。已提交实现优先通过纠正 Task 修复，不重跑无法证明幂等的原 Task；非幂等副作用无法确认安全时保持 blocked 并请求人工决定。
 
 ## 执行流程
 
 1. **读取项目规则和计划**：检查相关 `AGENTS.md`、贡献说明、现有架构、测试风格和可用命令。
 2. **建立当前基线**：记录 `HEAD`、Git status 和本次相关 changed paths。发现 Task 涉及的路径已有无法区分的修改时询问用户，不尝试复杂的自动回滚。
-3. **选择执行方式**：按上节决定主 agent、单 worker 或有界并行；需要委派时提供完整 Task 内容和项目约束。
+3. **选择执行方式并物化 Task Packet**：按上节决定主 agent、单 worker 或有界并行；需要委派时展开引用契约、现有锚点、行为案例、实施要点和项目约束，确认 Packet 自包含且带上 dispatch revision 后再 dispatch。
 4. **执行 Task**：只修改当前 Task 范围，采用计划指定的验证策略，不添加无关重构、抽象或依赖。
-5. **回收 Task**：检查 worker DoD、回传结果和范围；单 Task `no-review` Wave 不重复 Task 验证，异常时阻塞。
+5. **回收 Task**：在接受结果前重新读取当前 Plan Revision；有来源 spec 时同时读取当前 Spec Revision。检查 worker DoD、回传结果、范围和 dispatch revision 是否一致；单 Task `no-review` Wave 不重复 Task 验证，revision 不一致时阻塞。
 6. **验证 Wave**：多 Task 或有共享契约时运行跨 Task、构建或集成检查。失败时先分类根因，不自动生成 synthetic Remediation Waves。
 7. **提交边界**：`wave-commits` 下由主 agent 提交已验证的连贯改动，最后一个 Wave 延迟提交；`no-commits` 保留工作树修改。提交失败时不进入下一 Wave。
-8. **审核实现**：`review` 模式在全部 Task 完成后运行一轮 implementation reviewer；reviewer 检查当前实现和已有证据，不要求尚未运行的最终验证。主 agent 分类，implementation findings 委派 repair worker 修复并重跑受影响验证，plan/design findings 返回上游，不自动复审。`no-review` 模式跳过该步骤。
+8. **审核实现**：`review` 模式在全部 Task 完成后运行一轮 implementation reviewer；若给定 `FOCUSED_SCOPE`，只能作为局部检查，不能替代整份 revision 的完整审核，必须覆盖全部本次 changed paths 及相关回归。reviewer 检查当前实现和已有证据，不要求尚未运行的最终验证。主 agent 分类，implementation findings 委派 repair worker 修复并重跑受影响验证，plan/design findings 返回上游，不自动复审。`no-review` 模式跳过该步骤。
 9. **最终验收**：在全部 repair 完成后运行计划中的完整最终检查，记录精确命令和结果；无 repair 时也必须运行，除非计划明确声明 Wave 验收与最终验收完全等价。
 10. **最终状态**：最终验收通过后记录运行状态；最后一个 Wave 的计划 checkbox 可随最终代码 commit 一起更新，不能为 checkbox 单独创建提交；`wave-commits` 下必要的 repair 使用 `repair-commit`。
 11. **报告结果**：列出变更、验证、审核、提交和偏离；清理当前 run 临时状态。
@@ -103,6 +117,7 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 - **当前 Task 内的实现问题**：在原范围内做定向修复并重跑验证；无需创建新的 synthetic Task 或 Wave
 - **flaky、环境或既有失败**：确认来源，能安全处理则处理；否则阻塞并报告，不把它伪装成代码修复
 - **需要新增文件、依赖、行为、验收或任务**：返回 `writing-plans`
+- **Task Packet 无法固定关键实现决策**：返回 `writing-plans` 补充契约、锚点、案例或接线信息，不让 worker 猜测
 - **产品意图、范围、数据或安全决策变化**：返回 `brainstorming`，批准后再更新计划
 
 机械调整可以直接继续，例如现有代码要求等价命名或路径变化。无法保持设计与验收不变时停止，不自行猜测。

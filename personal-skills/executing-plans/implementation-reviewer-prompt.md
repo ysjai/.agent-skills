@@ -1,6 +1,6 @@
 # 实现审核提示词
 
-仅在 `Review Mode=review` 且全部执行 Task 完成后使用。Reviewer 只读审核当前实现；主 agent 委派 repair worker 修复 findings 后重跑受影响验证，不自动复审。
+仅在 `Review Mode=review` 且全部执行 Task 完成后使用。Reviewer 只读审核当前实现；主 agent 委派 repair worker 修复 findings 后重跑受影响验证，不自动复审。若提供 `FOCUSED_SCOPE`，只能把它当作局部检查，不能把结果当成整份 revision 的完成审核。
 
 ```text
 Task tool（优先使用宿主或项目配置的审核 subagent，未指定时使用 `explore`）：
@@ -15,11 +15,13 @@ Task tool（优先使用宿主或项目配置的审核 subagent，未指定时�
     本次 changed paths：[CHANGED_PATHS]
     验证结果：[VERIFICATION_RESULTS]
     审核范围：[FULL 或用户明确指定的 FOCUSED_SCOPE]
+    审核覆盖说明：`FULL` 才能作为整份 revision 的完成审核；`FOCUSED_SCOPE` 只发现局部问题，不能单独推进门禁，除非用户明确接受未覆盖部分。
 
     使用只读工具自行检查相关 diff 和文件，不只依赖主 agent 摘要。忽略明确标注且可验证为本次范围外的既有改动。
 
     检查：
     - 实现是否满足设计、Task 和验收，且没有未批准范围
+    - 实现是否遵守计划中的关键实现契约、现有锚点、行为案例和禁止偏离项，尤其是签名/schema、错误、状态、幂等/并发和接线位置
     - bug、回归、边界处理、错误处理和数据/安全风险
     - 测试或验证方式是否适合场景，已有证据是否足够；不要要求尚未执行的最终验收
     - 是否有不必要的抽象、依赖、兼容层或重构
@@ -36,7 +38,7 @@ Task tool（优先使用宿主或项目配置的审核 subagent，未指定时�
     ## 实现审核
     **状态：** 通过 | 需要修改
     **问题：**
-    - [implementation | plan | design] [path:line 或 Task] [问题、影响和最小修正方向]
+    - [finding_id] [implementation | plan | design] [path:line 或 Task] [问题、影响和最小修正方向]
     **建议：**
     - [非阻塞建议]
 ```

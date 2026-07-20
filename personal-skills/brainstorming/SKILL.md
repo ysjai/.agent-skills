@@ -60,6 +60,7 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 - 只设计服务当前目标的内容，避免顺手重构和未来假设。
 - 遵循现有项目模式；只有现有边界直接阻碍本次工作或验证时，才把针对性改善纳入设计。
 - 单元边界应清楚到能说明职责、调用方式和依赖，但不要为了“小文件”机械拆分。
+- 固定公共、外部或会约束多个实现 Task 的工程契约，例如公共 API、schema、共享状态、错误语义、安全边界、兼容性、迁移和幂等规则；私有函数拆分和普通控制流留给执行计划，完整实现代码留给实现阶段。
 - 明确范围外事项、错误处理和验收方式；只在相关时讨论权限、安全、持久化和兼容性。
 - 记录结论和理由，不粘贴原始聊天或内部推演。
 
@@ -86,6 +87,9 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 ## 设计
 [按需描述组件、接口、数据流、UX/API 行为、错误处理和集成点。]
 
+## 工程契约
+[仅在存在公共、外部或跨 Task 约束时记录接口/schema、共享状态、错误语义、安全、兼容、迁移或幂等规则；不要写私有实现骨架或完整代码。]
+
 ## 风险与约束
 [只列与本工作相关的数据、安全、迁移、兼容性或外部依赖风险；没有可省略。]
 
@@ -100,7 +104,7 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 - `reviewed revision N`
 - `skipped-by-user revision N`
 
-`reviewed revision N` 只表示 reviewer 看过该 revision，不表示主 agent 修复后的 revision 已被复审。`review` 模式批准前必须是 `reviewed revision N` 或 `skipped-by-user revision N`，且 N 等于当前 `Spec Revision`；`no-review` 模式使用 `not-required`。`Spec Approval Revision` 为 `none` 或用户明确批准的当前 `Spec Revision`。设计语义、范围或验收发生变化时递增 `Spec Revision`，把批准版本清为 `none` 并将审核状态重置为 `not-requested`；旧审核记录自然只覆盖旧 revision。格式修正和批准元数据更新不递增 revision。
+`reviewed revision N` 只表示 reviewer 针对 FULL 范围看过该 revision，不表示主 agent 修复后的 revision 已被复审。`FOCUSED_SCOPE` 审核只能发现局部问题，不能单独作为整份 revision 的完成审核；若要推进门禁，必须由用户明确接受未覆盖部分并记录 `skipped-by-user revision N`。`review` 模式批准前必须是 `reviewed revision N` 或 `skipped-by-user revision N`，且 N 等于当前 `Spec Revision`；`no-review` 模式使用 `not-required`。`Spec Approval Revision` 为 `none` 或用户明确批准的当前 `Spec Revision`。设计语义、范围或验收发生变化时递增 `Spec Revision`，把批准版本清为 `none` 并将审核状态重置为 `not-requested`；旧审核记录自然只覆盖旧 revision。格式修正和批准元数据更新不递增 revision。
 
 ## 自检与独立审核
 
@@ -110,9 +114,10 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 2. 是否包含了用户明确要求之外的功能或重构。
 3. 关键决策是否有理由，验收标准是否可判定真假。
 4. 范围是否适合放入到单个执行计划内；不适合时先停止并与用户确认是否拆成独立子项目及独立 spec，不要直接从当前 spec 自动生成多份计划。
-5. 只读本文档的人是否无需重新猜测产品意图。
+5. 公共、外部或跨 Task 的接口、数据、错误、安全、兼容、迁移和幂等约束是否已固定，且没有提前设计无关的私有实现细节。
+6. 只读本文档的人是否无需重新猜测产品意图。
 
-`review` 模式使用同目录的 `spec-document-reviewer-prompt.md` 做一轮审核。主 agent 根据问题修正文档并重新自检，审核完成后写入当前 revision 的 `Independent Review`，不自动派发复审；若修复改变语义，递增 revision 并按用户决定重新审核或记录 `skipped-by-user revision N`。缺少可用 reviewer 时说明限制，由用户明确决定稍后审核或记录 `skipped-by-user revision N`，不得自行跳过。
+`review` 模式使用同目录的 `spec-document-reviewer-prompt.md` 做一轮审核。主 agent 根据问题修正文档并重新自检，审核完成后写入送审时 revision 的 `Independent Review`，不自动派发复审；若修复改变语义，递增 revision，旧审核记录保持不变，并按用户决定对新 revision 重新审核或记录 `skipped-by-user revision N`。缺少可用 reviewer 时说明限制，由用户明确决定稍后审核或记录 `skipped-by-user revision N`，不得自行跳过。
 
 ## 用户批准
 
