@@ -1,6 +1,6 @@
 # 执行计划审核提示词
 
-仅在 `Review Mode=review` 时使用。Reviewer 只读计划和来源设计，不编辑文件；每个 revision 最多派发一轮自动审核。`FOCUSED_SCOPE` 只能作为局部检查，不能单独算作整份 revision 的完成审核；若要推进门禁，必须由用户明确接受未覆盖部分。
+仅在 `Review Mode=review` 时使用。Reviewer 只读计划和来源设计，不编辑文件；同一 revision 最多派发一轮，全部自动审核不得超过计划 `Review Rounds` 的上限。`FOCUSED_SCOPE` 只能作为局部检查，不能单独算作整份 revision 的完成审核；若要推进门禁，必须由用户明确接受未覆盖部分。
 
 ```text
 Task tool（优先使用宿主或项目配置的审核 subagent，未指定时使用 `explore`）：
@@ -12,13 +12,14 @@ Task tool（优先使用宿主或项目配置的审核 subagent，未指定时�
     计划：[PLAN_FILE_PATH]
     来源设计：[SPEC_PATH_OR_INLINE_BASIS]
     审核范围：[FULL 或用户明确指定的 FOCUSED_SCOPE]
+    审核轮次：[CURRENT_ROUND]/[ROUND_LIMIT]，审核复杂度：[REVIEW_COMPLEXITY]
 
     使用只读工具抽查计划引用的现有文件、符号、测试和命令，不要只检查文档内部一致性。优先核实关键实现契约、每个 Task 的必读上下文和容易猜错的接线点；不要求为了审核扫描整个仓库。
 
-    如果来源设计是真实 spec：检查 `Review Mode` 是否原样继承来源 spec，以及来源 spec 的审核状态是否满足当前 revision。若来源设计是无 spec 的实现依据：只检查计划本身的 `Review Mode`、`Plan Detail Level`、任务结构和验证，不要求任何 spec 级字段。
+    如果来源设计是真实 spec：检查 `Review Mode`、`Review Complexity` 和轮次上限是否原样继承来源 spec，以及来源 spec 的审核状态是否满足当前 revision。若来源设计是无 spec 的实现依据：只检查计划本身的 `Review Mode`、`Review Complexity`、`Review Rounds`、`Plan Detail Level`、任务结构和验证，不要求任何 spec 级字段。
 
     检查：
-    - 若存在来源 spec，则 `Review Mode` 是否原样继承来源 spec；来源 spec 的 `Independent Review` 是否覆盖当前 spec revision，`no-review` 是否为 `not-required`
+    - 若存在来源 spec，则 `Review Mode`、`Review Complexity` 和轮次上限是否原样继承来源 spec；来源 spec 的 `Independent Review` 是否覆盖当前 spec revision，`no-review` 是否为 `not-required`
     - 需求、Task 和最终验收是否完整对应，是否有范围蔓延
     - Task 是否拥有完整 DoD、足以承担一次 worker 上下文，而不是按命令、文件或 TDD 步骤机械拆分
     - `Plan Detail Level` 是否为 `standard` 或 `guided` 且理由成立；`guided` 是否真正增加关键骨架、调用顺序、样例、断言和禁止偏离项，`standard` 是否仍包含必要契约
@@ -48,4 +49,4 @@ Task tool（优先使用宿主或项目配置的审核 subagent，未指定时�
     - [非阻塞建议]
 ```
 
-只要存在“问题”，状态必须是“需要修改”。主 agent 根据审核结果修复并自检；本流程不自动派发复审。
+只要存在“问题”，状态必须是“需要修改”。主 agent 根据审核结果修复并自检；只有尚有审核轮次时才可对新 revision 派发下一轮，达到上限后不得自动复审。

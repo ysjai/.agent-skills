@@ -30,14 +30,16 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 
 ## 选择审核模式
 
-完成风险分流后，根据当前复杂度推荐审核模式，并让用户选择；用户已明确模式时直接采用。
+完成风险分流后，根据当前复杂度推荐审核模式、审核复杂度和轮次上限，并让用户选择；用户已明确模式时直接采用。
 
-如果需要用户选择审核模式，把它作为一次单独的澄清问题提出，不要与范围、产品或技术问题打包。
+如果需要用户选择审核模式，把审核模式、建议的审核复杂度和对应轮次上限合并为一次单独的澄清问题提出，不要与范围、产品或技术问题打包。
 
 - 推荐 `no-review`：目标明确、局部、低风险、易回滚，不涉及跨模块、公共契约、数据、权限、安全或迁移。
 - 推荐 `review`：新功能、跨模块或服务、公共 API、数据模型、权限、安全、迁移、不可逆副作用，或需要并行 worker。
 
-`review` 模式在设计文档和执行计划写入后各派发一轮 reviewer，由主 agent 根据审核结果修复；全部执行任务完成后再派发一轮 implementation reviewer，由主 agent 修复并重跑受影响验证。修复后不自动复审。审核状态必须覆盖当前 revision。
+`Review Mode=review` 时按当前工作复杂度设置审核复杂度和硬性轮次上限：`simple` 为 1 轮，适用于边界清楚、局部且只因用户要求独立审核的工作；`medium` 为最多 2 轮，适用于常规新功能、跨模块协作或存在少量关键契约；`complex` 为最多 3 轮，适用于数据迁移、权限/安全、公共接口、不可逆副作用或多个高风险子系统。`no-review` 使用 `not-applicable` 和 `0 / 0`。轮次只计算实际派发的 FULL reviewer；主 agent 自检、用户批准和 FOCUSED_SCOPE 检查都不消耗轮次。
+
+`review` 模式在设计文档和执行计划写入后，分别在各自的轮次上限内派发 reviewer，由主 agent 根据审核结果修复；全部执行任务完成后再派发一轮 implementation reviewer，由主 agent 修复并重跑受影响验证。文档审核只会在剩余轮次内进行复审，绝不超过上限；实现审核仍固定一轮。审核状态必须覆盖当前 revision，或在上限耗尽后由用户明确接受未复审的修复版本。
 
 `no-review` 模式不派发 subagent reviewer，直接按三个阶段推进，但不跳过用户对 spec 和 plan 的批准门禁。把选择写入 spec，并由后续 plan 和 execution 原样继承；`review` 模式在审核未完成或未获用户明确跳过前不得进入下一阶段。
 
@@ -53,7 +55,7 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 4. **比较方案**：存在真实决策空间时给出 2-3 个方案、推荐和取舍；只有一个合理方案时直接说明原因。
 5. **展示设计**：简单设计一次完整展示；复杂设计可按架构、数据、交互或风险分段确认，不为短设计制造多轮批准。
 6. **编写设计文档**：保存到 `docs/specs/YYYY-MM-DD-<topic>-design.md`，或用户指定路径。
-7. **自检与审核**：修复占位符、矛盾、歧义和范围问题；`review` 模式派发一轮独立审核并由主 agent 修复，`no-review` 模式只做主 agent 自检。
+7. **自检与审核**：修复占位符、矛盾、歧义和范围问题；`review` 模式按审核复杂度在轮次上限内派发独立审核并修复，`no-review` 模式只做主 agent 自检。
 8. **取得一次最终批准**：让用户审核写入文件的当前 revision。只有该批准是持久化门禁。
 9. **建议下一步**：多步骤实现建议使用 `writing-plans`；由用户决定何时继续。
 
@@ -94,6 +96,8 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 **规格版本（Spec Revision）：** `1`
 **规格批准版本（Spec Approval Revision）：** `none`
 **审核模式（Review Mode）：** `review | no-review`
+**审核复杂度（Review Complexity）：** `simple | medium | complex | not-applicable`
+**审核轮次（Review Rounds）：** `[已用轮次] / [上限：simple=1，medium=2，complex=3，no-review=0]`
 **独立审核（Independent Review）：** `not-requested`（`review`）或 `not-required`（`no-review`）
 
 ## 目标与范围
@@ -120,9 +124,10 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 - `not-requested`
 - `not-required`
 - `reviewed revision N`
+- `review-limit-reached revision N (last reviewed revision M)`
 - `skipped-by-user revision N`
 
-`reviewed revision N` 只表示 reviewer 针对 FULL 范围看过该 revision，不表示主 agent 修复后的 revision 已被复审。`FOCUSED_SCOPE` 审核只能发现局部问题，不能单独作为整份 revision 的完成审核；若要推进门禁，必须由用户明确接受未覆盖部分并记录 `skipped-by-user revision N`。`review` 模式批准前必须是 `reviewed revision N` 或 `skipped-by-user revision N`，且 N 等于当前 `Spec Revision`；`no-review` 模式使用 `not-required`。`Spec Approval Revision` 为 `none` 或用户明确批准的当前 `Spec Revision`。设计语义、范围或验收发生变化时递增 `Spec Revision`，把批准版本清为 `none` 并将审核状态重置为 `not-requested`；旧审核记录自然只覆盖旧 revision。格式修正和批准元数据更新不递增 revision。
+`reviewed revision N` 表示一轮 FULL reviewer 对该 revision 未提出阻塞问题。`review-limit-reached revision N (last reviewed revision M)` 表示第 M 个 revision 的最后可用审核轮提出问题，主 agent 已完成对当前 N 的定向修复和自检，但上限已耗尽，不能把它描述为已复审。`FOCUSED_SCOPE` 审核只能发现局部问题，不能单独作为整份 revision 的完成审核；若要推进门禁，必须由用户明确接受未覆盖部分或审核上限耗尽后的修复，并记录 `skipped-by-user revision N`。`review` 模式批准前必须是 `reviewed revision N` 或 `skipped-by-user revision N`，且 N 等于当前 `Spec Revision`；`no-review` 模式使用 `not-required`。`Spec Approval Revision` 为 `none` 或用户明确批准的当前 `Spec Revision`。任何为解决 reviewer “问题”所做的内容修复都递增 `Spec Revision`，把批准版本清为 `none` 并将审核状态重置为 `not-requested`；设计语义、范围或验收变化也遵循此规则。旧审核记录自然只覆盖旧 revision。只有格式修正、审核轮次和批准元数据更新不递增 revision。
 
 ## 自检与独立审核
 
@@ -135,7 +140,7 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 5. 公共、外部或跨 Task 的接口、数据、错误、安全、兼容、迁移和幂等约束是否已固定，且没有提前设计无关的私有实现细节。
 6. 只读本文档的人是否无需重新猜测产品意图。
 
-`review` 模式使用同目录的 `spec-document-reviewer-prompt.md` 做一轮审核。主 agent 根据问题修正文档并重新自检，审核完成后写入送审时 revision 的 `Independent Review`，不自动派发复审；若修复改变语义，递增 revision，旧审核记录保持不变，并按用户决定对新 revision 重新审核或记录 `skipped-by-user revision N`。缺少可用 reviewer 时说明限制，由用户明确决定稍后审核或记录 `skipped-by-user revision N`，不得自行跳过。
+`review` 模式使用同目录的 `spec-document-reviewer-prompt.md` 做 FULL 审核。每次派发前把 `审核轮次` 加一；同一 revision 最多一轮。reviewer 未提出“问题”时，写入 `reviewed revision N` 并停止审核。reviewer 提出问题时，主 agent 只修复 findings 并自检；任何解决问题的内容修复都递增 revision。若仍有剩余轮次，对修复后的当前 revision 自动派发下一轮；若已用尽上限，写入 `review-limit-reached revision N (last reviewed revision M)`，不再自动派发复审，并向用户说明最后一轮 findings、修复范围和当前版本尚未复审。只有用户明确接受该状态后，才改为 `skipped-by-user revision N` 并进入批准门禁。建议、格式改动和无阻塞审核结果不得触发下一轮。缺少可用 reviewer 时说明限制，由用户明确选择稍后审核或 `skipped-by-user revision N`，不得自行跳过。
 
 ## 用户批准
 

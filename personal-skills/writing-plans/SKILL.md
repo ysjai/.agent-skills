@@ -22,9 +22,9 @@ description: 已有获批设计或明确需求、工作确实包含多个步骤�
 
 ## 输入与门禁
 
-优先使用用户给出的精确 spec 路径，其次使用当前对话明确批准的设计。存在 spec 时读取其 `Spec Revision`、`Spec Approval Revision` 和 `Review Mode`，只有批准版本相等才能基于它写计划；`review` 模式还要求 `Independent Review` 为当前 revision 的 `reviewed revision N`（仅 FULL 审核）或用户明确的 `skipped-by-user revision N`，`no-review` 模式要求 `not-required`。计划必须原样复制 spec 的 `Review Mode`，不得在计划中另行选择。来源内容在计划批准前发生实质变化时重新生成受影响部分。
+优先使用用户给出的精确 spec 路径，其次使用当前对话明确批准的设计。存在 spec 时读取其 `Spec Revision`、`Spec Approval Revision`、`Review Mode`、`Review Complexity` 和 `Review Rounds`，只有批准版本相等才能基于它写计划；`review` 模式还要求 `Independent Review` 为当前 revision 的 `reviewed revision N`（仅 FULL 审核）或用户明确的 `skipped-by-user revision N`，`no-review` 模式要求 `not-required`。计划必须原样复制 spec 的 `Review Mode`、`Review Complexity` 和轮次上限，但计划自身的已用轮次从 `0` 开始，不得沿用 spec 已消耗的轮次。来源内容在计划批准前发生实质变化时重新生成受影响部分。
 
-没有 spec 时，只要需求、约束和验收已经明确，或用户明确选择跳过正式设计，就可以继续。在当前对话尚未确定 `Review Mode` 时，先按复杂度推荐 `review` 或 `no-review`，让用户选择后再写计划。在计划中写一个简短的“实现依据”章节，不要制造虚拟 spec 状态；无 spec 路径也必须在计划中持久化用户选择。
+没有 spec 时，只要需求、约束和验收已经明确，或用户明确选择跳过正式设计，就可以继续。在当前对话尚未确定 `Review Mode` 时，先按复杂度推荐 `review` 或 `no-review`，以及 `simple`（1 轮）、`medium`（最多 2 轮）或 `complex`（最多 3 轮）的审核复杂度，让用户选择后再写计划；`no-review` 使用 `not-applicable` 和 `0 / 0`。在计划中写一个简短的“实现依据”章节，不要制造虚拟 spec 状态；无 spec 路径也必须在计划中持久化用户选择。
 
 发现缺失的产品、UX、数据、安全或公共接口决策时，停止并返回 `brainstorming`；实现细节可以在不改变用户意图的前提下由计划确定。
 
@@ -138,6 +138,8 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 **计划版本（Plan Revision）：** `1`
 **计划批准版本（Plan Approval Revision）：** `none`
 **审核模式（Review Mode）：** `review | no-review`
+**审核复杂度（Review Complexity）：** `simple | medium | complex | not-applicable`
+**审核轮次（Review Rounds）：** `[已用轮次] / [上限：simple=1，medium=2，complex=3，no-review=0]`
 **独立审核（Independent Review）：** `not-requested`（`review`）或 `not-required`（`no-review`）
 **计划详细度（Plan Detail Level）：** `[standard | guided]，理由：[默认 | 用户明确要求 | 复杂度理由]`
 **提交策略（Commit Policy）：** `[wave-commits | no-commits]，来源：[用户明确选择 | 用户确认默认]`
@@ -148,7 +150,7 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 
 计划只保存稳定设计和任务信息，不保存 `Execution State`、`Resume Point`、`Execution Blocker`、临时目录或 worker lease。运行时进度由执行器维护；Task 复选框只在对应实现和验证完成后更新。
 
-`Independent Review` 使用 `not-required`、`reviewed revision N` 或 `skipped-by-user revision N`；旧计划的 `not-requested` 只可作为未完成的 `review` 状态。`reviewed revision N` 只表示 reviewer 针对 FULL 范围看过送审时 revision，不表示主 agent 修复后的 revision 已被复审；`FOCUSED_SCOPE` 审核不能单独作为整份 revision 的门禁完成。`review` 模式批准前必须满足当前 revision 的审核门禁。任何改变计划详细度、关键实现契约、Task、依赖、验收或行为的修改都递增 `Plan Revision` 并把批准版本清为 `none`；受影响 Task、所有依赖后继和最终验收必须重置为未完成，并记录 `完成版本`。对已产生的非幂等副作用优先增加纠正 Task，不自动重跑原 Task。格式、复选框和提交结果更新不递增 revision。
+`Independent Review` 使用 `not-required`、`reviewed revision N`、`review-limit-reached revision N (last reviewed revision M)` 或 `skipped-by-user revision N`；旧计划的 `not-requested` 只可作为未完成的 `review` 状态。`reviewed revision N` 表示一轮 FULL reviewer 对该 revision 未提出阻塞问题。`review-limit-reached revision N (last reviewed revision M)` 表示第 M 个 revision 的最后可用审核轮提出问题，主 agent 已完成对当前 N 的定向修复和自检，但上限已耗尽，不能把它描述为已复审。`FOCUSED_SCOPE` 审核不能单独作为整份 revision 的门禁完成；若要推进门禁，必须由用户明确接受未覆盖部分或审核上限耗尽后的修复，并记录 `skipped-by-user revision N`。`review` 模式批准前必须满足当前 revision 的审核门禁。任何为解决 reviewer “问题”所做的内容修复都递增 `Plan Revision` 并把批准版本清为 `none`；计划详细度、关键实现契约、Task、依赖、验收或行为变化也遵循此规则。受影响 Task、所有依赖后继和最终验收必须重置为未完成，并记录 `完成版本`。对已产生的非幂等副作用优先增加纠正 Task，不自动重跑原 Task。只有格式、复选框、审核轮次和批准元数据更新不递增 revision。
 
 ## 必备章节
 
@@ -263,7 +265,7 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 9. 计划引用的文件、符号、命令和现有模式是否已从当前代码库核实；greenfield 是否明确新建依据，而不是根据命名习惯虚构锚点。
 10. `guided` 计划是否提供足够的代码骨架、调用顺序、样例和断言，同时没有退化成完整 patch；`standard` 是否仍包含必要契约，而不是任务清单。
 
-`review` 模式使用 `plan-document-reviewer-prompt.md` 做一轮审核，由主 agent 根据审核结果修复并自检；不自动派发复审。审核完成后把送审时 `Plan Revision` 写入 `Independent Review`；若 reviewer 不可用，必须由用户明确选择稍后审核或 `skipped-by-user revision N`。`no-review` 模式只做主 agent 自检并写 `not-required`。普通单 Task 或低风险计划通常推荐 `no-review`。
+`review` 模式使用 `plan-document-reviewer-prompt.md` 做 FULL 审核。每次派发前把 `审核轮次` 加一；同一 revision 最多一轮。reviewer 未提出“问题”时，写入 `reviewed revision N` 并停止审核。reviewer 提出问题时，主 agent 只修复 findings 并自检；任何解决问题的内容修复都递增 revision。若仍有剩余轮次，对修复后的当前 revision 自动派发下一轮；若已用尽上限，写入 `review-limit-reached revision N (last reviewed revision M)`，不再自动派发复审，并向用户说明最后一轮 findings、修复范围和当前版本尚未复审。只有用户明确接受该状态后，才改为 `skipped-by-user revision N` 并进入批准门禁。建议、格式改动和无阻塞审核结果不得触发下一轮。若 reviewer 不可用，必须由用户明确选择稍后审核或 `skipped-by-user revision N`。`no-review` 模式只做主 agent 自检并写 `not-required`。普通单 Task 或低风险计划通常推荐 `no-review`。
 
 ## 批准与交接
 

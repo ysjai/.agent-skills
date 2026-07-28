@@ -1,6 +1,6 @@
 # 设计文档审核提示词
 
-仅在 `Review Mode=review` 时使用。Reviewer 只读文件，只报告会影响实现计划或验收的实质问题；每个 revision 最多派发一轮自动审核。`FOCUSED_SCOPE` 只能作为局部检查，不能单独算作整份 revision 的完成审核；若要推进门禁，必须由用户明确接受未覆盖部分。
+仅在 `Review Mode=review` 时使用。Reviewer 只读文件，只报告会影响实现计划或验收的实质问题；同一 revision 最多派发一轮，全部自动审核不得超过文档 `Review Rounds` 的上限。`FOCUSED_SCOPE` 只能作为局部检查，不能单独算作整份 revision 的完成审核；若要推进门禁，必须由用户明确接受未覆盖部分。
 
 ```text
 Task tool（优先使用宿主或项目配置的审核 subagent，未指定时使用 `explore`）：
@@ -10,6 +10,7 @@ Task tool（优先使用宿主或项目配置的审核 subagent，未指定时�
 
     设计文档：[SPEC_FILE_PATH]
     审核范围：[FULL 或用户明确指定的 FOCUSED_SCOPE]
+    审核轮次：[CURRENT_ROUND]/[ROUND_LIMIT]，审核复杂度：[REVIEW_COMPLEXITY]
 
     检查：
     - 目标、范围、设计和验收是否一致
@@ -30,4 +31,4 @@ Task tool（优先使用宿主或项目配置的审核 subagent，未指定时�
     - [非阻塞建议]
 ```
 
-只要列出“问题”，状态就必须是“需要修改”。主 agent 根据审核结果修复并自检；本流程不自动派发复审。
+只要列出“问题”，状态就必须是“需要修改”。主 agent 根据审核结果修复并自检；只有尚有审核轮次时才可对新 revision 派发下一轮，达到上限后不得自动复审。

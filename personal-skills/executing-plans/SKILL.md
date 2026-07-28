@@ -11,10 +11,10 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 
 1. 定位用户指定或当前对话明确批准的计划；多个候选时询问，不按修改时间猜测。
 2. 读取 `Plan Revision` 和 `Plan Approval Revision`，要求二者相等。兼容旧计划中的 `Plan Approval Status`：若存在且不是 `approved`，同样停止。
-3. 有来源 spec 时，从计划记录的精确路径读取当前 `Spec Revision` 和 `Spec Approval Revision`，要求二者相等，并确认计划记录的来源 revision 仍是当前版本。不要比较计划中遗留的整套 spec 状态副本。若计划没有来源 spec，只按计划自身的 `Review Mode`、`Plan Detail Level` 和 `Plan Revision` 继续，不要虚构 spec 元数据。
+3. 有来源 spec 时，从计划记录的精确路径读取当前 `Spec Revision` 和 `Spec Approval Revision`，要求二者相等，并确认计划记录的来源 revision 仍是当前版本。还要核验计划继承了 spec 的 `Review Mode`、`Review Complexity` 和 `Review Rounds` 上限，但计划的已用轮次独立计算。不要比较计划中遗留的整套 spec 状态副本。若计划没有来源 spec，只按计划自身的 `Review Mode`、`Review Complexity`、`Review Rounds`、`Plan Detail Level` 和 `Plan Revision` 继续，不要虚构 spec 元数据。
 4. 没有 spec 时，要求计划包含足以执行的“实现依据”。
 5. 检查 `Plan Detail Level`、关键实现契约、Task、依赖、验证策略和最终验收。旧计划没有 `Plan Detail Level` 时按 `standard` 评估，不要求仅为元数据迁移而重写。发现产品、范围或公共接口缺口时返回 `brainstorming`；发现实现者仍需发明关键签名/schema、行为分支、错误语义、状态转换、幂等/并发规则、接线位置、代表性测试或验证方式时返回 `writing-plans`，不得让 worker 自行补设计。
-6. 读取计划中的 `Review Mode`：`review` 执行最终 implementation review，`no-review` 跳过所有 subagent review；两种模式都保留主 agent 自检和用户批准门禁。若计划有来源 spec，要求 plan 与 spec 的 `Review Mode` 完全相同；若计划无来源 spec，则只按计划自身的 `Review Mode`、`Plan Detail Level` 和 `Plan Revision` 继续。若旧计划只有 `Workflow Review Mode`，把 `explore-review` 映射为 `review`、`lightweight` 映射为 `no-review`；若新旧字段同时存在且冲突，以新字段为准。`review` 必须有与当前门禁相关的 `Independent Review`：有来源 spec 时，来源 spec 与 plan 的当前 revision 都要满足各自审查状态；无来源 spec 时只要求 plan 的当前 revision 满足审查状态。`no-review` 必须为 `not-required`。不满足时停止并返回上游阶段。
+6. 读取计划中的 `Review Mode`：`review` 执行最终 implementation review，`no-review` 跳过所有 subagent review；两种模式都保留主 agent 自检和用户批准门禁。`review` 的 `Review Complexity` 必须为 `simple`、`medium` 或 `complex`，且 `Review Rounds` 上限依次为 1、2 或 3；`no-review` 必须为 `not-applicable` 和 `0 / 0`。若计划有来源 spec，要求 plan 与 spec 的 `Review Mode`、`Review Complexity` 和轮次上限完全相同；若计划无来源 spec，则只按计划自身的这些字段、`Plan Detail Level` 和 `Plan Revision` 继续。若旧计划只有 `Workflow Review Mode`，把 `explore-review` 映射为 `review`、`lightweight` 映射为 `no-review`；若新旧字段同时存在且冲突，以新字段为准。`review` 必须有与当前门禁相关的 `Independent Review`：有来源 spec 时，来源 spec 与 plan 的当前 revision 都要满足各自审查状态；无来源 spec 时只要求 plan 的当前 revision 满足审查状态。`no-review` 必须为 `not-required`。不满足时停止并返回上游阶段。
 
 不要把多份计划自动解释成一个计划集、跨计划 DAG 或跨计划 Wave。存在多个候选时必须让用户明确指定；一次只执行当前明确指定且已批准的一份计划。用户要求统一编排相互依赖的多份计划时，返回 `writing-plans` 将它们合并为一份计划内的 Task、DAG 和 Wave；若它们应成为独立交付目标，则先返回 `brainstorming` 拆成各自的设计和验收。
 
