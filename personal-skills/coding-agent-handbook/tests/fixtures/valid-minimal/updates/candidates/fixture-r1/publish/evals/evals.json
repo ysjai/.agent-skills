@@ -1,0 +1,10 @@
+[
+  {
+    "id": "fixture-eval",
+    "prompt": "Validate the fixture route.",
+    "expected_records": ["codex-demo-2026-07-28-r1"],
+    "required_answer_fields": ["version"],
+    "forbidden_claims": [],
+    "manual_review": "Review the fixture answer manually."
+  }
+]

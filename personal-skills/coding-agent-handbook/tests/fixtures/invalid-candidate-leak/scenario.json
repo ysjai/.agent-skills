@@ -1,0 +1,6 @@
+{
+  "base_fixture": "valid-minimal",
+  "mode": "final-published",
+  "rule": "candidate-leak",
+  "mutation": "formal-candidate-reference"
+}

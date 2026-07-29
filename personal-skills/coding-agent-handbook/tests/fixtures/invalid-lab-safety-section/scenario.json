@@ -1,0 +1,6 @@
+{
+  "base_fixture": "valid-minimal",
+  "mode": "final-published",
+  "rule": "lab-safety-section",
+  "mutation": "lab-missing-network-safety"
+}

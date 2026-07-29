@@ -1,0 +1,6 @@
+{
+  "base_fixture": "valid-minimal",
+  "mode": "final-published",
+  "rule": "fact-evidence-hash",
+  "mutation": "fact-snapshot-hash"
+}

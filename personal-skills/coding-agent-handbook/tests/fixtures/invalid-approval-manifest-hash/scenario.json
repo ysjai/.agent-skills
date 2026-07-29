@@ -1,0 +1,6 @@
+{
+  "base_fixture": "valid-minimal",
+  "mode": "final-published",
+  "rule": "approval-manifest-hash",
+  "mutation": "approval-hash"
+}

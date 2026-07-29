@@ -1,0 +1,6 @@
+{
+  "base_fixture": "valid-minimal",
+  "mode": "final-published",
+  "rule": "publication-transaction-pending",
+  "mutation": "pending-transaction"
+}
