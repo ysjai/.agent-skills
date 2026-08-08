@@ -28,6 +28,12 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 
 无法判断时，只问最能决定分流的一个问题，不要默认选择更重的流程。
 
+## 推荐执行模式
+
+正式设计完成后，为后续计划提供非绑定的 `Recommended Execution Mode`。只有已知信息同时支持至少两个独立连贯成果、稳定或可先稳定的共享契约、可隔离的写入与运行资源、以及高于 Task Packet 和集成成本的协调净收益时，才推荐 `orchestrated`；否则推荐 `direct`。设计风险、模块数量和审核复杂度本身都不是 `orchestrated` 的充分条件，且不为推荐提前完成计划级调查。
+
+默认 `Recommendation Source=agent-recommended`，计划可基于核实证据改选。用户明确指定偏好时写 `user-preferred`；计划不得静默改选，只有不安全、不可执行或有显著可靠性风险时才请求重新确认。快速路径不为了记录推荐而创建 spec。
+
 ## 选择审核模式
 
 完成风险分流后，根据当前复杂度推荐审核模式、审核复杂度和轮次上限，并让用户选择；用户已明确模式时直接采用。
@@ -50,7 +56,7 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 ## 正式设计流程
 
 1. **探索相关上下文**：查看与请求直接相关的文件、文档、项目规则和必要历史，不做无目的全库扫描。
-2. **确认范围**：只有能独立交付、独立批准和独立验收的子项目，才拆成各自的设计、计划和实现周期。共享同一最终验收或存在紧密实现依赖的多个模块保留在同一设计中，后续在一份计划内用 Task、DAG 和 Wave 拆分；不要保留一份 umbrella spec 后自动生成多份相互依赖的计划。
+2. **确认范围**：只有能独立交付、独立批准和独立验收的子项目，才拆成各自的设计、计划和实现周期。共享同一最终验收或存在紧密实现依赖的多个模块保留在同一设计中；后续由 `writing-plans` 选择 `direct` 或 `orchestrated`，只有后者使用 Task、DAG 和必要 Wave。不要保留一份 umbrella spec 后自动生成多份相互依赖的计划。
 3. **澄清关键问题**：优先问最会改变设计的问题，一次消息只问一个问题，即使其他问题彼此独立也不要打包成问卷。每题提供 2-3 个有实质差异的选项，明确推荐其中一项，并说明推荐理由如何对应已知目标、项目上下文或风险；用户也可以提出未列出的选项。收到回答后，先更新理解并判断是否仍有会改变设计的关键歧义；有则只问下一个最关键的问题，没有才进入方案比较或设计文档。不要根据对第一题的回答臆测其余需求，也不要在关键问题未澄清时先生成完整设计文档。
 4. **比较方案**：存在真实决策空间时给出 2-3 个方案、推荐和取舍；只有一个合理方案时直接说明原因。
 5. **展示设计**：简单设计一次完整展示；复杂设计可按架构、数据、交互或风险分段确认，不为短设计制造多轮批准。
@@ -99,6 +105,9 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 **审核复杂度（Review Complexity）：** `simple | medium | complex | not-applicable`
 **审核轮次（Review Rounds）：** `[已用轮次] / [上限：simple=1，medium=2，complex=3，no-review=0]`
 **独立审核（Independent Review）：** `not-requested`（`review`）或 `not-required`（`no-review`）
+**推荐执行模式（Recommended Execution Mode）：** `direct | orchestrated`
+**推荐理由：** [成果独立性、共享契约、隔离条件和协调净收益；不得只写“任务复杂”]
+**推荐来源（Recommendation Source）：** `agent-recommended | user-preferred`
 
 ## 目标与范围
 [要解决的问题、用户可见结果和明确不做的内容。]
@@ -127,7 +136,7 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 - `review-limit-reached revision N (last reviewed revision M)`
 - `skipped-by-user revision N`
 
-`reviewed revision N` 表示一轮 FULL reviewer 对该 revision 未提出阻塞问题。`review-limit-reached revision N (last reviewed revision M)` 表示第 M 个 revision 的最后可用审核轮提出问题，主 agent 已完成对当前 N 的定向修复和自检，但上限已耗尽，不能把它描述为已复审。`FOCUSED_SCOPE` 审核只能发现局部问题，不能单独作为整份 revision 的完成审核；若要推进门禁，必须由用户明确接受未覆盖部分或审核上限耗尽后的修复，并记录 `skipped-by-user revision N`。`review` 模式批准前必须是 `reviewed revision N` 或 `skipped-by-user revision N`，且 N 等于当前 `Spec Revision`；`no-review` 模式使用 `not-required`。`Spec Approval Revision` 为 `none` 或用户明确批准的当前 `Spec Revision`。任何为解决 reviewer “问题”所做的内容修复都递增 `Spec Revision`，把批准版本清为 `none` 并将审核状态重置为 `not-requested`；设计语义、范围或验收变化也遵循此规则。旧审核记录自然只覆盖旧 revision。只有格式修正、审核轮次和批准元数据更新不递增 revision。
+`reviewed revision N` 表示一轮 FULL reviewer 对该 revision 未提出阻塞问题。`review-limit-reached revision N (last reviewed revision M)` 表示第 M 个 revision 的最后可用审核轮提出问题，主 agent 已完成对当前 N 的定向修复和自检，但上限已耗尽，不能把它描述为已复审。`FOCUSED_SCOPE` 审核只能发现局部问题，不能单独作为整份 revision 的完成审核；若要推进门禁，必须由用户明确接受未覆盖部分或审核上限耗尽后的修复，并记录 `skipped-by-user revision N`。`review` 模式批准前必须是 `reviewed revision N` 或 `skipped-by-user revision N`，且 N 等于当前 `Spec Revision`；`no-review` 模式使用 `not-required`。`Spec Approval Revision` 为 `none` 或用户明确批准的当前 `Spec Revision`。任何为解决 reviewer “问题”所做的内容修复都递增 `Spec Revision`，把批准版本清为 `none` 并将审核状态重置为 `not-requested`；设计语义、范围、验收、推荐执行模式、推荐理由或推荐来源的新增、移除和变化也遵循此规则。旧审核记录自然只覆盖旧 revision。只有格式修正、审核轮次和批准元数据更新不递增 revision。
 
 ## 自检与独立审核
 
@@ -139,6 +148,7 @@ description: "在创建功能、组件、能力或修改行为前使用。先按
 4. 范围是否适合放入到单个执行计划内；不适合时先停止并与用户确认是否拆成独立子项目及独立 spec，不要直接从当前 spec 自动生成多份计划。
 5. 公共、外部或跨 Task 的接口、数据、错误、安全、兼容、迁移和幂等约束是否已固定，且没有提前设计无关的私有实现细节。
 6. 只读本文档的人是否无需重新猜测产品意图。
+7. 推荐执行模式是否基于独立成果、稳定契约、隔离和协调净收益，而非设计复杂度、审核模式或模块数量；用户偏好是否写为 `user-preferred`。
 
 `review` 模式使用同目录的 `spec-document-reviewer-prompt.md` 做 FULL 审核。每次派发前把 `审核轮次` 加一；同一 revision 最多一轮。reviewer 未提出“问题”时，写入 `reviewed revision N` 并停止审核。reviewer 提出问题时，主 agent 只修复 findings 并自检；任何解决问题的内容修复都递增 revision。若仍有剩余轮次，对修复后的当前 revision 自动派发下一轮；若已用尽上限，写入 `review-limit-reached revision N (last reviewed revision M)`，不再自动派发复审，并向用户说明最后一轮 findings、修复范围和当前版本尚未复审。只有用户明确接受该状态后，才改为 `skipped-by-user revision N` 并进入批准门禁。建议、格式改动和无阻塞审核结果不得触发下一轮。缺少可用 reviewer 时说明限制，由用户明确选择稍后审核或 `skipped-by-user revision N`，不得自行跳过。
 
@@ -155,5 +165,5 @@ Mockup、布局对比、架构图或空间关系确实更适合视觉呈现时�
 ## 下一步
 
 - 快速路径的单一任务可以直接实现。
-- 正式设计批准后，多步骤工作建议使用 `writing-plans`。
+- 正式设计批准后，多步骤工作建议使用 `writing-plans`；计划复核非绑定推荐并确定最终 `Execution Mode`。
 - 不自动切换 skill；由用户决定是否继续。

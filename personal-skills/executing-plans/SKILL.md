@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: 已有获批执行计划并准备实现时使用。按任务耦合度选择主 agent、单 worker 或安全并行，采用计划指定的测试或验证策略，实现、验收并按用户确认的策略提交。
+description: 已有获批执行计划并准备实现时使用。按计划的 direct 或 orchestrated 执行模式选择主 agent、worker 或安全并行，采用指定的测试或验证策略，实现、验收并按用户确认的策略提交。
 ---
 
 # 执行已批准计划
@@ -13,8 +13,9 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 2. 读取 `Plan Revision` 和 `Plan Approval Revision`，要求二者相等。兼容旧计划中的 `Plan Approval Status`：若存在且不是 `approved`，同样停止。
 3. 有来源 spec 时，从计划记录的精确路径读取当前 `Spec Revision` 和 `Spec Approval Revision`，要求二者相等，并确认计划记录的来源 revision 仍是当前版本。还要核验计划继承了 spec 的 `Review Mode`、`Review Complexity` 和 `Review Rounds` 上限，但计划的已用轮次独立计算。不要比较计划中遗留的整套 spec 状态副本。若计划没有来源 spec，只按计划自身的 `Review Mode`、`Review Complexity`、`Review Rounds`、`Plan Detail Level` 和 `Plan Revision` 继续，不要虚构 spec 元数据。
 4. 没有 spec 时，要求计划包含足以执行的“实现依据”。
-5. 检查 `Plan Detail Level`、关键实现契约、Task、依赖、验证策略和最终验收。旧计划没有 `Plan Detail Level` 时按 `standard` 评估，不要求仅为元数据迁移而重写。发现产品、范围或公共接口缺口时返回 `brainstorming`；发现实现者仍需发明关键签名/schema、行为分支、错误语义、状态转换、幂等/并发规则、接线位置、代表性测试或验证方式时返回 `writing-plans`，不得让 worker 自行补设计。
-6. 读取计划中的 `Review Mode`：`review` 执行最终 implementation review，`no-review` 跳过所有 subagent review；两种模式都保留主 agent 自检和用户批准门禁。`review` 的 `Review Complexity` 必须为 `simple`、`medium` 或 `complex`，且 `Review Rounds` 上限依次为 1、2 或 3；`no-review` 必须为 `not-applicable` 和 `0 / 0`。若计划有来源 spec，要求 plan 与 spec 的 `Review Mode`、`Review Complexity` 和轮次上限完全相同；若计划无来源 spec，则只按计划自身的这些字段、`Plan Detail Level` 和 `Plan Revision` 继续。若旧计划只有 `Workflow Review Mode`，把 `explore-review` 映射为 `review`、`lightweight` 映射为 `no-review`；若新旧字段同时存在且冲突，以新字段为准。`review` 必须有与当前门禁相关的 `Independent Review`：有来源 spec 时，来源 spec 与 plan 的当前 revision 都要满足各自审查状态；无来源 spec 时只要求 plan 的当前 revision 满足审查状态。`no-review` 必须为 `not-required`。不满足时停止并返回上游阶段。
+5. 读取 `Execution Mode`。新计划必须为 `direct` 或 `orchestrated`，且与 Task 结构一致；冲突时返回 `writing-plans`，不在执行阶段静默改选。旧计划缺失字段时，存在多个独立执行 Task、明确 DAG/Wave 调度表或独立 worker 指令则兼容为 `orchestrated`，否则为 `direct`。`wave-commits`、普通 Wave 文字和“单 Task 等同隐式 Wave 1”不是 orchestrated 证据；兼容推断不回写计划或触发 revision 迁移。
+6. 检查 `Plan Detail Level`、执行模式、关键实现契约、Task、依赖、验证策略和最终验收。旧计划没有 `Plan Detail Level` 时按 `standard` 评估，不要求仅为元数据迁移而重写。`direct` 必须是一个连贯 Task 和有序步骤，并固定范围、关键行为、调用与接线、边界案例、验证和禁止偏离；`orchestrated` 必须具备 Task Packet 所需的自包含信息。发现产品、范围或公共接口缺口时返回 `brainstorming`；发现实现者仍需发明关键签名/schema、行为分支、错误语义、状态转换、幂等/并发规则、接线位置、代表性测试或验证方式时返回 `writing-plans`，不得让执行者自行补设计。
+7. 读取计划中的 `Review Mode`：`review` 执行最终 implementation review，`no-review` 跳过所有 subagent review；两种模式都保留主 agent 自检和用户批准门禁。`review` 的 `Review Complexity` 必须为 `simple`、`medium` 或 `complex`，且 `Review Rounds` 上限依次为 1、2 或 3；`no-review` 必须为 `not-applicable` 和 `0 / 0`。若计划有来源 spec，要求 plan 与 spec 的 `Review Mode`、`Review Complexity` 和轮次上限完全相同；若计划无来源 spec，则只按计划自身的这些字段、`Plan Detail Level`、`Execution Mode` 和 `Plan Revision` 继续。若旧计划只有 `Workflow Review Mode`，把 `explore-review` 映射为 `review`、`lightweight` 映射为 `no-review`；若新旧字段同时存在且冲突，以新字段为准。`review` 必须有与当前门禁相关的 `Independent Review`：有来源 spec 时，来源 spec 与 plan 的当前 revision 都要满足各自审查状态；无来源 spec 时只要求 plan 的当前 revision 满足审查状态。`no-review` 必须为 `not-required`。不满足时停止并返回上游阶段。
 
 不要把多份计划自动解释成一个计划集、跨计划 DAG 或跨计划 Wave。存在多个候选时必须让用户明确指定；一次只执行当前明确指定且已批准的一份计划。用户要求统一编排相互依赖的多份计划时，返回 `writing-plans` 将它们合并为一份计划内的 Task、DAG 和 Wave；若它们应成为独立交付目标，则先返回 `brainstorming` 拆成各自的设计和验收。
 
@@ -22,16 +23,22 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 
 ## 提交策略
 
-执行前确定一次 `Commit Policy`：当前用户明确指令优先于计划记录；用户未表态且计划没有可信选择时询问，默认 `wave-commits`。把最终生效策略和来源写回计划或运行状态后再 dispatch；没有 run state 时更新计划元数据且不递增 Plan Revision。只有针对提交问题的回复才算确认。
+执行前确定一次 `Commit Policy`：当前用户明确指令优先于计划记录；用户未表态且计划没有可信选择时询问，默认 `wave-commits`。把最终生效策略和来源写回计划；仅 orchestrated 有运行状态时可写入运行状态，且不递增 Plan Revision。只有针对提交问题的回复才算确认。
 
-- `wave-commits`：由主 agent 在验证通过的 Wave 边界创建连贯 commit。通常每 Wave 一个；同一 Wave 有明显独立成果时可以拆成多个逻辑 commit。最后一个 Wave 的 commit 延迟到 implementation review、repair 和最终验收之后；实现审核后的代码修复使用带 finding ID 的 `repair-commit`；最终验收记录写入运行状态，不创建空的状态提交
+- `wave-commits`：`orchestrated` 由主 agent 在验证通过的 Wave 边界创建连贯 commit。通常每 Wave 一个；同一 Wave 有明显独立成果时可以拆成多个逻辑 commit。最后一个 Wave 的 commit 延迟到 implementation review、repair 和最终验收之后；实现审核后的代码修复使用带 finding ID 的 `repair-commit`，最终验收记录写入运行状态。`direct` 在 implementation review、主 agent 定向修复和最终验收后创建一个连贯 commit，并在会话最终报告中记录验收结果。
 - `no-commits`：不提交，也不创建 patch、evidence 或 boundary 替代工件
 
-不创建强制文档基线 commit，也不创建只包含复选框或完成状态的 finalization commit。Worker 不得进行任何 Git 写操作；只有主 agent 可以暂存和提交。若最终验收状态必须持久化到 plan，应与实际代码或 repair 一起提交；否则写入运行状态。
+不创建强制文档基线 commit，也不创建只包含复选框或完成状态的 finalization commit。Worker 不得进行任何 Git 写操作；只有主 agent 可以暂存和提交。仅 orchestrated 的最终验收状态写入运行状态；若必须持久化到 plan，应与实际代码或 repair 一起提交。direct 不创建 run state。
+
+`direct + wave-commits` 将整份 direct Task 作为一个隐式提交边界，通常在 implementation review、定向修复和最终验收后创建一个连贯 commit；`orchestrated` 保持按已验证 Wave 边界提交。
 
 在第一个实现 commit 前，用户可以改变策略。已有实现 commit 后不改写历史；如果用户改变后续提交意图，说明当前历史并确认后续处理方式。
 
 ## 协调执行
+
+`direct` 由主 agent 在连续上下文直接执行：不派发业务或 repair worker，不生成 Task Packet，不建立按 Wave 的 Todo 或临时 run state。主 agent 按计划的有序步骤实施，执行中只可核实计划明确允许延后的私有局部细节，不得改变公共契约、行为、范围或验收。
+
+以下 worker、Task Packet、Wave 和文件 ownership 规则仅适用于 `orchestrated`。
 
 多 Task、跨模块或包含 Wave 的计划默认由主 agent 协调，业务 Task 优先委派给 `general` worker。主 agent 负责调度、回收结果、更新 plan/TodoList/run state、多 worker Wave 的跨 Task 验证和提交，不直接实现业务 Task；单 worker Wave 的 Task 与 Wave 验证由该 worker 完成。修复优先委派 repair worker。repair worker 使用同一 `general` 类型，但必须带 `finding_id`、关联 Task、文件级 OWNED_SCOPE、允许/禁止修改范围、验收标准和验证命令。
 
@@ -52,19 +59,19 @@ description: 已有获批执行计划并准备实现时使用。按任务耦合�
 
 Worker 的 Task DoD 必须包括：自查完整 diff 和 OWNED_SCOPE、逐项通过 Task 验收、运行分配给它的验证命令并回传精确结果。单 worker Wave 的 worker 还必须运行该 Wave 的完整验证；多 worker Wave 中各 worker 只运行 Task 级验证，主 agent 在全部结果回收后运行跨 Task 接线、构建或集成检查。主 agent 不重复执行 worker 已完成的命令或逐行审 diff。
 
-单 Task 在执行语义上等同于隐式 `Wave 1`，但不因此强制委派。若由单 worker 执行，主 agent 在其 Task 与 Wave 验证全部通过后直接采信 DoD，不重跑测试或完整审 diff；共享契约和外部副作用应体现在分配给 worker 的验证与恢复规则中，不构成机械重跑理由。`wave-commits` 仍须在提交前检查提交边界；`review` 仍按模式执行最终 implementation review。
+单一 `orchestrated` Task 在执行语义上等同于隐式 `Wave 1`，但不因此强制委派。若由单 worker 执行，主 agent 在其 Task 与 Wave 验证全部通过后直接采信 DoD，不重跑测试或完整审 diff；共享契约和外部副作用应体现在分配给 worker 的验证与恢复规则中，不构成机械重跑理由。`wave-commits` 仍须在提交前检查提交边界；`review` 仍按模式执行最终 implementation review。
 
 Wave DoD：单 worker Wave 要求该 worker 的 Task 与 Wave 验证全部通过；多 worker Wave 要求所有 worker 均完成且无 `blocked|unknown`、范围和依赖正确、主 agent 的跨 Task 验证通过。失败或异常时暂停并分类，不自动重复派发。
 
-TodoList 只按 Wave 建项；Task 进度由 plan checkbox 和 run state 记录。Wave 完成后再更新 TodoList 和计划状态。
+`orchestrated` 的 TodoList 只按 Wave 建项；Task 进度由 plan checkbox 和 run state 记录。`direct` 使用一个实现 Todo 和必要的验证 Todo，不按有序步骤创建独立状态。Wave 完成后再更新 orchestrated TodoList 和计划状态。
 
-单一低风险 Task 可由主 agent 直接执行；只有当独立上下文、隔离或验收收益高于 Task Packet 与项目上下文的重复加载成本时才使用单 worker；至少两个真正独立且并行收益足够的 Task 才并行。相邻串行 Task 共享大量上下文时优先合并；不能合并且宿主支持续接 worker 会话时，复用同一 worker handle/session，而不是启动新 worker。共享工作树中以文件为最小写入边界，同一文件不得由两个 active worker 修改；符号级所有权只适用于独立 worktree/sandbox。并行前确认写入范围、共享契约和运行资源隔离；无法证明隔离时串行或使用独立 worktree/sandbox。
+`orchestrated` 中，单一低风险 Task 可由主 agent直接执行；只有当独立上下文、隔离或验收收益高于 Task Packet 与项目上下文的重复加载成本时才使用单 worker；至少两个真正独立且并行收益足够的 Task 才并行。相邻串行 Task 共享大量上下文时优先合并；不能合并且宿主支持续接 worker 会话时，复用同一 worker handle/session，而不是启动新 worker。共享工作树中以文件为最小写入边界，同一文件不得由两个 active worker 修改；符号级所有权只适用于独立 worktree/sandbox。并行前确认写入范围、共享契约和运行资源隔离；无法证明隔离时串行或使用独立 worktree/sandbox。
 
 ## 最小运行状态
 
-普通直接执行和单 worker 任务使用按 Wave 的会话 Todo 与计划 Task 复选框即可，不创建额外状态目录。
+`direct` 在任何情况下都不创建 run directory 或 run state，只使用普通实现/验证 Todo 并在会话最终报告记录验收；单 worker orchestrated 任务不创建额外状态目录，使用按 Wave 的会话 Todo 与计划 Task 复选框。
 
-只有并行 worker、长时间任务或非幂等外部副作用确实需要中断对账时，才在当前仓库解析出的 Git 元数据路径下创建一个临时 run 目录，例如：
+只有 orchestrated 的并行 worker、长时间任务或非幂等外部副作用确实需要中断对账时，才在当前仓库解析出的 Git 元数据路径下创建一个临时 run 目录，例如：
 
 ```text
 git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
@@ -88,14 +95,14 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 
 1. **读取项目规则和计划**：检查相关 `AGENTS.md`、贡献说明、现有架构、测试风格和可用命令。
 2. **建立当前基线**：记录 `HEAD`、Git status 和本次相关 changed paths。发现 Task 涉及的路径已有无法区分的修改时询问用户，不尝试复杂的自动回滚。
-3. **选择执行方式并物化 Task Packet**：按上节决定主 agent、单 worker 或有界并行；需要委派时展开引用契约、现有锚点、行为案例、实施要点和项目约束，确认 Packet 自包含且带上 dispatch revision 后再 dispatch。
-4. **执行 Task**：只修改当前 Task 范围，采用计划指定的验证策略，不添加无关重构、抽象或依赖。
-5. **回收 Task**：在接受结果前重新读取当前 Plan Revision；有来源 spec 时同时读取当前 Spec Revision。检查 worker DoD、回传结果、范围和 dispatch revision 是否一致；单 worker Wave 确认其 Task 与 Wave 验证均已通过，不重复执行命令；revision 不一致时阻塞。
-6. **验证 Wave**：同一 Wave 有多个 worker 时，主 agent 只运行计划指定的跨 Task 接线、构建或集成检查；单 worker Wave 不再由主 agent重复验证。失败时先分类根因，不自动生成 synthetic Remediation Waves。
-7. **提交边界**：`wave-commits` 下由主 agent 提交已验证的连贯改动，最后一个 Wave 延迟提交；`no-commits` 保留工作树修改。提交失败时不进入下一 Wave。
-8. **审核实现**：`review` 模式在全部 Task 完成后运行一轮 implementation reviewer；若给定 `FOCUSED_SCOPE`，只能作为局部检查，不能替代整份 revision 的完整审核，必须覆盖全部本次 changed paths 及相关回归。reviewer 检查当前实现和已有证据，不要求尚未运行的最终验证。主 agent 分类，implementation findings 委派 repair worker 修复并重跑受影响验证，plan/design findings 返回上游，不自动复审。`no-review` 模式跳过该步骤。
-9. **最终验收**：在全部 repair 完成后运行计划中的完整最终检查，记录精确命令和结果；无 repair 时也必须运行。只有整份计划为单 Task/单 Wave，且计划明确声明该 worker 已完成的 Wave 验证与最终验收完全等价时，才复用其结果而不重复执行；多 Wave 计划仍由主 agent 运行计划级最终验收。
-10. **最终状态**：最终验收通过后记录运行状态；最后一个 Wave 的计划 checkbox 可随最终代码 commit 一起更新，不能为 checkbox 单独创建提交；`wave-commits` 下必要的 repair 使用 `repair-commit`。
+3. **选择执行方式**：`direct` 由主 agent 使用计划的有序步骤直接实施；`orchestrated` 按上节选择单 worker 或有界并行，需要委派时物化自包含 Task Packet 并附 dispatch revision。
+4. **执行 Task**：只修改当前范围，采用计划指定的验证策略，不添加无关重构、抽象或依赖。
+5. **回收或自检**：`direct` 由主 agent 检查有序步骤、范围和 Task 验收；`orchestrated` 在接受 worker 结果前重新读取当前 Plan Revision 和来源 Spec Revision，检查 DoD、范围和 dispatch revision。revision 不一致时阻塞。
+6. **验证**：`direct` 运行 Task 指定验证；`orchestrated` 的多 worker Wave 由主 agent 只运行跨 Task 接线、构建或集成检查，单 worker Wave 不重复验证。失败时先分类根因，不自动生成 synthetic Remediation Waves。
+7. **提交边界**：`direct + wave-commits` 在审核、修复和最终验收后提交整份连贯 Task；`orchestrated + wave-commits` 在已验证 Wave 边界提交，最后一个 Wave 延迟提交；`no-commits` 保留工作树修改。提交失败时不进入后续工作。
+8. **审核实现**：`review` 模式在全部 Task 完成后运行一轮 implementation reviewer，dispatch 时传入 `Execution Mode`。`direct` 的 implementation finding 由主 agent 在原范围内定向修复并重跑受影响验证；`orchestrated` 的 implementation finding 委派 repair worker。plan/design finding 返回上游，不自动复审。`no-review` 模式跳过该步骤。
+9. **最终验收**：在全部修复完成后运行计划中的完整最终检查，记录精确命令和结果；无修复时也必须运行。只有 `orchestrated` 单 Task/单 Wave 且计划明确声明 worker Wave 验证与最终验收完全等价时，才复用其结果而不重复执行。
+10. **最终状态**：最终验收通过后记录必要状态；`direct` 不创建 run state，最后一个 Task checkbox 只能与实际代码或修复一起提交。`orchestrated` 按既有 run state 和 Wave 提交规则更新。
 11. **报告结果**：列出变更、验证、审核、提交和偏离；清理当前 run 临时状态。
 
 ## 测试与验证纪律
@@ -118,7 +125,7 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 - **当前 Task 内的实现问题**：在原范围内做定向修复并重跑验证；无需创建新的 synthetic Task 或 Wave
 - **flaky、环境或既有失败**：确认来源，能安全处理则处理；否则阻塞并报告，不把它伪装成代码修复
 - **需要新增文件、依赖、行为、验收或任务**：返回 `writing-plans`
-- **Task Packet 无法固定关键实现决策**：返回 `writing-plans` 补充契约、锚点、案例或接线信息，不让 worker 猜测
+- **orchestrated Task Packet 无法固定关键实现决策**：返回 `writing-plans` 补充契约、锚点、案例或接线信息，不让 worker 猜测
 - **产品意图、范围、数据或安全决策变化**：返回 `brainstorming`，批准后再更新计划
 
 机械调整可以直接继续，例如现有代码要求等价命名或路径变化。无法保持设计与验收不变时停止，不自行猜测。
@@ -137,15 +144,15 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 `Review Mode=review` 时，在全部 Task 完成后使用 `implementation-reviewer-prompt.md`：
 
 - 对当前实现做一轮独立审核
-- 每个 implementation finding 委派带 `finding_id` 的 repair worker，限定文件级 OWNED_SCOPE，并重跑受影响验证
+- `direct` 的 implementation finding 由主 agent 在原范围内定向修复并重跑受影响验证；`orchestrated` 才委派带 `finding_id` 的 repair worker，限定文件级 OWNED_SCOPE
 - plan/design finding 返回 writing-plans 或 brainstorming，不让 repair worker 改变依据
 - 修复后不自动派发复审
 
-`Review Mode=no-review` 时只做主 agent 的 Wave 范围和验收确认；单 Task Wave 不重跑 worker 已完成的 Task 级测试或完整审 diff，但仍必须执行最终验收。Reviewer 发现 plan 或 design 问题时返回对应上游，不让实现 worker 自行改变依据。
+`Review Mode=no-review` 时，`direct` 只做主 agent 的范围和验收确认；`orchestrated` 只做主 agent 的 Wave 范围和验收确认，单 Task Wave 不重跑 worker 已完成的 Task 级测试或完整审 diff，但两种模式都必须执行最终验收。Reviewer 发现 plan 或 design 问题时返回对应上游，不让实现 worker 自行改变依据。
 
 ## 进度与最终回复
 
-只在 Task 实现和验证通过后勾选 Task，并填写 `完成版本`；多步骤内部过程不要求逐命令实时勾选。最终验收结果写入 run state；只有能与最后一个 Wave 或 repair commit 一起提交时才更新计划 checkbox。
+只在 Task 实现和验证通过后勾选 Task，并填写 `完成版本`；多步骤内部过程不要求逐命令实时勾选。`direct` 在会话中记录最终验收结果，不创建 run state；`orchestrated` 将最终验收结果写入 run state。只有能与实际代码、最后一个 Wave 或 repair commit 一起提交时才更新计划 checkbox。
 
 最终报告包括：
 
@@ -159,7 +166,7 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 - `command / 人工步骤`：PASS/FAIL 和关键结果
 
 审核：
-- [no-review：主 agent 协调验收 | review：一轮独立审核、主 agent 委派修复并重跑受影响验证，不复审]
+- [no-review：主 agent 验收 | review：一轮独立审核、direct 由主 agent 修复或 orchestrated 委派修复并重跑受影响验证，不复审]
 
 提交：
 - [commit 列表 | 未提交]

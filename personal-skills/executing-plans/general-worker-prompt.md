@@ -1,6 +1,6 @@
 # `general` Worker 提示词
 
-仅在执行器决定某个 Task 适合独立委派或安全并行时使用。每个 worker 完成一个边界清晰的 Task。
+仅在 `Execution Mode=orchestrated` 且执行器决定某个 Task 适合独立委派或安全并行时使用。每个 worker 完成一个边界清晰的 Task；`direct` 不得使用本提示词。
 
 ```text
 你是 `general` worker。只完成指定 Task，并返回实现和验证结果。

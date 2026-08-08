@@ -1,6 +1,6 @@
 # 实现审核提示词
 
-仅在 `Review Mode=review` 且全部执行 Task 完成后使用。Reviewer 只读审核当前实现；主 agent 委派 repair worker 修复 findings 后重跑受影响验证，不自动复审。若提供 `FOCUSED_SCOPE`，只能把它当作局部检查，不能把结果当成整份 revision 的完成审核。
+仅在 `Review Mode=review` 且全部执行 Task 完成后使用。Reviewer 只读审核当前实现；`direct` finding 由主 agent 修复，`orchestrated` finding 才由 repair worker 修复，之后重跑受影响验证且不自动复审。若提供 `FOCUSED_SCOPE`，只能把它当作局部检查，不能把结果当成整份 revision 的完成审核。
 
 ```text
 Task tool（优先使用宿主或项目配置的审核 subagent，未指定时使用 `explore`）：
@@ -14,6 +14,7 @@ Task tool（优先使用宿主或项目配置的审核 subagent，未指定时�
     实现基线：[BASELINE_HEAD_OR_DESCRIPTION]
     本次 changed paths：[CHANGED_PATHS]
     验证结果：[VERIFICATION_RESULTS]
+    执行模式：[EXECUTION_MODE：direct | orchestrated]
     审核范围：[FULL 或用户明确指定的 FOCUSED_SCOPE]
     审核覆盖说明：`FULL` 才能作为整份 revision 的完成审核；`FOCUSED_SCOPE` 只发现局部问题，不能单独推进门禁，除非用户明确接受未覆盖部分。
 
@@ -32,7 +33,7 @@ Task tool（优先使用宿主或项目配置的审核 subagent，未指定时�
     - implementation：原计划范围内的代码、测试或验证修复
     - plan：任务、依赖或验收计划有缺口
     - design：产品、范围、公共接口、数据或安全决策需要改变
-    - implementation finding 的文件级修复范围、验收标准和验证命令，供 repair worker 使用
+    - implementation finding 的文件级修复范围、验收标准和验证命令；`direct` 供主 agent 定向修复，`orchestrated` 供 repair worker 使用
 
     输出：
     ## 实现审核

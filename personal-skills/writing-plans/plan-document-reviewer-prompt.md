@@ -18,25 +18,29 @@ Task tool（优先使用宿主或项目配置的审核 subagent，未指定时�
 
     如果来源设计是真实 spec：检查 `Review Mode`、`Review Complexity` 和轮次上限是否原样继承来源 spec，以及来源 spec 的审核状态是否满足当前 revision。若来源设计是无 spec 的实现依据：只检查计划本身的 `Review Mode`、`Review Complexity`、`Review Rounds`、`Plan Detail Level`、任务结构和验证，不要求任何 spec 级字段。
 
+    先读取计划的 `Execution Mode`。旧计划缺失该字段时，根据多个独立执行 Task、明确 DAG/Wave 调度表或独立 worker 指令判断为 `orchestrated`，否则为 `direct`；`wave-commits`、普通 Wave 文字或“隐式 Wave 1”不是 orchestrated 证据。
+
     检查：
     - 若存在来源 spec，则 `Review Mode`、`Review Complexity` 和轮次上限是否原样继承来源 spec；来源 spec 的 `Independent Review` 是否覆盖当前 spec revision，`no-review` 是否为 `not-required`
+    - 计划是否记录最终 `Execution Mode` 和模式依据；来源 spec 的 `agent-recommended` 是否只作为可复核的非绑定推荐，`user-preferred` 是否未被静默覆盖，旧 spec 缺少推荐字段时是否按未提供推荐处理
     - 需求、Task 和最终验收是否完整对应，是否有范围蔓延
-    - Task 是否拥有完整 DoD、足以承担一次 worker 上下文，而不是按命令、文件或 TDD 步骤机械拆分
+    - `direct` 是否使用一个连贯 Task 与有序步骤，且固定范围、关键行为、调用与接线、边界案例、验证和禁止偏离；只有可从锚点唯一推导、私有且局部、不会改变行为/范围/验收的细节可留给执行阶段
+    - `orchestrated` 的 Task 是否拥有完整 DoD、足以承担一次 worker 上下文，而不是按命令、文件或 TDD 步骤机械拆分
     - `Plan Detail Level` 是否为 `standard` 或 `guided` 且理由成立；`guided` 是否真正增加关键骨架、调用顺序、样例、断言和禁止偏离项，`standard` 是否仍包含必要契约
     - 关键实现契约是否固定相关的签名/schema、行为分支、错误语义、状态转换、幂等/并发规则和接线位置；实现者是否仍需自行发明会影响正确性的决策
     - 引用的路径、符号、测试风格、命令和现有模式是否真实且适用；greenfield 是否明确新建契约及约束来源而没有虚构锚点；计划中的代码骨架、类型和名称是否前后一致
     - 每个行为型 Task 是否包含代表性正常案例和重要失败/边界案例及可判定断言；非行为型 Task 是否提供对应的渲染、构建、搜索或回归案例
-    - Task 是否包含精确的必读上下文和读取目的，引用的共享契约是否足以在执行时内联成自包含任务包
+    - Task 是否包含精确的必读上下文和读取目的；`orchestrated` 的共享契约是否足以在执行时内联成自包含任务包，`direct` 的单一 Task 是否已固定关键契约、接线和验证
     - 测试驱动、验证驱动、混合或探索策略是否适合任务场景
     - 配置、文档、视觉、迁移、机械重构等任务是否被不必要地强制 TDD
-    - DAG 是否无环；是否利用了子工程、独立模块和稳定契约后的安全并行边界
-    - 并行 Task 的文件级写入范围、读取状态和运行资源是否真正隔离；共享工作树禁止同一文件并行写入
-    - Task/Wave 是否因文件、命令或流程步骤被机械拆分，导致重复加载上下文；只有并行、隔离或独立验收收益高于委派成本时才应使用独立 worker
-    - 没有并行是否有合理原因；未利用的纯性能优化只能作为建议
-    - 单 worker Wave 是否由该 worker 完成 Task 与 Wave 验证，多 worker Wave 是否只把跨 Task 集成验证留给主 agent，避免重复运行 Task 级检查
+    - `orchestrated` 的 DAG 是否无环；是否利用了子工程、独立模块和稳定契约后的安全并行边界
+    - `orchestrated` 的并行 Task 文件级写入范围、读取状态和运行资源是否真正隔离；共享工作树禁止同一文件并行写入
+    - `orchestrated` 的 Task/Wave 是否因文件、命令或流程步骤被机械拆分，导致重复加载上下文；只有并行、隔离或独立验收收益高于委派成本时才应使用独立 worker
+    - `direct` 不要求 DAG、Wave 或证明已经利用所有并行机会；除用户明确偏好外，只有独立成果、稳定或可先稳定的契约、资源隔离和协调净收益四项同时成立，且模式错误会实质影响执行可靠性或成本时，才把应改为 `orchestrated` 列为问题
+    - `orchestrated` 的单 worker Wave 是否由该 worker 完成 Task 与 Wave 验证，多 worker Wave 是否只把跨 Task 集成验证留给主 agent，避免重复运行 Task 级检查
     - 验收命令、人工步骤和预期结果是否足以判定完成
     - 只有真实外部或非幂等副作用才需要专门恢复策略
-    - 提交策略是否记录最终有效策略和来源，是否包含 repair commit 边界但没有扭曲 Task 边界
+    - 提交策略是否记录最终有效策略和来源；`orchestrated` 是否包含 repair commit 边界且不扭曲 Task 边界，`direct` 是否在审核、定向修复和最终验收后形成一个连贯提交而不要求 repair commit
 
     只把会导致错误、数据/安全风险、执行者必须重新设计、无法执行或无法验收的问题列为阻塞。不要因为计划没有粘贴普通样板代码而阻塞；大段重复实现、措辞和可选优化列为建议。
 

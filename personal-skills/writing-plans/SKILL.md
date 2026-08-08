@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: 已有获批设计或明确需求、工作确实包含多个步骤、依赖或并行机会且尚未实现时使用。按连贯成果拆 Task，按场景选择测试驱动或验证驱动，再组织必要的依赖 Wave。
+description: 已有获批设计或明确需求、工作确实包含多个步骤、依赖或并行机会且尚未实现时使用。先选择 direct 或 orchestrated 执行模式，再按场景选择测试驱动或验证驱动；仅在有协调净收益时组织 Task、依赖和 Wave。
 ---
 
 # 编写可执行计划
@@ -22,15 +22,27 @@ description: 已有获批设计或明确需求、工作确实包含多个步骤�
 
 ## 输入与门禁
 
-优先使用用户给出的精确 spec 路径，其次使用当前对话明确批准的设计。存在 spec 时读取其 `Spec Revision`、`Spec Approval Revision`、`Review Mode`、`Review Complexity` 和 `Review Rounds`，只有批准版本相等才能基于它写计划；`review` 模式还要求 `Independent Review` 为当前 revision 的 `reviewed revision N`（仅 FULL 审核）或用户明确的 `skipped-by-user revision N`，`no-review` 模式要求 `not-required`。计划必须原样复制 spec 的 `Review Mode`、`Review Complexity` 和轮次上限，但计划自身的已用轮次从 `0` 开始，不得沿用 spec 已消耗的轮次。来源内容在计划批准前发生实质变化时重新生成受影响部分。
+优先使用用户给出的精确 spec 路径，其次使用当前对话明确批准的设计。存在 spec 时读取其 `Spec Revision`、`Spec Approval Revision`、`Review Mode`、`Review Complexity` 和 `Review Rounds`，只有批准版本相等才能基于它写计划；`review` 模式还要求 `Independent Review` 为当前 revision 的 `reviewed revision N`（仅 FULL 审核）或用户明确的 `skipped-by-user revision N`，`no-review` 模式要求 `not-required`。计划必须原样复制 spec 的 `Review Mode`、`Review Complexity` 和轮次上限，但计划自身的已用轮次从 `0` 开始，不得沿用 spec 已消耗的轮次。读取 `Recommended Execution Mode`、推荐理由和 `Recommendation Source` 作为计划层输入；旧 spec 缺少任一字段时视为未提供推荐，不阻塞也不迁移。来源内容在计划批准前发生实质变化时重新生成受影响部分。
 
 没有 spec 时，只要需求、约束和验收已经明确，或用户明确选择跳过正式设计，就可以继续。在当前对话尚未确定 `Review Mode` 时，先按复杂度推荐 `review` 或 `no-review`，以及 `simple`（1 轮）、`medium`（最多 2 轮）或 `complex`（最多 3 轮）的审核复杂度，让用户选择后再写计划；`no-review` 使用 `not-applicable` 和 `0 / 0`。在计划中写一个简短的“实现依据”章节，不要制造虚拟 spec 状态；无 spec 路径也必须在计划中持久化用户选择。
 
 发现缺失的产品、UX、数据、安全或公共接口决策时，停止并返回 `brainstorming`；实现细节可以在不改变用户意图的前提下由计划确定。
 
+## 选择执行模式
+
+在深入研究 Task DAG 和 Wave 前，只做足以核实成果边界、共享上下文、写入范围、依赖和隔离条件的定向调查并确定最终 `Execution Mode`。
+
+- `agent-recommended` 可基于核实证据沿用或改选并记录理由；`user-preferred` 必须沿用，除非不安全、不可执行或有显著可靠性风险，此时请求重新确认。
+- 无推荐或证据不足时默认 `direct`。
+- 只有至少两个独立连贯成果、共享契约已经稳定或可先稳定、写入范围和运行资源可隔离、且委派/并行/专业上下文/独立验收存在净收益四项同时成立时，才选择 `orchestrated`。设计风险、模块数量、审核模式或计划详细度不单独决定模式。
+
+`direct` 使用一个连贯 Task 和有序步骤，不建立 DAG、Wave、并行边界、worker ownership、Task Packet 或 Wave 验证责任。`orchestrated` 保留完整 Task、DAG、必要 Wave、跨 Task 契约、文件级写入范围、资源隔离、独立 DoD 和 Task Packet 协议，但不强制最大并行。
+
+`Execution Mode` 或模式依据变化属于实质计划修订，必须递增 `Plan Revision`、清空批准版本并重置受影响 Task。
+
 ## 计划边界
 
-一份获批 spec 默认生成一份执行计划。多步骤、跨模块依赖和并行机会应在该计划内部通过 Task、DAG 和 Wave 表达。
+一份获批 spec 默认生成一份执行计划。`orchestrated` 计划通过 Task、DAG 和 Wave 表达多步骤、跨模块依赖和并行机会；`direct` 计划通过一个连贯 Task 的有序步骤表达。
 
 只有来源已经拆成多份独立获批 spec，或用户明确要求分别规划，并且每个子项目都能独立交付、批准和验收时，才生成多份计划。每份计划分别绑定自己的来源与批准；不要从一份 umbrella spec 自动创建多份相互依赖的计划，也不要构造跨计划 DAG、Wave 或统一执行顺序。若多个成果不能独立验收，或依赖另一计划的中间状态，保留为一份计划；来源设计边界需要改变时返回 `brainstorming`。
 
@@ -55,12 +67,14 @@ description: 已有获批设计或明确需求、工作确实包含多个步骤�
 
 只有针对该提交问题的明确回复才算确认；用户在看到选项后直接回复“继续”或“按默认”，可视为选择默认。把选择和来源写入计划。
 
-- `wave-commits`：主 agent 在验证通过的 Wave 边界提交连贯改动。通常每 Wave 一个 commit；最后一个 Wave 的提交延迟到 implementation review、repair 和最终验收之后。实现审核后的代码修复使用 `repair-commit`，最终验收状态写入运行状态；不创建只包含状态的 finalization commit
+- `wave-commits`：`orchestrated` 计划由主 agent 在验证通过的 Wave 边界提交连贯改动，通常每 Wave 一个 commit；`direct` 计划将整份连贯 Task 作为一个提交边界。两种模式的最后一个提交都延迟到 implementation review、repair 或定向修复和最终验收之后。只有 orchestrated 的实现审核修复使用 `repair-commit` 且最终验收状态写入运行状态；direct 在会话最终报告中记录验收，不创建 run state 或只含状态的 finalization commit
 - `no-commits`：不创建 commit，也不生成 patch、evidence 或 boundary 替代工件
 
 Wave 是依赖和调度边界，不应为了满足提交数量反向改变 Task 拆分。
 
 ## Task 拆分与并行
+
+本节仅适用于 `orchestrated`。`direct` 不需要为调查并行边界或满足本节而机械拆分 Task。
 
 目标是缩短依赖关键路径，不是增加 Task 数量。Task 应是值得占用一次完整 worker 上下文、并拥有独立 DoD 的最小连贯成果。
 
@@ -77,7 +91,7 @@ Wave 是依赖和调度边界，不等于必须启动新 worker。委派会产�
 
 ## 实现充分性门禁
 
-写计划前读取每个目标区域最相关的现有实现和测试，记录可复用模式。不要只根据 spec 猜测文件名、符号、命令或框架习惯。greenfield 区域没有现有锚点时明确写“新建契约”，并以获批 spec、项目级约定和已核实的框架/API 文档为依据，不得虚构参考文件或符号。
+模式选定后，读取每个目标区域最相关的现有实现和测试，记录可复用模式。不要只根据 spec 猜测文件名、符号、命令或框架习惯。greenfield 区域没有现有锚点时明确写“新建契约”，并以获批 spec、项目级约定和已核实的框架/API 文档为依据，不得虚构参考文件或符号。
 
 把会影响行为正确性、且无法从指定现有锚点唯一推导的内容视为**高熵决策**。以下相关项必须由计划固定：
 
@@ -89,6 +103,8 @@ Wave 是依赖和调度边界，不等于必须启动新 worker。委派会产�
 - 必须沿用的现有实现模式，以及明确禁止的兼容层、抽象、依赖或范围外改动
 
 若实现者仍需自行发明上述任何相关决策，计划尚未完成。若这些内容属于产品、公共接口、数据或安全决策且来源未确定，返回 `brainstorming`；若只是实现细节，计划作者在不改变用户意图的前提下确定并记录。
+
+`direct` 仍须固定范围、关键行为、公共或跨模块契约、调用方、注册、导出、依赖注入、路由、迁移和跨模块接线、重要边界案例、验证和禁止偏离项。只有能从已核实锚点唯一推导、私有且局部、不会改变行为、范围或验收的 helper 名称、文件内控制流、样板实现和测试组织，才可由主 agent 在执行中确定。
 
 普通 CRUD、样板 JSX、简单字段映射和可从明确现有锚点唯一推导的代码不需要展开。对这些内容给出精确锚点和差异即可，例如 `src/orders/create.ts:createOrder`，并说明复用哪个模式、改变什么；greenfield 则说明新建边界和约束来源。
 
@@ -113,6 +129,8 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 选择测试驱动时，失败必须来自目标行为尚未满足，而不是故意制造语法错误或不存在的符号。Red、Green 和必要重构属于同一 Task 的内部过程，不需要分别成为计划复选框。
 
 ## 并行与 Wave
+
+本节仅适用于 `orchestrated`。`direct` 没有显式或隐式 Wave；不要将其单一 Task 描述为 `Wave 1`。
 
 多 Task 计划才需要在文档中列出 Wave。单 Task 在执行语义上等同于隐式 `Wave 1`，但不因此强制委派。`Wave 1` 包含没有未满足依赖、并且并行收益高于协调成本的 Task；后续 Wave 依此类推。
 
@@ -142,6 +160,8 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 **审核轮次（Review Rounds）：** `[已用轮次] / [上限：simple=1，medium=2，complex=3，no-review=0]`
 **独立审核（Independent Review）：** `not-requested`（`review`）或 `not-required`（`no-review`）
 **计划详细度（Plan Detail Level）：** `[standard | guided]，理由：[默认 | 用户明确要求 | 复杂度理由]`
+**执行模式（Execution Mode）：** `direct | orchestrated`
+**模式依据：** [来源推荐及来源；沿用理由，或允许改选时的依赖、隔离与协调净收益证据]
 **提交策略（Commit Policy）：** `[wave-commits | no-commits]，来源：[用户明确选择 | 用户确认默认]`
 
 **最终验收：**
@@ -150,7 +170,7 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 
 计划只保存稳定设计和任务信息，不保存 `Execution State`、`Resume Point`、`Execution Blocker`、临时目录或 worker lease。运行时进度由执行器维护；Task 复选框只在对应实现和验证完成后更新。
 
-`Independent Review` 使用 `not-required`、`reviewed revision N`、`review-limit-reached revision N (last reviewed revision M)` 或 `skipped-by-user revision N`；旧计划的 `not-requested` 只可作为未完成的 `review` 状态。`reviewed revision N` 表示一轮 FULL reviewer 对该 revision 未提出阻塞问题。`review-limit-reached revision N (last reviewed revision M)` 表示第 M 个 revision 的最后可用审核轮提出问题，主 agent 已完成对当前 N 的定向修复和自检，但上限已耗尽，不能把它描述为已复审。`FOCUSED_SCOPE` 审核不能单独作为整份 revision 的门禁完成；若要推进门禁，必须由用户明确接受未覆盖部分或审核上限耗尽后的修复，并记录 `skipped-by-user revision N`。`review` 模式批准前必须满足当前 revision 的审核门禁。任何为解决 reviewer “问题”所做的内容修复都递增 `Plan Revision` 并把批准版本清为 `none`；计划详细度、关键实现契约、Task、依赖、验收或行为变化也遵循此规则。受影响 Task、所有依赖后继和最终验收必须重置为未完成，并记录 `完成版本`。对已产生的非幂等副作用优先增加纠正 Task，不自动重跑原 Task。只有格式、复选框、审核轮次和批准元数据更新不递增 revision。
+`Independent Review` 使用 `not-required`、`reviewed revision N`、`review-limit-reached revision N (last reviewed revision M)` 或 `skipped-by-user revision N`；旧计划的 `not-requested` 只可作为未完成的 `review` 状态。`reviewed revision N` 表示一轮 FULL reviewer 对该 revision 未提出阻塞问题。`review-limit-reached revision N (last reviewed revision M)` 表示第 M 个 revision 的最后可用审核轮提出问题，主 agent 已完成对当前 N 的定向修复和自检，但上限已耗尽，不能把它描述为已复审。`FOCUSED_SCOPE` 审核不能单独作为整份 revision 的门禁完成；若要推进门禁，必须由用户明确接受未覆盖部分或审核上限耗尽后的修复，并记录 `skipped-by-user revision N`。`review` 模式批准前必须满足当前 revision 的审核门禁。任何为解决 reviewer “问题”所做的内容修复都递增 `Plan Revision` 并把批准版本清为 `none`；计划详细度、执行模式、模式依据、关键实现契约、Task、依赖、验收或行为变化也遵循此规则。受影响 Task、所有依赖后继和最终验收必须重置为未完成，并记录 `完成版本`。对已产生的非幂等副作用优先增加纠正 Task，不自动重跑原 Task。只有格式、复选框、审核轮次和批准元数据更新不递增 revision。
 
 ## 必备章节
 
@@ -165,7 +185,7 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 [用 `C1`、`C2` 编号定义后续 Task 共享或容易猜错的接口、schema、行为表、错误语义、状态转换、接线点、代表性测试和禁止偏离项；简单计划也要说明完全沿用的现有锚点及唯一差异，greenfield 则说明新建契约及约束来源。]
 
 ## 任务与依赖
-[多 Task 时用表格列出 Task、依赖、Wave、建议执行方式和并行理由；单 Task 可省略 Wave 表。]
+[`direct`：说明单一连贯 Task 的有序步骤；`orchestrated`：用表格列出 Task、依赖、Wave、建议执行方式和并行理由。]
 
 ## 执行任务
 [按依赖顺序写 Task。]
@@ -205,6 +225,42 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 ## Task 模板
 
 只保留有信息量的字段。不相关的字段直接省略，不要填一串“无”。
+
+`direct` 使用一个连贯 Task，省略 worker、Wave 和并行字段：
+
+```markdown
+### [ ] Task 1：[连贯成果]
+
+**目标与范围：** [完成后成立什么，不做什么]
+**涉及文件与符号：** [精确路径加目标符号/章节]
+**必读上下文：** [精确 `path:symbol/section` 及读取目的]
+**引用契约：** [关键实现契约；没有独立契约时省略]
+**依赖与接线点：** [调用方、注册/导出/路由/注入/迁移位置，以及必须先后发生的步骤]
+
+**有序实施步骤：**
+1. [先核实或修改什么]
+2. [后续实现或接线]
+3. [验证和收尾]
+
+**行为与测试案例：**
+
+| 场景 | 输入/准备 | 预期结果或断言 |
+|------|-----------|----------------|
+| [代表性正常场景] | [具体输入/fixture] | [可判定断言] |
+| [重要失败或边界场景] | [具体输入/fixture] | [错误、状态或副作用断言] |
+
+**禁止偏离：**
+- [不得改变的接口、行为、依赖或范围外事项]
+
+**验收标准：**
+- [可判定结果]
+
+**验证策略：** [测试驱动 | 验证驱动 | 混合验证 | 探索验证，以及选择理由]
+**验证：**
+- `[精确命令或人工步骤]`，预期 `[结果]`
+```
+
+`orchestrated` 使用以下模板：
 
 ```markdown
 ### [ ] Task N：[连贯成果]
@@ -257,13 +313,14 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 1. 每个需求是否映射到 Task 和验证，是否存在范围蔓延。
 2. Task 是否按连贯成果拆分，而不是按命令、文件或 TDD 步骤机械拆分。
 3. 每个 Task 的验证策略是否适合场景；不应有的 TDD 是否被移除。
-4. 依赖 DAG 是否无环，Wave 是否安全且有实际并行收益。
+4. `orchestrated` 的依赖 DAG 是否无环，Wave 是否安全且有实际并行收益；`direct` 是否确实不满足完整四项 orchestrated 条件，且没有被错误要求建立 DAG/Wave。
 5. 验收是否包含精确命令、可观察状态或人工步骤及预期结果。
 6. 只有存在真实外部副作用的 Task 才要求恢复策略。
 7. 提交策略是否已由用户确认，但没有反向支配 Task 边界。
 8. 每个高熵决策是否已在关键实现契约或 Task 中固定；实现者是否仍需发明接口、分支、错误、状态转换或接线位置。
 9. 计划引用的文件、符号、命令和现有模式是否已从当前代码库核实；greenfield 是否明确新建依据，而不是根据命名习惯虚构锚点。
 10. `guided` 计划是否提供足够的代码骨架、调用顺序、样例和断言，同时没有退化成完整 patch；`standard` 是否仍包含必要契约，而不是任务清单。
+11. `direct` 是否只延后可从已核实锚点唯一推导、私有且局部的细节，并固定关键调用和接线；`orchestrated` 是否具备 Task Packet 所需的自包含信息。
 
 `review` 模式使用 `plan-document-reviewer-prompt.md` 做 FULL 审核。每次派发前把 `审核轮次` 加一；同一 revision 最多一轮。reviewer 未提出“问题”时，写入 `reviewed revision N` 并停止审核。reviewer 提出问题时，主 agent 只修复 findings 并自检；任何解决问题的内容修复都递增 revision。若仍有剩余轮次，对修复后的当前 revision 自动派发下一轮；若已用尽上限，写入 `review-limit-reached revision N (last reviewed revision M)`，不再自动派发复审，并向用户说明最后一轮 findings、修复范围和当前版本尚未复审。只有用户明确接受该状态后，才改为 `skipped-by-user revision N` 并进入批准门禁。建议、格式改动和无阻塞审核结果不得触发下一轮。若 reviewer 不可用，必须由用户明确选择稍后审核或 `skipped-by-user revision N`。`no-review` 模式只做主 agent 自检并写 `not-required`。普通单 Task 或低风险计划通常推荐 `no-review`。
 
