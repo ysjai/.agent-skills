@@ -25,10 +25,10 @@ description: 已有获批执行计划并准备实现时使用。按计划的 dir
 
 执行前确定一次 `Commit Policy`：当前用户明确指令优先于计划记录；用户未表态且计划没有可信选择时询问，默认 `wave-commits`。把最终生效策略和来源写回计划；仅 orchestrated 有运行状态时可写入运行状态，且不递增 Plan Revision。只有针对提交问题的回复才算确认。
 
-- `wave-commits`：`orchestrated` 由主 agent 在验证通过的 Wave 边界创建连贯 commit。通常每 Wave 一个；同一 Wave 有明显独立成果时可以拆成多个逻辑 commit。最后一个 Wave 的 commit 延迟到 implementation review、repair 和最终验收之后；实现审核后的代码修复使用带 finding ID 的 `repair-commit`，最终验收记录写入运行状态。`direct` 在 implementation review、主 agent 定向修复和最终验收后创建一个连贯 commit，并在会话最终报告中记录验收结果。
+- `wave-commits`：`orchestrated` 由主 agent 在验证通过的 Wave 边界创建连贯 commit。通常每 Wave 一个；同一 Wave 有明显独立成果时可以拆成多个逻辑 commit。最后一个 Wave 的 commit 延迟到 implementation review、repair 和最终验收之后；实现审核后的代码修复使用带 finding ID 的 `repair-commit`。只有已创建 run state 的 orchestrated 运行将最终验收记录写入其中；无 run state 的单 worker orchestrated 将精确结果记录在会话最终报告。`direct` 在 implementation review、主 agent 定向修复和最终验收后创建一个连贯 commit，并在会话最终报告中记录验收结果。
 - `no-commits`：不提交，也不创建 patch、evidence 或 boundary 替代工件
 
-不创建强制文档基线 commit，也不创建只包含复选框或完成状态的 finalization commit。Worker 不得进行任何 Git 写操作；只有主 agent 可以暂存和提交。仅 orchestrated 的最终验收状态写入运行状态；若必须持久化到 plan，应与实际代码或 repair 一起提交。direct 不创建 run state。
+不创建强制文档基线 commit，也不创建只包含复选框或完成状态的 finalization commit。Worker 不得进行任何 Git 写操作；只有主 agent 可以暂存和提交。已创建 run state 的 orchestrated 运行将最终验收状态写入其中；无 run state 的单 worker orchestrated 和 direct 将精确结果写入会话最终报告。若必须持久化到 plan，应与实际代码或 repair 一起提交。direct 不创建 run state。
 
 `direct + wave-commits` 将整份 direct Task 作为一个隐式提交边界，通常在 implementation review、定向修复和最终验收后创建一个连贯 commit；`orchestrated` 保持按已验证 Wave 边界提交。
 
@@ -69,7 +69,7 @@ Wave DoD：单 worker Wave 要求该 worker 的 Task 与 Wave 验证全部通过
 
 ## 最小运行状态
 
-`direct` 在任何情况下都不创建 run directory 或 run state，只使用普通实现/验证 Todo 并在会话最终报告记录验收；单 worker orchestrated 任务不创建额外状态目录，使用按 Wave 的会话 Todo 与计划 Task 复选框。
+`direct` 在任何情况下都不创建 run directory 或 run state，只使用普通实现/验证 Todo 并在会话最终报告记录验收；单 worker orchestrated 任务不创建额外状态目录，使用按 Wave 的会话 Todo 与计划 Task 复选框，并在会话最终报告记录最终验收。
 
 只有 orchestrated 的并行 worker、长时间任务或非幂等外部副作用确实需要中断对账时，才在当前仓库解析出的 Git 元数据路径下创建一个临时 run 目录，例如：
 
@@ -102,7 +102,7 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 7. **提交边界**：`direct + wave-commits` 在审核、修复和最终验收后提交整份连贯 Task；`orchestrated + wave-commits` 在已验证 Wave 边界提交，最后一个 Wave 延迟提交；`no-commits` 保留工作树修改。提交失败时不进入后续工作。
 8. **审核实现**：`review` 模式在全部 Task 完成后运行一轮 implementation reviewer，dispatch 时传入 `Execution Mode`。`direct` 的 implementation finding 由主 agent 在原范围内定向修复并重跑受影响验证；`orchestrated` 的 implementation finding 委派 repair worker。plan/design finding 返回上游，不自动复审。`no-review` 模式跳过该步骤。
 9. **最终验收**：在全部修复完成后运行计划中的完整最终检查，记录精确命令和结果；无修复时也必须运行。只有 `orchestrated` 单 Task/单 Wave 且计划明确声明 worker Wave 验证与最终验收完全等价时，才复用其结果而不重复执行。
-10. **最终状态**：最终验收通过后记录必要状态；`direct` 不创建 run state，最后一个 Task checkbox 只能与实际代码或修复一起提交。`orchestrated` 按既有 run state 和 Wave 提交规则更新。
+10. **最终状态**：最终验收通过后记录必要状态；`direct` 和无 run state 的单 worker orchestrated 在会话最终报告记录验收，已创建 run state 的 orchestrated 按既有 run state 规则更新。最后一个 Task checkbox 只能与实际代码、Wave 或 repair 一起提交。
 11. **报告结果**：列出变更、验证、审核、提交和偏离；清理当前 run 临时状态。
 
 ## 测试与验证纪律
@@ -152,7 +152,7 @@ git rev-parse --git-path agent-plan-state/<plan-id>/<run-id>
 
 ## 进度与最终回复
 
-只在 Task 实现和验证通过后勾选 Task，并填写 `完成版本`；多步骤内部过程不要求逐命令实时勾选。`direct` 在会话中记录最终验收结果，不创建 run state；`orchestrated` 将最终验收结果写入 run state。只有能与实际代码、最后一个 Wave 或 repair commit 一起提交时才更新计划 checkbox。
+只在 Task 实现和验证通过后勾选 Task，并填写 `完成版本`；多步骤内部过程不要求逐命令实时勾选。`direct` 和无 run state 的单 worker orchestrated 在会话最终报告中记录最终验收结果；已创建 run state 的 orchestrated 将结果写入 run state。只有能与实际代码、最后一个 Wave 或 repair commit 一起提交时才更新计划 checkbox。
 
 最终报告包括：
 

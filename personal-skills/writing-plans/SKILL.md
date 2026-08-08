@@ -67,7 +67,7 @@ description: 已有获批设计或明确需求、工作确实包含多个步骤�
 
 只有针对该提交问题的明确回复才算确认；用户在看到选项后直接回复“继续”或“按默认”，可视为选择默认。把选择和来源写入计划。
 
-- `wave-commits`：`orchestrated` 计划由主 agent 在验证通过的 Wave 边界提交连贯改动，通常每 Wave 一个 commit；`direct` 计划将整份连贯 Task 作为一个提交边界。两种模式的最后一个提交都延迟到 implementation review、repair 或定向修复和最终验收之后。只有 orchestrated 的实现审核修复使用 `repair-commit` 且最终验收状态写入运行状态；direct 在会话最终报告中记录验收，不创建 run state 或只含状态的 finalization commit
+- `wave-commits`：`orchestrated` 计划由主 agent 在验证通过的 Wave 边界提交连贯改动，通常每 Wave 一个 commit；`direct` 计划将整份连贯 Task 作为一个提交边界。两种模式的最后一个提交都延迟到 implementation review、repair 或定向修复和最终验收之后。只有 orchestrated 的实现审核修复使用 `repair-commit`；已创建 run state 的 orchestrated 将最终验收状态写入其中，无 run state 的单 worker orchestrated 和 direct 在会话最终报告中记录验收，不创建只含状态的 finalization commit
 - `no-commits`：不创建 commit，也不生成 patch、evidence 或 boundary 替代工件
 
 Wave 是依赖和调度边界，不应为了满足提交数量反向改变 Task 拆分。
@@ -313,7 +313,7 @@ TDD 是适合特定任务的实现技术，不是所有计划的固定模板。
 1. 每个需求是否映射到 Task 和验证，是否存在范围蔓延。
 2. Task 是否按连贯成果拆分，而不是按命令、文件或 TDD 步骤机械拆分。
 3. 每个 Task 的验证策略是否适合场景；不应有的 TDD 是否被移除。
-4. `orchestrated` 的依赖 DAG 是否无环，Wave 是否安全且有实际并行收益；`direct` 是否确实不满足完整四项 orchestrated 条件，且没有被错误要求建立 DAG/Wave。
+4. `orchestrated` 的依赖 DAG 是否无环，Wave 是否安全且有实际并行收益；`agent-recommended` 或无推荐的 `direct` 是否确实不满足完整四项 orchestrated 条件，且没有被错误要求建立 DAG/Wave；`user-preferred direct` 是否安全可执行，若不安全是否已请求重新确认。
 5. 验收是否包含精确命令、可观察状态或人工步骤及预期结果。
 6. 只有存在真实外部副作用的 Task 才要求恢复策略。
 7. 提交策略是否已由用户确认，但没有反向支配 Task 边界。
