@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-pnid-children="KDaRo7mQcdSfZHY8C1GPPm">某零售集团 AI-DLC 研发提效实践 · 架构组分享</title>
+<style data-pnid-children="E9J4HEOxXUcOPDcEalfPQz">
+  :root{
+    --ink:#0F2233;
+    --ink2:#3B5266;
+    --muted:#7A8FA3;
+    --line:#DCE7F0;
+    --line2:#EAF1F7;
+    --blue:#0070AD;
+    --navy:#003B5C;
+    --accent:#8E3B45;
+    --logo:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAI4AAACCCAYAAACQP/BzAABEiElEQVR42u29ebxdZXU+/qz1vnvvM90xN7kZIWGepwQFxJCIWKVYQU2qra1DW+lkZ3/9/joldPr1a2tbtdpKK9pahyZFiygIMgQEVEwYE4YASch0k5vh5o7n7L3fd63fH+8+596EBAlTCL378zlwc+69556z99preNazngVMHgc9VJWKrwgA+lTfeP26fv2Dr9yh//3E3lv36b4uVe2IrHnO74z/7vO97tF90KSJHPzYqVrrJRoBgIbqlbdsqX/zt5d90iGpWucdLjzrNLzz4rN2nnlczyfntpdXdgJbicgBwG7V9inAKBH5A4zGACgR0eik4bzOj1HVd69c33f973/iKyJJlVGqoZ5nEHHq8zE6c3oP/vSj70ebH/7ECcd0fW4e0E9EdQBYpsrLASUifT4P9HzfnzSco+lYtoxxzTXSp7rozg3ZnVf/+ec9dfeYuvMQG8EzgYwBsgwJnLr+rXJSb6f59Y+8H20Y/vQbz5hz78nADUSUAsCKFWqWLt3f+0x6nNeTvajyNeHu1zV73Pse2pN/7ff+9jqXJR2WkirG8hSwBhABOAJxBE1HUU4YEJX6zm3+2Bmd0Ufe/Q5Uh7Z8fMExx997yandTxLRXgC8QpWW0uvDgCYNpzjuVLWLiRwB+Oqjm65Yv3Psxr/7zxsz6pwe59yG+lgDKMcgozAiQMMDSQmqAi8OYIPYGmhjyLs9fXLusTOiKy8+H/O6o2/MOm7e5y6dHt2uAD76+dXRW7vmS9MDNZPloy1c/a83HALwL6tXR1cvWJCras+19zz6nu9v7P+X7/zw4TynWpQiApWqyIQAVbB4VGIDk2fI0jpcUoUzMeAcbGTgHWAgiAn56O7tcuKcnuSqi85Ge2Pfr71r4cKNZ/bSLQBwy0N91bedPb0BQILdkBwiB+JDfW/ScF7NEnvTpgRz54KIGqtVowXLVymuWey2qr7z2w9s+PCN96y9atWjG3MkbRFxDM8WmQo8W8BaIMtB0kBsFIBCKUbuI8AYqAjADBgB0hxRYkE+ddnO7X7hueckZ/VWUe6Z/isfvfyE3ScS/Q8AfGr9+uS3Tz45herB3m9ERPmkxzlyeEzrjlaAoFpZA2QLioty+86RX7zviS1f/NqqR3j9tsE0jtsSFQvDDE+CjD08AJAFSAFyABwAAUkElhKgBGFAOQfYgQCoKAgMyzHy0ZEUWd1c+sbz7cmVdPRt88/8s3edWnuQiO4EQKtXq12wYNxIivcdj4wMLqzVOu5uJtqvlcO+zo2GiUi0uJt1eHgaJOq8eg02XruAclVdfGO/vOsfvnbDr969YScNSTWzbVOTLPVgAhwpPDxUCcwKIIcAADGAGBACxBQwoUBJQFCoMJQEYAMFkKsHVyuJbavo7T/+cXp/PlKuG/vJH63Ds3cP65ffXMO3iOjHH7tpffLu8ol+8eKABxFROjCwy096nCNgOMWXERGlIzt3Tt/y1FY+9eL529c39IrvrHn2c7c/vmXOzT942EuliyluI1GBEQ8Wh5wVUAGUETFAksMxQ9gCGgFiwSIg8hByUPIwwcHBEwCDwkMFz6NjI0iSCDFBh7dtz6Z2TkuuvGwhzpxRXfPuC2f80zFEXxIAj+/StlN6MEZEXvu0iukYe60lz/b16mWKO1ZUlZ8C8PnV2yq13t4dqjr/lmH9m9/6528senJPOmfjtoFG0jYtEVjyXgEDeJtD1AECEDhcfAgAQSQAvMBDIaQwEEA9iMJzWtgKA1BfNCwoeCSUK0i9IBVQaebxyagj+dcV38tOO37q/PseNJ/6nz79mXdMx6cjolXLVqyNVRUYHq4AbfUQZSc9ziua0xzq7tyq+jP/dd/mf7zjyQ3zvvvAE/BUlijpYEoFlg1yeDh2UJMGT+MNDCyUABUHQwLrASsGHhaODUDBoJRC5Gr+4abxCAAlCoZDDIBBQmBRQAlJKUI6vMOX3LBZeO65OH361M2/9K6zPnOqpb+bLMdffeOpAhi74YndtYvNAE058cSe28fwheWf/NIJ/VKdvf6ZbVk8bXakiCiv1xGVIvisAWIPIgMXXARABkwEkEBEwnWHBAdEChJAYQAwlLj4OngngoQEudknJQYzB0PyAkgOkMKQgEhBxOqG97h5U7qik6fY+oeXXvXQkmNLv0VEqz+/WqOrF7y2qqvXpeFs3KilefOoAQC7Va/6m/+595N3P7ll3pO7GhhsGDFRlVUIhgDRHJ4dwAISDwMD1hK8GAgkuI0QmAA2ABdVlTqQCIAIqlER9bkwFVf4GgQPowDDAlCIKog8lDwIHoIcMDGgEQwJkI1KxY/xKTO78ObTjtv2O1dd9DfHEP3TkhUrzIolS+S1kuvY11s4WrZsGc+bRw1VPekr60e+9c7l1/Vsa9CUrcPeIaoZikosAhAEqlqEj+Zp8BBFYSQYTytIQSCoCuARDEibcYlCJQU/wRtNxOsEIIScqfn+SYOXQpFDKUFF4MGAbedRU8GPN+z1e+tbZq1e9+W/vWFD+rErj0tOpvG2iEx6nJf5YALu2aOb//Pbd1VXPbaxe3NdMeZjhUlITAR4AUPAKgHAg8IzAUSAyhE5IRRuBigY4AggAkkO+Lp2GU+ndiW4/NxTtv3RO8/7ABGtKqrFmCh41UnDeYEV0+7BwQuiJBnoKJWeHGzoie0JthHRmKpO/ad7Njx8/Z0/mLF2805IrVsHHEE5IpRrQBaAO1IBw4NUIUQQMi3O1pE4IUYJ1iscFGIJagxUHeAdSDJNsjpm1xK66MTZjT/4yNufPDPCeU13SESqqjUMDkbU2TnwatE06CgNVbY4cRUAsg7IB/qytf+28sa5t6/dFA1FbapRgtTElHEUcg/x4cEKEgcqwpAShTsdBnQEyHmkQAyGESD3Ds4G4wG0VcszFCZtaE1Tmn/cTPzGe97xxJXzojOaRLEj0Silo9BqKKAtEADxExn+bOUta/7Pl7/7Q+rPI+TlNqTM8EpFLsKAz0CWgIih2Rg4MCdCbgELJXPEvE3wOMFwPDyEPZSL90YWoBjwEj6tcahkw3JCe8RLFy548o/fcfqbAIwQUfpqE8LsUZUQL19OIBKoVr/7LCobn31kxe0Pbbh41aMbfSOaYrJKWwvtJQpeRC2BTAyVHEhTEBfJLzgkxsogMWjZ4hGgyzgIHAhsGCCAVKBCrbKfkzJ8ngI2QV09PzU0iH+96a6ThePdP3vpiV9R1V8lopFXM3G2R4PBrFwJJiLPgHrVnru21D/346e3LvnkV24WV+3VsfIME8U1eO8AcSAmRGwCXpJ5qHgoaUE7b+ItBFUGaRS8EviAauhV/ZRApBAUhgwGK8EIQ+Dh66Oh417Ye560oS/N8Lf/fUfaN5T+/AcvO2OKqv4cEQ0sW6Z8zTWv/Aeho6XsVtXOJ4H5X7/hvr+4e92WC+99fEvDTpuVjGlCqoErAwIgKSLD8LkDPFCyMUQ8PAEUEXL1wWgolMGkFlS0tJTcEfE4Sk2HR6HcFwtLHMp8Df4IRgDLkNyBjAWrhTYycGNP9p6Lzorf/1MX3fGWOfHPthPtXqFqXmmmoX2tGsy1a2CJKFfVqA5c9Pd3PvaBDWnyy/96w/0ilW4x0+aV6l4C2EYMRBR6RhBAHCI2IGKIFlA/KZwg5A3c/EMBsAulOSCkR6YhRBLoqMogRGCi0BmjgC8QKUgd4ASGGCIBNUKpCluL4/+690fpQN54y+AlF3xls+r7jyHau2zZnfaaaxa7A26+ly0Psq9h7kyuqj03b5Pf3V1v/NHnbrwPz+wZybirN1KbkPMF5kIFUisFaktanHQp/mmhhYeRJqinTV8baBAhr0AB5NGRCVXwIAWMepAytDAeEIX3RAZGCawKgsKxB4iQOY946qzk1vseajRGs7f17Tj92mfG9PeOr9DmZQewB4vSnfYAbVOA4ZdiRPa15mWuDjwZ8yzwvj/71v1XPjFo3rvyW7ePRjOPLZWm98aZSwHXAPGEC1yAd8Htm4J0FfKZwKzj8DM04UJpSIRJfcBwCQCiIxS9FSABFSg0qUdxB0GVAYoDMq0eUAWRgDWDUA6wQe4NStOPLd392IZG5vQ9TvKpqrqEiPo39Y/MOHZqdQcR6e7R0dkAtpeBNiIaOmo8TtNV6q5dbejpGWla/ApVU3ydq+q8f39s7+/3jWa/8Z+rHsSWwTSvHX9CdWQkR15vgCNT8BSa1E0ULp6KS8Dj156adqDjbWvVlpE1f0bJt/KcI4fDmuBlSMBN5wkDSLgZQApVgkIK8kbwUhAAPkJqCOWe2aUfrt9Uz6AL94yMfGHd3rHfPDaXdPv2+hxV3bZvdHQagG1Vom3DOjytjdr6X2z4skckHO3ZQ6jXZ6tq/zpAzyDKIgbWev3zP/7WDy9ZswMLb7nrvkbSVbNRZ2fUqI8gKZdBapDWU1BsoXBFlRQ60SxRaB+FensChwZNPngwGmleKi3+S/AwoVdxxIoqbk4aQxihEaoOgBZeKHxDincurRvGw5AFA3BqUM8Ftqu3/NCW/tS57IqypfaPXTH/gzOBoXXrYM44o/aAqrKqzh7DmLyUcWQ6UnkMMDL1tg21xmXH06CqXviFR3b+yvqdwx/+6s2rsHXQ5VFHdxTcN5A1UpSqVWjukYqCDDV7h4WXIbByy/uAtKBy+uK7GuxIKTD0lEN53mTqNR+KFqL8aiLHXBiOsEJYABY0yeukBJLgkYQw/kYRwrM1BiQeeZbDVqpQ9dCsAR0bSM88pid578Vnrf7Tt5z2ASJ6sr+/f8bUqVN3YBS9VKMdLyVZtq/mAD8RKRFpn2plxvLVe3DNYvek6vK/v+ep99+05pmT7nhgbcZtXWw7u6JcFOwNmBQcV5E2XOD02ggqvugqGzT700JaJJfjaL3QuE8hACwWzdMkauCpmftQqzseKBGvMnLsDYwaZCQQ9cE2OOQ0KgRlAjWrQ5jwuZXBCninAHuY2EKzrLiZDExbT/Lotj1ZfvcDC+Jy/HVVfcczO3b4qUD8Uo3mVfc4qko3A/HlRCkD+PpG/7d3P/zEH9x474PYOjicR3E58sbAwYZqophLYGNaeId6Gb/OwuEjTPgULTYECYTGS20AYCWQUsHKKyoXogknwx8Rhqb1DFKGNwpPGjxOM26qTuihcQhezXxMi0BGCjIC8TlUBWRCvmSY4Ef25qdN64p+4+0Lf/QbF826YPU2rcyficZLndWiVyMZ3rdvX3dHBxui9t0AdFj1Y19/ZPtV137z+4sf2r5X87hNbJQY8jlMZJE5gRIdUK5ODp0e/CQ3m7M51AQAU9WEHpcyDBRxOurOn9ltf/XyS+7+ufM6L3k5AMJXJVR1dHSka7ZDVXX6jwbwV39x82Pvv+nBx0trN/dJrXsqwYkRNwZbqiAbrUPjZHLg9DDAw9DdD6Gbml648JwCgUaJ/cH6p3xHZ2nhd7amq95JtKg58vyaNJwCcGIiGq0kjC880PepWx/Z/uFv3vcQ9uXquK3T1rMGDDOMNciyHFyuwft80iAOG0AkQG1BU9WiKPBw3sNbIO6ZZm566GHf1hZdssbpfecSXfRSPM8rZji6fn2ys31GJxHt7Fd9391b5RN//Jkv92wc8cgcCdVq1lgFJIcTD1ULpQSBYXkkG45Hn9EoAaQMFi66KQJCaOxG1sAzYyyKobZqbnrgMZnSUbtwo+rX5y1f/nMv1vO8YjFAV6jhpeQfGtafu/WRXV/49MrvlHZrgjoZ2CSCZBk0TwFLoVtNEaAxIAIiN2k4h+lvWCyMcGuqFOwgUBAzvBYVIysi1HWKG8VH33LRrk8svbC3kTlS1cMmgb1ihmMAfGPT8Me+tebpv/+v793Po6ad1BgKDb0GosQCHCFvOBBiEEWQZndAs0nDOZxLWOBTRgIs4VkCHkTNjjuBS2WIz0CNQVQ41zlliz/84Luf+NDpXYuI6LARZH75RBb3n2v68mMbP/Fv373r01/57l08llRZ45jYWFhDiCILnzvkaQ4iC6IIqk2gbtJgXkqjFOSK4b+CuQ+CKVcgjQwmV1RKHcgkpg3DmX719u+f+miOu0dG+mfQ/iPTr7zHUe2rAtPHJrTuL/jPJ/q+/BcrVp3QNzCsjVTIlmrIwXASmEgGDFYOM/swTbQdrGH6QKiFwE8eP+kQE9oS5EEI8+tCFPpbbACxwSN5QVxMeDjjkZJIF+V86XFdW1d+7MoriWiNhp6hf1U8DtGM0eXLlxMAjKq+58Yd/gd/+Nmbj3t2hDCsFZK4FBSrfApLABsLRQTfGmRTEHKAMoCywLmdNJrDTjYECs/j4geA7td7C55cQKoBODUxDzj4DUM0+89ufPhzqjrl2jXbE1VNXpWqqimMuEP1ym9tqv/3Ly/7gsvbp9lsFOCkBGM8KKvDCIMpQuYMfItMFWgNkeZQCHJTZEfCR2Ti4KgNUoRAcGcBlMASemDjnjv0wBwpVCQ0gsXAxG3mgSc353O7295w7478y1cvmHX5SRs3ll5Rw1FVsxzQpUR+veoFNz2285u/9dfXOvSeYnONYRVQzeG9QsmC2ICNheQFa48NWDwm0Kkmcb6X4nWIisvpQIGQEUZuODR8hTVQMprNXFWoJ8TdU829j22Uqo7OVtVziejB1arRgp+gBPaiQ9VTe1C9hkjWq15yx4Nbf/C7/9+/5GbaMXbUBWzG6BiQ1oN4FSXwHCEngkYGRALjM5himtJR4YW8DX3GyeOw0+LgdiwAC4VtMSJZfZE0A8oMxwzHoS+nKvBkeXea62N73Jmff2DHF1T19A39/cmyn5AovyjDWasan9RDQ4+l+r6bH9iz6k/+5fpMeuZFI8LgWMBI4UWh1oKjCBSZMKjvG+H/5IuoHOgCrBYsMVgsWMxkmDqsMOWL88kgb8A+gaqF54IxAA/WVjwLHXam4Oc5kMJMrduseXJz4+H+kXPvGcRvL+3tHelbs8a8rKFqhWp8BlG2TfXK//7Rrq/92XX/k9VL0yOJSpB8FCYfQmzLyFwJokH8TMUBlIc3rA6AgTcG5BmkFkYAIl8g5wTHOpkgH6bPIWEYz4V9CDw7kHoYDQIb0iQdcRNtVhAcQDGEI3B3b3TDbavzKXAnqeo5S1fi0eersvhwtYCXEmUDqu9dcf/2b/zt9d91I3FblCEil+UwNobLDTKhoMigCvUeAbo0IFhATGuuKeQ0YXpRSIvHpBkczsHFkASrD4h7S2JFmxQ2aOtCKyDNaisM/LF38D4HlSpm+449vs8ll/zH2t1XrlxKfvnKdeawQ5WqWlWNm7Kpqhp/6wdbIlU99X8e3Hjdp264FVtTkJTKBAYsBJx7UNIB5wMKTCYQroksSCzgGAQbcActikgOhuNZAh/lf6m3KaQCf8JDn/NAAZyCPIQdlB1ALny/4BsJUcHrkSC4IIHjw8pgBiIItD6K8vSZ0crv3pM9uHHr4u2q51+zbpesWKHmcENVkxENALpy1brkHxafMTLt5vs+fv0PHy/1DedCcYfRPAURgUEgKiidZLBfltvU8KWDnK3JY8JyoxcG2hx42rSgr2MicKr74zzN51vcfRq/QsYYkMsBhRnaN5gPiV140w/WXoZrFv8YhzAcfh5KhG+KMy9fuY6XLj5j5LO3PfKrtzzS9+4n9gp7ipnyHAY5jHh4EHIhKDwUbrK0flUxnP347hNi2HNvVm0SJwEIBwm6PEvBUYQ8b6A6pTu+/tu3pbtRe7+qXrRkCbRYl3R4Oc6n1mtyzdIzsu89m37w8b3uH9duGW4f4TYSUyJDQKQBxvYacpSAI0zW1C+mpD7U46DGsp93mfgETXA9E74uaLNUPE/Fc8oGYAvxHswEGObBzOj6YT7jM/dvPomIZOnKlYeXHK9Yq/Fv//FKl6r+0hPb+z/933c9GO32VmBLrFpIkbUG9g1AQUjamElDOGLqWDrRtaA1DUIT8ijjxydXoQqyEYy1UFGkDYdS98z4a9ffllY7u/5fVb1g5dKl/kCvY58PGV4FiK5YEv/jHWuv+vr9G9t31F1mentjn2bFO7NwZILKAiiIFhUxd/J4BYlR+2FzTQHu/VNKOkgqyQekmgqCqgN7wJbKGBsbQxwn4KjEYyO7dcOu4ZNuLbmpAGjVqv3fIh+KKrF8+XJdTORWrt/z+/dtHnrLj57ampkpvbEfGQI0BYEhMMgpKnpPYULSq8JPMiNedGX1glDiA6JTK6zRc5NsPfBnJ/68KsAMD6AxMopSuQKAUG/koO5p/M1b7tEfrHnouHIS6eLF5CZSaA5qOGsAe80118gu1Q/0jeiffvveB2KudUReMrARxPAgFQg1Q1Qxo62FE2Oe9DmH1/gDRMEgmCZUITrh4nPrAeLg0VXCQyT8LBvAmLC9RgsxStUwZkQhCfYUsk9HBMcMNWGEhjmU7LkTeFjAEDim+PENm/ParJP+6qFG9oaJjlFVrT3ESIuLDXDddx84/aZ1/XEDSWpKpUSyDNYQfJZCKQmdbJo4Ztsc9J+0hcMC8ZoycsXNRwRoIaqgRIDzAXXnYoDQUPg3ASZJUGlvgzEGJrIgwyBiWCIYY9BIU7g8h8tyZGkGn+XwLg+v6TL4Rh1cqiIpl+CzIlqIh2GFltv0x8/sqI7u2VsGgOXLlzcrbvccw1m+CgaAu3OPvn/Ffc9+/K77v5dWZ85MxtIRsLXwXqCIixU8zUHswvoJ+2kGT1rQC09wSMclVrRQqpCm/q4tZtub59jGKLW3obOrC7acwLEUMnAE0SDC3VwFEJUjxAXOBgDiPBr1BkbHRpGPDYPGGH60gTQnUFwFeQdxDUAUUVu7ueW+B3Hxz7/pF1V1DRGNNCmmzzGcaxaTqOrMa255+G3funeDqcycIx451GVhLl8t2MTj5CDyEygRzbHcySTnxeAx1PQwLf2DIhspnuNyCbWuLrR1diMuJ3AiyCQPPBsKCPK4ZF34NQaFsCU+ALUxI46riDoqML4LbmQfBncNIh3MoeLCtTQEgQdxZPcNjWRS7f3IRuBaAD9qRiU+cPstEeTWzQOX9efRhzZu708dmUhEUC5X4J3CmASiFiLNmWwHQhaMpfk5m8KHk8cLb1ISipHkoFYRcphwRzITStN6MOvEkzBlzmxIxNjXGEVdHdRaKFsoM7xhqLEQY6HFI2dGTgRvDHIipKpoiCAnRm4YptaGacfNQ9dxc0G1SihyDMMR4HwOqtXozvsfxf0Pb5hN45K4tf0N55prVERPeHzTlktvuuMusW0dJheF8wqvBmwTuFxBTEWbQYptcTJBehUwqpPA8WEcUuTCLZV/DSsBqBSDymVMP/VkdE2biobkGGqMISUFl2J4Q3AQGMPgQt5FRKDew3sH53KID57GWIs4jhFFEcgaiAqcKhpMaBhCpbsDvcceg0pPd6HsLlDDMJHl+x9+UlOO3iRF75KIhg8MVXpn39CbdqT2F7bu3JlGvR0JOIZHGZkjECWheeabjTVplXtBzl5h1Iccb9JyDnfCZUKJDCCKkHS0o9bZAbUMMdTSLxTSwtAMjArUjbP+wAw21FqBRAjG5PI8rCMgBnNInIVDzBhLPRwcapUEU6ZPB0WM0V07QHmOyFizvW9Hnkyd87v9wOcAPP2cUKWqnU/t2Hf+f91yj6v0HGO8KFyWg6MkWLQ4mNhAJIOqQMiEDwNbKJMrpKBJHGw56eRxKLSXINqkzwpgI8TtHahM6Ua5qx2ZIWTQQg+5WB1ChfSJFgyE0EgIHswL1AvUBUoLg2CJEUUR4iiCYQPxHlkmEESIyxUoewxndWgSo3P6VFSmTQGYIWBQVw/ufuBZf8faRiudtU21chDpOofzpDLtNzZur6elGcckzmcgA0ieQYlBpPC+DrJcdGQJJNGEUVSCL9Dj/22xiiZ4WT2EkbRg/uJCeyqwr1bbBkBkYTs70D6jF7aSYDBPQcaAJvYufZM72WxJ0YRUehw2JqIC82k5BuSFviCIYMnCOYKnDDE7IEkw6j1UclSn90A80OjbA652Ys3TG8yOx+5xzQ/EzfSbmXDvffeVV97wLWc6eiiTCSAeUfGBw5sKOnQHWgft53YnXcr+p6c4dWGjlQicl0JvOeAyVISZpKsL3b3TwLFF6nJwAbXpAa8zkcODQ6DGL6S1ETxXsfZIHWAZJo4ACMrdPbBd3RCXmw3btugvvPPSXw4cLWrCTFDvpavWPed3H3n8aU5KsdXJkvrl1goKfCWlYtS54P8SQcUDllHq7kTnlC4kpVL42Z9w0V/yDUoAFxGCmk2EZuhjg1q1gmpnJ6hU4l07dkpH99Q/AdChqsyiSqpKt2wa7t0+gktTij0MsYqbnFd5sRMHE/uPB/xbitDS1LgMFRQhamtD97SpSMoVpC6Dcw7MDIg01W8OCnHoS7YdCvlrE/MRgUhIvnNxqFSrKHV0gJISHn3yGdc3PAwAsM3R3elLPrzntDdc7qXSDlcoXoJ40hJeLINPn0OMCwVFMyVRLUZUFLajHbXebnBi4VnhReEpVEms++dQE43npXocUoF4BcPvRxhszrmRKGJjUOvuRn17jE3bd9iHqoSZ57UXWuOqtf/4u89+ft2G7dSgyOh+goqTx8txcEtuhEDM0OaC12oV7T1TUG6roaEeOQSILNhwq0nZUieVg9BG6aV4G4WKjtNgWpBzcBpkDDwDSa0KW6ni2V17YEql3lZ3fASo5qZ01Z6GV0kq7CdIgU0eLy/Ut18VxAa1ri6U29uQqwDWwlPQMRZCK89hObiHm7iu+kUbtAEMNbvuRZ9Vg9Kp00KA0xrUunqwbe8IwDSnmeTj5u8/JXfe+0OHcgdAETTPQcZM2s5LL6Zah/cCEyUgYyASkp9SZzs6p3UjhyJnDeLYxZjQfiT/V1BuhKFQlZbXIQqeMDTqQ0Kfi6Jjag/tGhxFVuaTrDXBcNZt2kjbdu2znuNih3axqXYyWr28lJsmMqwCWyujNqULuUrAxSjMtsoE3XdPzw1Hza+FXp7kGMUY9v4jEcWXHJqmHjlMHFNdAFuqfCDLXcwAMGtGZ+fmnXsC8qgKshbwfrKqelF084N7HrI2lN3eA9ag1jsDcaWCTELIaqK+9JLGZ17sAhJtiY1zQd3QJjmvSOAdg7hc0Ywq8wFErKp80qnzPrR1524QG9KWh5zMc15ekxovj5LuLrR1tMETgeMYeZ6DQeCDOPmDiUy9fEYkzw8rkIRxYngIFHGtDUMNSyjq7XKq7X8wUk/VGmWIB7yAJr3Ni5rEfO4FKFCYQqLOVGro6u1FLh6IGJ6lkNzX58Vo9BVD5KkYiKD9NujohI6BFkoXcamCsTRHf5EcR/tGNWIbFyOlUpyAScN5eTuaCmKgY3ovbGThDSHXsGvcWNOKGKT7E8F1Qj6zP930ZdLia1F/9dAKyhTQbk4SeAXGAMsjQDIwPAbisIWEVMA8WVG9/MbDKHV2or2zHU4FbA1yCIQtvLZy0UOKrQq9kl7nEKlPcziLimW4bEDGogwkvAVwYzmQaxjIIggMc0jkJkHAwxvFpYPlCaFyYcvonD4NKQSUxMjEg5lBomFS4TBK+5ebRNZ8n62dKoqwxpFMq4sVplok8IKACo8B9eHUIaUYsBYChZMUJuL9N8lNHj8RGYaEVdXG8DgGYwGQQ3lmL3ILSGzQ8HmQHiGCVR94TE1Ajyd00nX/x8HCFb2EyND8m54JCg6GQR5GCNYFWRpPBPgcEXI4FkgZygBzCWBjAoc4bGwpdG1kcmPL4RxeA9UyEKl8AFDFA87BdHSg2tkGSmLkFBbUCzTQe5ULvvH+Hov1CMEJBemdlaFCcE5gKKQxrB4dbUwpMMBVwCaxbS0Do2J4SyYZfId5+yoYXDQzmz0mBeII7T1TECUlKIfuMzHDGFOQ4fQIznM1H9wihpFSS28n1EoGMAlEGQmADpbhOUCd5wJ5WylWIz7oNxGDyRQaN5PHC74ITWoCGygzxDsgsih1daLUXkMuHt45QBXGmECgEhxhii3DCMPIxDWPmLAol0G2BKUICmhnHFElrX8FQMYA0NUWk4WDeg9VgifCpL85fF6L+hDug8CUA1fLaO/qBtgECI3H1bFEwogusQlV7BHDnwKGxM0pUgWIQnknqiCO4IQAYe2tVVDJ/f2GyTMAdJRzVzIARKAihxZmmTyel+HXMggokJRQ7ehAXC3DqYacxzCIAS8CKXpE1OTY6BECLTFxMZpO6OIHhXtRgvcEdaonTO91kTEPSYE1pYnWv9pWisiaJmBIk4nxYac4hXGETBlxWzsq7R0hrzEEp4UoTXFemQjMDBGBF39ETjcVHidwnydCCwLPAuLQyTdMYJfjwrOOse2d1S2hiiRyA/39n509tQPwTkIbVybt5rnSdqHkbi5YbYak5gUwoaggFVAcob2rA3G5hNS7Yg6cwkZfDeMqzVluVR0XzzoSdVQxkuJZ4ZuzXc1UxRAgOaw66UwsmbH8hpOBRqvqa4zK1uNm9UJdHlQyvE72qg4RjvQAo2nJibAJbDpmJN0diGsViEGhiCgtMK05062FOEBzKvbIpAZBzlaKWXUtopYUArfic5Qtw+Sj/sRZ03VwYNefE9FIiwF40rxZ2UnH9Gaa1REZA+bAj508JtJWBOJcQXQaN5qW8RS6aaathvYpPUAUIROFsVEhTq0HFVDS1xhDUZggFLAl5HWUTQ7et0d/6g3HmLmnzkyBMNzAADB/Zpu9dOGZseZ1kDqYyez4YLEqdIsLnEYmlNZkTRj+jmIkHe0oVasQZngJiHAAU5+LALfUsl4THKKmJrIWK6mBxABo7JMZVebpvn7TxcAWgJRovI++d/u23b8599hjOU9TZxiwk43Og/BzzXNoBxMP29GGSkd7GNVVDzGAK4b+aULr4LXmcZrCks2tMgYAe0bFWrjhve7yN55tO51ea5iGmlkRIwjlZF/83t0rzzj1FPWNhkI8CDLpdQ6R40w0Iu891HtQuYRadxeSWhkNl8MXi1SDTAlj4phL03CaZHOhI3umSSfmtFrs+LTwjVHpSmBP6qQHFvZWVouO45Utz/knv/bu9jdfPJ+bMz/iJ7vjzzeR2QxZDMBEEWpdnShVK4WKFreMgQ232goHcm1eC55mIq+HizY/iYFVg3x0zC180wXcUUu+CGA7xvVxwM0vzgP6OvJd/9Hb2WGJw2S6aY3bTJBrLmS8tTl2PnGvwFHuocZFGg+I/hpkHcHjhCuIAN4BhhHVaqh1d0GZkeY5KLYgEZDLEcFAUxnf6kICTwpBISRAAoKEZWQkz+1dKQdmXvPxHLnaAzxHsa+BWoS8ZhecW93wsGIx7D+lQmyYhaBKEEbYJ+Yy31sqR+e045EruirfISI9mOooEdFoL8X/+e43n0f1wQFvTBQkMhgAZSDbJMQW7TC1UAR9FqsZmLKwxib0Vo9GTazidDRnuouHMoy3YB96UGQt2LlwwiMDiQiVGdPBpQq8As4aeAKsy9FBFjzmUI5KyNWjzg554uATQl54pAhh60tAaj1kApOLlFtq6C1V9KJmDnr24RECTSBdGfWw6mFUiglNgidGyoScGZ4EIIHVHBEcYlK4RgOqAJcqGHYOFAm0vlvf98bTadGM7oeA/l0HVVZvqmYvPq5jx1vOOUmYPZhCFzf0XgwkzQLwZbigX+yf5LVGgV5vAwvEBeBLgCjIObA1gPcQoyhNnwYql5AX/AIhglMHaw2yRgNJUkaj4RDFJdjIwkmORjoGqCIyUdjZ5QIoSIX6qB6UOK6F50ex8FaKR8HlaRo+cTCjJuhITVRGiwSdQRIgSC1ohZVKG3IAaZ6irZIg37cjX3jysfakmvn0yYyriXpHDtxLzk35UQAoET06PLT9F9+56MK4sW935i2DciCRCAwDNYBqBkgGhoPR0EEVKtb5qW1N2h9tBhTuWAeCgxWBlaCkqpBilLJYxMYMrwpHBNvRgfbuKbCGIfDw7KHFRIDEFllEaMDDJGWkGcASIVKDMgEl8kDqwS5CpBVYF8F6CyOmlXcoCbzx8MbDGQdvHLzJoJRDuPlw8Ax4YigMPCLkFCOnCJkx8KQwcEi8oOQEiWOQRshRQ8ZVZMIYFQFKMVgdon0D/rRKKVo0O976njnlrxJRQ1X5wGX2rZiyTJUVwFvOnPPs2+afMkL5iJINM84mEyRRHBJCcUHeOGCOEBA8Gch+y8vkKJY29+CiW0xNUIwEqj7kLdbA5TmoVkV1+gyQYfiiYcmM1u9kECAyGBkdRGyAMgyQK+AZiY0RUehpkZRhNYHxDCMGVgxYzX45jZK0FjNQEVStCmIRGM+w3oKUIRSYDZ6bG2LC5IIRAxYDLsKcguEptBhyNvAFe7Hq6toxNqA/v/Ds/K0nT/9rIvrRirAlTw4VqugaIoEqzSW6Jxnc9ntXXvbmxO/bmyalBN5JmM9LHcAARwRq6v+Bg6dRe1TmNvtlOUXC2MweSEMmLCRhPTMJfJYD5QpKU3sQt9fgmYNBqUNkTDHCy3DeQ32OWVNqcIN9WlWPCIwMEep5QKJja8NqA2EQIhAsVG0xHNfc/MIgsTBiYX14JM4iyWIkeYxqHqGcWcTeFmFM4CmsVYxEkTgL9gkECVKOkRrAmQxqRuDNGBCZoLdd36e1sUH50CVvxDk95d+fR/TPy+5Uu/QnrFa0ALACYFWld19w+uOLzjpxe0kbyr6uagqxZlgQJVAv8GiuQeSiNc8TXk6PVpXqCat8eEK3WIucNEhGlKb1oto1Bakvpl6hoNwh8h7GKwwx2BqQ5Lj09ONxZk8nucHtYlyKclyBcozR3MExQa0g1xxCWpxTKRbPA85MwHialawaqFqwWkAsBIBngRTqrwyBUcBqWB89zl0ubgYSELmQapBCNQfGBmSaa8gVZ51EC2a3/9VFVfrMihVqli869P6oZo6TA8BSIn/J8lWmm+iemm/8wQeuWFwa7d/SQCnsNSJKoGpCl7dwh035jQOzSjoKPU6zHHdsw0Utmo9a9O4UiqhnKmrdHaAkAojgXQ62FIzFCWKlUNqCUDEGp5SgV545b/upszuZ0gEfZYLIlpBFFg0WOJvDRRkymyO3ObLIwbGHZwehYlepCUbkCfBEcMTIDCM3Fg0LjCUNZFEGZQcWReQIRsbXV4JSMBqwmiLyDtYTjNhg5OmQzrSCd512nLl03tRPXNEVLV+hapYsgRyY10w8nkM9+9tVX6LTFi0yv3vh2aWdQ8OXbewfmrpjaMDDVFm1uUvAtMooEi6GgYIr53FZnqPMfEJVQmzDcAczVAVsbGj4koLiEtpmzoKtlOGhYCJ4l4FJESHsUBBm5OqhXtBNhFMqJb/kjNryMYfjc+d6nt2+01XaaizqwYaCl4EDkUDgYDgo8Cs8IBK8goyTvpqezzMX3imHUgaCwmqTS6XjwgQU3I5RDQtGOOROQhaU1d0UzfD2U4/lhbOn/M2VM8p/9F5VsxzPbzQH3R7TjGlEdP9ZM45//1vOOXF9yad5xF5CZ9gWi2YLLTIaLw1BCqP6ksc2jhyOY0OeUfgfwwzyoZmJpIzSjFngSgKNC3lo5xDHBgJFJh4eilwdIgOUhEGZYNP27bYOuN88vffqK06evfqS02faxs5n0nbN1OQNQH0A3OCRGAaLh2QZTO4RqyJSgRWHCAKmHNAcggzKObzJADjESjASPKKSQKwiNwpHHk4Vaoo9qapgIZAoXCN3x07psr+46CyzZMHMf7xqdvmPlqxYG694AUZzUI8DAHf9+7/Lp25an7x3Qc+zv/bxj1c5Kb39kSefyeK2TutTB45seBPNdYoTdglwC6082lS9wu2sKkDMgM9QIkDzHBJZVKf1on1qDySJwry35LAa2jJqaVwQiQVJZCEO0CyHcXW88aw53Imx6xZOaf8q90y5qGxpXt/WbVDv1dqYDEdwomAThTRAAEMRuMBaDAdtYlIC+aIkKc63hYEhGzx/ayFVsQ7KRJAoQQaCY4E1Cje0NyunQ7L4xDnR4mM77n3HCR3/9Ya7lv+fvo+tMv/x1mn+hRjN827I+613nOhOXK/JO07EbUrJ+qe27D3pwa19Wdw+Lc6zHDZ0LCDGB/fZXG+Mo3ju3JgwhOjqIGSwLrDhalN6UJ06FQ3LyNRDfEBdwyJ4hlAEZwRsCMbnUOehMJBSGX0+x2P9+dvPmVbxTz21p77kxCnvO+GC4/66nA7/zEP9vn3tszvSyoxZsZiYGmMZYhujlFQgXuFcDgLB5WHq0zCDyMJQsS9MBOIJXgnWJmAoRAXe+dAeiQycAogtGo2R3I8MyKJTj03ePLMXcyP6p5+dW/2/RLQVqgXG+cLjBP2Ejh6BSDervuHfbntyxRdv/f4xO0fFsalF8BZiCJmRYjsewKKhv6UMzzjK9I4DgMbwMH4QMXLYRupPO+9is6+UYK9GyJIYGedgzpCoInZAAwapiSAsMEZhnQMyDzYlxEywqOPC7vLIired/MZhYFc70S5V0BPQX7nt6YHf2ThqT/3GPQ/IYBLnpWqbJbImdR5ew5iSFnRVbfUCJZT/RY/LGlsIXXt4oSCmbQ0EQO5SL3ldUB+Us2ZMSd5y6rGouZFPv/X0Wc+eT/T3AuBOVbsI8IdjND9pJ2eCHTvsyrVr82OI7r93+9gvbu6b+827H93Y1T8y7MW0G0+2cPFaDMsHg8FROQSqgM9AnKNmHbKB/vyqq5ZE8y8+DZ+54WEoA4YMDPvQxvICr1TwdMOclMtTqBAiW4Yhg7obhYlJN+wdqN42jL+5rJ1+RlUtETnVVdfNOWFR40Hg7HY95cOby11d99z7Q+wdGkvLnZ2EqMy5GEu2BIcg2S8qoWXAQRHUsoFRD/gsZGdkIN55l4u4vC5l45Jzj5lhLj3zLLinn7lu0ayOB97c1vnZPwyIL+tyULNrcLiHfV4e4fTp6dIZM9yKtRq/aSbd/e3HN753796h//rhhp3de7XhxdQMhMOHUWkJGqIlx4qja4cLK0oxY6SvL/3AlT+dLH3LaTc9umfk8pGxIY2nzqLRhgMpINbB+RwGBuASmGNYzWE8gZCAbQmeUohzSJxQ3StuffTZd+aqly0H7hoaGpraN1aau3dj/zcuPv2xFdPPWfS9H+/D6ee8ce7Ppqb9/Ee29GPd1j5sH6pneZyoJFXybENhYjho1ngHAZS8B3sH1hycpeiIkMyb3mXefO55sEN9j5XB1y/qtU+f0XvySiKqA8t4xdrldsnpyA+GCL+kUNVsaOmAdsIiRg27rr72Wnvt1Vfn33lm2y9/5qYff3bV0zu5gZKxqBAVBB+ZAHWjGKaf+GcODF0/ceyvKeyrE0Z/6LkvNFFltVnO6QG0T5Km1kuzJUITVuaG99tRNtj3zNrsjz/2kfitZ837VE+H7Pvkd59adueOfTpq2okpgbJDboah4hEjgTM1pD4CSwMJCUAVpM7DmzraygQd2oc29To1tvLrl73hhx+cZi5evXdvx3xjLHV07Fmmaq8p7npVPeEhhzN/+PCGGVrCZdo958qdeYRN/fuwL8sx0kiRORdQZ2KU4hiVJEZntYZpHSXM7gZ4z7Z1lbHshuNPnPfIm2I8Uo3t42N5wPE+rxp9FHCHG5ZesMdpvXAn6tiClNpIiSif/9GPRpcfN/M/k/cuLMl/3/WZ+57e6UezjDWukY0rkOa2EgqriQwzlBlOqdXZLSj+xcWV8b4WFfG76NEELSJTNBd53BgKTY7n5k/hb5CExSVayN3DK5A5sC2BDSPPGuAkgvoUqjmsjeBzRSUiuP5n0r/+7Q8lbzpr3pUL23DvraLff7J/C1CeTr4hKJkcDikcFEQxBDFEFUy+UEonGMmQwMMDyB3Bxe2AOHKNMb7n0S0XPdTQa88p0UeX3am2uf9UVTnsOaOnATxNYU5rxTrgk7scOjeJreWC6ljDw+Wq9VRSheYwPqvGnjraRKd1w89uR/3c9lkbATw7MQRNyGPyq4/EuusJHqn99m27Lv/8d378te8+uN5LeQqPpkK23AHnPdgrrBdwRKGvp1rslbTF5lpt9YbGVaGatIHAQBt/e3pIj7Wf96GwszJSgRrANZdv2yiApw0f1loSIJqDIyBihRGHrNHQOEvTT338I6W3nFR77/FE1+udd9q/nHF8ft09azFSOxaKGElWh+ccuRGoJoAm8OCALEPBKojFw2gA6DIi5JbBImjLxnQOPF0+t6ux7M3HX0FEtzfznQnnla9ds8ZcvWC+OxAJM/vtC8dPJPYuU+XlTYdMLz+qZl+E0RARDanq3fRTZ7/phN6p9153420SlbtpOGOAEmgSAy5F5upQY2HjCF4c1GWBL1KEDi4uuhSKl62FX+wP3fOiCc/TAWw4BbxXxBwD8HDOFcgpAXHBSZEMzgssEkgjRbpntyw4fi7/yUevKF00J7l8GtHNgNJDC/GF+759HxrVDozBg9QXA3kGqqbV/wEFMkZzE4wQBZqVOsQaSN8CIDWGtmeZfntTf+wTXKuqv0VE31ENYAYRaZFzSGDaadueMbQ/WsHOxUTeH3Sb0f4kqGXF2VkeXk+uebX2bR3OsWKFmqVLyT8+qjNvXf34ts9/4zb0UxV7fQRhC6gD1APGBEKYFLu1rS3Qy3HQDUWPaFyuzI23MZ5HEjbcd9x6ntSCnQ0RSjJQZEDWhnXJ4sFMIPGIiRF7gd+3L//AT78tevs5M77wrlPa/4KInlXVBED3Pzy6d+O1D6xL+sttaJgEEIPEKVh90UxUsIb93Y7CZyDV0Flv0TLDTi/PgGMq+kgNnVsieucJU3b8xrnzfrWb6IbVqtGCol840fsUH86/Eh7jVfc4rdbE0tCaOLVK2/epTjn95OP2LP/s17B2+x40yh3ITAxba4NzDpKmgDHg2ECyHJDQFBy3jWY/pXDDrcVfckBTQPdLgJv0ypYgLAESCYgsyAeWHmkxnpJUoTDQNIemo2jLB92f/84vRGfN7vyV+b34EhG5ZYGwlH5vSH9wz8Y9yQAqmiIuuj8CTxzaEipQuGIfKQOIYDQAgp5DE3K8Ix3es+ESUghGCbTVC1Y88Oy0Sq17xWOqXzyN6FcPkmfKa5nYRC/Ta+iY6oXr9rquWx7Z/D/XfeuWaKcrY7SRK+KYTKkEEOBdHni0ZIpQxc/JXWRC+4yb1A0N/B/ScQPChMmBZp4khdoVxyWQV/gsC4QpEPIsU2sMtRnGT80/HZeeOuPvfvkNvX8MoANbtozQMcfUAWBM9cL/59Zn7rijr17aF1UwbBQi9ZBnUAmkDIYHIwUhgycDhUEkweqdMXBkCrWt0GciIuQ2wlAjRa2rG+nAXkyjHF3pkPzUaSfzwpNnfu3yKfj4HmC4h2joUEDs681wxtfVqFYB9Hx/GA/91Re+Z7cMprVN27ZC2CqShDIlcJRAQIVeIo2HHHqugmpzj/b+rP5CbkyfO9KmJFDjgqfxEThKYDwr5w2a2saYEWX5739oyej5x1f+/jiivxgc1CkdHbSnmaSmqud9acvgbdfd90zXxiGjSNoIBlCtg6xBqqZw0gKiFKCsNYUQ+lYCRzEcIgDB6wSNPwnIrzHwTIisga8PoUqCSt5ATbx/71vfbM6q0ecuN4N/io6OUSZK9WjZKfpyHmud/vyajfi/X12xstI30ujaumcYDS5JAwyxJaIoplZ5Tb4wnoIeKVx0McYlOPS5IvcHiL8TwALiMdW0odYR2uMS1+IEvRXC+9512faLT+u65Y0l+sh+uZqqWUrkVXXODXW5/3Pfu3/644OsI9pGCZcQQeHcCCiOMAYDpTAeKyaDUAYrBkYJVKxZFTKQgn9NyjDFCAoRYCxQzzOwLYoCEURMsGmGatbAHONwxYKzcXw3vmEi+Yd2W/PHd0ejs4E+AKMAMsPkRF+nhtNMnAFgm+q77n82+8S/fu0b0we53L51n8OWvUMQD48kIVgLNspAHni9KrDKIA0bhoWoNdccGHAB45Fiywmpqooqcge4OuKq8PSqxczYYlqko++4dNG2N589/fEzErqyiWksJnLbtm2r8MyZNINodLfqqduBn/+Dr932sfXc3j6oJfU+oponRErwlCIjwNkSFARWgicPZwRWFEbGdYhZNYQzpWJQlltuVMlBuSBnBWFggCJETlD2HmScOjekFXg+YWo3zpl9LE6a1o4uHt5RMvp9bWSPZ4ODj5fYbrnilLn36hEMYfaVeNGlS8kvW6Z8+hLYWUQ3ALihX/W31nt88LNfuD3b261v8Em72bprAHtGxrB37z7xESsZC6FIM5OMuxPSCRvlgmKYelH4jJA3lK21HR3t1NHdjp5aG/I9z255w0nH7Lti4ZvSRcfG17UT/TMALLtT7emLoIsAr6rxzrGxs3THvp2qmt2X4fqv3PPYqRvqJR2utiElT2x9Ma2k8Ai0iUBkZxgtPKE0KykUlE6A4FpCnGETT8iBtGiiomBjUqG540URRQmc5hhxnqL26ZS5TFbvbsgT258EjQyhzDp9as0uqeYjuOCkuTi7u/QjZr7g3StX8gpVORJVF73C47IEgFauW2eXnnFG1nx+j+pfbhrDRV//5vfo4ac2tnVMnzV/BFUMjDoMZIJBiZCKwGcZ1OVh6IMVZauI1aEaAVNqCbraShju3zrGhPXnnHVWdtF5Z7t3zkh+rRzxIw0XzuWyFWvjRUtOl8UBoSUAvHlsrPfYanX7XtWz1jp84bo7H1tw96YRP5R0ccNGJHYMFjnKLgTIBhlI0aWOPCHxYcgtp3DDGyEAEVQZyg2AAo0z8HsiABZCXEwrOIB8IdLIYI0geY6IDdQYjLoc5aQMhiLPGqhVYogMetm7w7113szk0jm9d3/o1JmLJk5WHgnDsa+wilWz/MnuVLW7AMaqdfEUoj+Z2IXfBnxx/RC61jyyo7Fhxw7evGcoqjccDQ2OSJaPIY6IO6olbitbndrZo1M7alnvlDZ3/oLTzNll3FwBvgZguHUCL1lmP/WvP2/OOvFEv5gou6YAllcB5nNLV+rKlUu3P6l6zu2D+OqND2059banBvKsbWqUcxkU5lNByOBIoQo4MiHHIkVE2up1McLYrBKBJYQprwQxzVHbQHTbfzyai/GbYtm8OkQJQTiHiqBSTpA6D2EgqcQYGdntZkTevuOC+eZN86bf8u52XE20nFQVB8Drrx/DmXgsHofWs9WrNeqfD/7i8pVaEOV/7kA3aCeAGGZCiys7pOdcwh/9/Gr+/Efn+wI0azYOaSXAS1eG96Cq5XW5/sINj/b/2fe2jM16YPveTNqnxMocJgQQlLIUxZY4CqMroBC0fFMfT6UIZYFaAQotDRAVoWnCAnvyxVx3UCcNe8FM+G0GGjoKD4eIYlCWwyZlpFld6iOD7uLjZsXn0cjjv3DG9MfPtfSefEIT+kiOlNgj8UcXLBhHSVWVngLa/W7o17+9Kd/bm+tnvviQ5l0DioHtBAB+Q9/4yZk/Hx+7cg6fgBPQfmpEZ86d628E/HJAli9HE7aHqvLyVYFPDpC3APpV33z9XvzSI1t2f/CGhzejL1cn5UrMJkjji4yFMUP1IBgQGEYiGA5DdzkVYysMsAYBaSGGY0Zu8pbYNPsIFlFIglvjunnIY8WOU721kE0zZUSWYYVAeSo6sNsdX0nit188P56K9MaPn3z8MiJ6EMXQ5EuhQxwVOc5h5EKVIrSN/YR86ZDxvHkXrlWNP70Gem1hnCUD1J2e/51h+eAP1m1653rXccz3Hn6sYTu7YooN+yxFAgYkzE55ZuQU5pcisWA1IFXk7JFFAkUOhoSJAiEIGeRMcCYDoIjyBHEeI9Io9MtMDm/yMPdEChID1ggkoeoSUsTWwkIxuHdn3qZ59NPnL8BxOvjIZfNnfnsB4y+JqL5khZoVE0ZWmvnjkTIii9eGoufYC8yXnnPcqWo3bdpkaflyd/9Te2acQbSlOLG9TwEf/v7Wxhm/f8/j5+4rd5/2/ce2Ya/syOOpPaUcVKyPZHhisKWgfh62LIAoELwJEgyEHUikpYwkKoVyqCCiYoAfjIgIESvYB0OyEoRLyJhxYQAJwZiJEamI9G1xHTJAV130xqhTxzaef0r1+p+pVb9GRA9MEIXYr3o6UHbkf6XHOXwPtbEEzHUTKQkxgGoSYU0j+8zDO/LOR5/ZdMwQYeEzaQUPb96CPankpY4Ok4mwgsCM8VlqCdV/UD/XQjQJhYBmSIABgWECEcBMxaYYCeuZAFAUQ5RBecB1jBSUWjagiOHgkYsgYosYUNdIfV5v+ClRlLztjOk4pzyqc2fM+Jc39Va/XCX6gQK4T7V8IZC+FkLT68RwVkdPYT6fRJQ+pvrr9z7y1CWbBkYqz+wZSeced/x7+lPCk9t2YtOOvUjjam5rHezZmNxlITVVH/TEKaTDojZQLUxQdtCJs1YTtRALpfGWsVDY4WAsIdW08EIWpAYWFkQGSgxVD4McMZyTkb1i64PmhKkd5q0XX4C2scEtx3VWvrRgWmVrL/DvRJRimfKK5aBDzW1PGs5LQaeLVsEW1cUPjfg7vrHmUTy6ZSe2DmfOl9qUojILJQwukbIJBDMRxIahkgNSkCOMhXAMBZDAw/g8wHeqhVA0o1VNm6Isn3DqvFeoOmicgY2G2adCGYI8iRfxkg9DR4cwt6caXXDGcTihLJiGsU+fcOxxqxfEeLjN8iOrvn9vOZ0xQ3fNnZsveYFDcZOG8yLBRSLSHXV9684IszbuGVh629pnL7/16T43wBWYpMw2aePUGzRyj8jGQcfG1cMUoio8fGDwGRtGY31e8Iiao87FkB4CWGdMQeHQcR5Va+6QCJnLxXonVVLQyD6NG2PRyXOm4cwTZuPkmd2Q4V1f6mpvv+OMnurWE4AHiGjwAHonXuzUwaThvABjGRwcnNLe3p4R0fATQ9pzctvyvcDyrts29Z+/fcrUm+/dOID71jyMgZHc21oneS5DmUkIJMUGO+JQCnv1YVsOUcFeMC09PRTIsC22+IpLYZkKwxMR7wDvwCpwObQSJWZGRxuOn9qJs+fOwIxo4Im4PvZP3eXaMyfP6Ng9A3iCiUZ0Al1CmwRYOrqGpo9Kj3PnnXfaRYsWycGSxj7VeRszf+Gu4dElQ2i/cs1Tm7Fucz+2DgwhhVEkMVIJZHI1phBQALwagEogSsL6bMmhLgWrRwJBQh4WDpSNwUpO1ZJFV0cFM6ZOxbT2Ks47/ljEo/u+PjaW/wcZHjht1hQ6M8IzSWT709xViWgU+/OBiV7DOczrNlQdyhs1lRS8ankXcMrmenbqPufOHWFz1QCS4zf3NTAwNord+/ZhrJEhdR6p98hzD/ERDEeIoxglZiQRUEssOisx2pIInZUIM6dWUUHaV6b8q5HQlkrZDrdZu+0Ya9dVgF2GKJXnvjce19Qmfd1sxMbrS4h4P6pBQTBjAPEgUHkGKMV1GBDiLE9jiK9qFFm4XNMsl8SYRsNHWVzU+CZKGlbhVZBVami0AX56aHFn1hhRkUPzO1+DzL2X6/j/AbfKleCMnUMqAAAAAElFTkSuQmCC");
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:#E9EFF4;
+    display:grid;place-items:center;overflow:hidden;
+    padding-bottom:56px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .stage{
+    width:1280px;height:720px;position:relative;background:#fff;
+    box-shadow:0 24px 70px rgba(15,34,51,.18);
+    transform-origin:center center;overflow:hidden;
+  }
+
+  /* ---------- base ---------- */
+  .slide{
+    position:absolute;inset:0;padding:46px 64px 54px;
+    display:none;flex-direction:column;background:#fff;
+  }
+  .slide.active{display:flex;animation:slideIn .38s cubic-bezier(.22,.8,.3,1);}
+  .slide:not(.cover)::after{
+    content:"";position:absolute;top:38px;right:60px;
+    width:33px;height:30px;background:var(--logo) center/contain no-repeat;
+    pointer-events:none;
+  }
+  @keyframes slideIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+  .kicker{display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:700;letter-spacing:.16em;color:var(--blue);text-transform:uppercase;}
+  .kicker::before{content:"";width:24px;height:2px;background:var(--accent);flex:none;}
+  .kicker .dim{color:var(--muted);font-weight:600;letter-spacing:.06em;}
+
+  h1.title{font-size:40px;line-height:1.22;color:var(--navy);font-weight:800;letter-spacing:-.015em;margin-top:11px;}
+  h1.title em{font-style:normal;color:var(--accent);}
+  .lead{font-size:15px;line-height:1.72;color:var(--ink2);margin-top:9px;max-width:1050px;}
+  .lead b{color:var(--navy);font-weight:700;}
+
+  .body{flex:1;min-height:0;margin-top:20px;display:flex;flex-direction:column;gap:15px;}
+  .body.spread{justify-content:space-between;}
+
+  .foot{
+    position:absolute;left:64px;right:64px;bottom:18px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding-top:9px;border-top:1px solid var(--line2);
+    font-size:10.5px;color:var(--muted);
+  }
+  .foot .fl{display:flex;align-items:center;gap:8px;}
+  .foot .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);}
+  .foot .pg{font-variant-numeric:tabular-nums;color:#9BAEBD;}
+
+  /* ---------- atoms ---------- */
+  .tiles{display:grid;gap:12px;}
+  .tile{border:1px solid var(--line);border-radius:10px;padding:20px;background:#FBFDFE;}
+  .tile .tv{font-size:36px;font-weight:800;color:var(--blue);line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em;}
+  .tile .tl{font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.5;}
+  .tile .tu{font-size:14px;color:var(--muted);margin-left:2px;font-weight:600;}
+
+  .card{border:1px solid var(--line);border-radius:10px;background:#FBFDFE;padding:16px 18px;display:flex;flex-direction:column;gap:8px;}
+  .card .ct{font-size:14px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:9px;}
+  .card .cd{font-size:12.8px;line-height:1.68;color:var(--ink2);}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;background:var(--navy);color:#fff;font-size:11.5px;font-weight:700;flex:none;font-variant-numeric:tabular-nums;}
+  .num.red{background:var(--accent);}
+  .num.blue{background:var(--blue);}
+
+  .note{border-left:3px solid var(--blue);background:#F3F8FC;border-radius:0 8px 8px 0;padding:13px 18px;font-size:13px;line-height:1.68;color:var(--navy);}
+  .note.warn{border-left-color:var(--accent);background:#FBF7F8;}
+  .note b{font-weight:800;}
+
+  code,.mono{font-family:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;font-size:.92em;}
+  .small{font-size:11.8px;color:var(--muted);line-height:1.6;}
+  .strong{color:var(--navy);font-weight:700;}
+  .rule{height:1px;background:var(--line2);}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;}
+  .label{font-size:11.8px;font-weight:700;color:var(--navy);letter-spacing:.06em;}
+
+  /* ---------- cover ---------- */
+  .cover{padding:0;background:radial-gradient(120% 90% at 90% 4%,#E6F2FA 0%,rgba(230,242,250,0) 56%),linear-gradient(180deg,#F7FBFD 0%,#EDF4FA 100%);}
+  .cover .grid-bg{position:absolute;inset:0;background-image:linear-gradient(#D9E7F2 1px,transparent 1px),linear-gradient(90deg,#D9E7F2 1px,transparent 1px);background-size:64px 64px;opacity:.32;mask-image:radial-gradient(78% 70% at 28% 34%,#000 0%,transparent 100%);-webkit-mask-image:radial-gradient(78% 70% at 28% 34%,#000 0%,transparent 100%);}
+  .cover .inner{position:relative;padding:66px 76px 46px;display:flex;flex-direction:column;height:100%;}
+  .cover .brandline{display:flex;align-items:center;gap:12px;font-size:11.5px;letter-spacing:.2em;color:var(--blue);font-weight:700;}
+  .cover .brandline .bar{width:28px;height:26px;background:var(--logo) center/contain no-repeat;}
+  .cover h1{margin-top:52px;font-size:57px;line-height:1.15;font-weight:800;color:var(--navy);letter-spacing:-.028em;}
+  .cover h1 span{display:block;}
+  .cover h1 .accent{color:var(--accent);}
+  .cover .sub{margin-top:20px;font-size:16px;line-height:1.78;color:var(--ink2);max-width:790px;}
+  .cover .sub b{color:var(--navy);}
+
+  .motif{margin-top:auto;}
+  .motif .mrow{display:flex;align-items:center;gap:15px;}
+  .motif .mrow span{font-size:12px;color:#5C7A91;letter-spacing:.02em;}
+  .motif .mrow span b{color:var(--blue);font-weight:800;margin-right:5px;font-size:11px;letter-spacing:.08em;}
+  .motif .mrow em{font-style:normal;color:#B7CBDC;font-size:13px;}
+  .motif .mcap{font-size:11px;color:#8AA2B5;margin-top:9px;letter-spacing:.04em;}
+
+  .cover .meta{margin-top:26px;display:flex;align-items:flex-end;justify-content:space-between;border-top:1px solid #CFE0EC;padding-top:16px;}
+  .cover .who{font-size:12.5px;color:var(--ink2);line-height:1.9;}
+  .cover .who b{color:var(--navy);font-size:14px;}
+  .cover .kpis{display:flex;gap:34px;}
+  .cover .kpi .kv{font-size:31px;font-weight:800;color:var(--blue);line-height:1;font-variant-numeric:tabular-nums;}
+  .cover .kpi .kl{font-size:11px;color:var(--muted);margin-top:6px;}
+
+  /* ---------- timeline ---------- */
+  .tl{display:flex;}
+  .tl .step{flex:1;padding:22px 17px;background:#FBFDFE;border:1px solid var(--line);display:flex;flex-direction:column;}
+  .tl .step .dt{margin-top:auto;padding-top:10px;border-top:1px dashed #E7EEF5;font-size:10.5px;color:#9BAEBD;font-family:"SF Mono",Menlo,monospace;letter-spacing:.02em;}
+  .tl .step:first-child{border-radius:9px 0 0 9px;}
+  .tl .step:last-child{border-radius:0 9px 9px 0;}
+  .tl .step+.step{border-left:none;}
+  .tl .step .w{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--accent);}
+  .tl .step .n{font-size:13.5px;font-weight:700;color:var(--navy);margin-top:7px;}
+  .tl .step .d{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.55;}
+  .tl .step .out{font-size:11px;color:var(--ink2);margin-top:10px;line-height:1.5;}
+  .tl .step .out b{color:var(--blue);font-weight:700;font-size:10px;letter-spacing:.08em;margin-right:4px;}
+
+  /* ---------- bars ---------- */
+  .legend{display:flex;gap:18px;align-items:center;font-size:11.5px;color:var(--ink2);}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;}
+  .bars{display:flex;flex-direction:column;gap:22px;}
+  .brow{display:grid;grid-template-columns:92px 1fr 66px;align-items:center;gap:12px;}
+  .brow .bl{font-size:11.5px;color:var(--ink2);}
+  .brow .track{display:flex;height:32px;border-radius:4px;overflow:hidden;background:#F0F5F9;}
+  .brow .track span{height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:10px;color:#fff;font-weight:700;font-variant-numeric:tabular-nums;}
+  .brow .bv{font-size:13px;font-weight:800;color:var(--accent);text-align:right;font-variant-numeric:tabular-nums;}
+  .colhead{display:grid;grid-template-columns:92px 1fr 74px;gap:12px;font-size:10px;color:#A6B8C8;padding-bottom:2px;}
+  .colhead .r{text-align:right;}
+  .axis{display:grid;grid-template-columns:92px 1fr 66px;gap:12px;font-size:10px;color:#A6B8C8;}
+  .axis .ticks{display:flex;justify-content:space-between;}
+
+  /* ---------- pipeline ---------- */
+  .pipe{display:flex;}
+  .pipe .st{flex:1;border:1px solid var(--line);background:#FBFDFE;padding:16px 15px 15px;display:flex;flex-direction:column;gap:8px;}
+  .pipe .st:first-child{border-radius:9px 0 0 9px;}
+  .pipe .st:last-child{border-radius:0 9px 9px 0;}
+  .pipe .st .sn{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--blue);}
+  .pipe .st .sr{font-size:17px;font-weight:800;color:var(--navy);letter-spacing:-.01em;}
+  .pipe .st .sa{font-size:12px;color:var(--ink2);line-height:1.6;}
+  .pipe .st .sk2{font-size:10.8px;color:var(--muted);line-height:1.5;padding-top:2px;}
+  .pipe .st .sf{font-size:10.5px;color:var(--muted);font-family:"SF Mono",Menlo,monospace;line-height:1.55;margin-top:auto;padding-top:9px;border-top:1px dashed #E4EDF4;}
+  .pipe .arw{width:24px;display:flex;align-items:center;justify-content:center;color:#B7CBDC;font-size:15px;flex:none;}
+
+  .spine{display:flex;align-items:center;gap:12px;background:var(--navy);color:#fff;border-radius:8px;padding:12px 20px;}
+  .spine .sk{font-size:9.5px;letter-spacing:.18em;opacity:.6;font-weight:700;}
+  .spine .sv{font-size:13.5px;font-weight:700;}
+  .spine .sd{font-size:11.5px;opacity:.72;margin-left:auto;}
+
+  /* ---------- code ---------- */
+  .code{background:#0F2740;border-radius:9px;padding:16px 18px;overflow:hidden;white-space:pre;
+    font-family:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;font-size:11.7px;line-height:1.95;color:#D6E6F4;}
+  .code .k{color:#7FC4EE;}
+  .code .v{color:#FFC98B;}
+  .code .c{color:#6C8AA5;}
+
+  /* ---------- flow ---------- */
+  .flowline{display:flex;align-items:stretch;gap:7px;}
+  .flowline .fn{flex:1;background:#F4F9FD;border:1px solid #D9E7F3;border-radius:7px;padding:10px 8px;font-size:11.8px;color:var(--navy);font-weight:700;text-align:center;line-height:1.35;}
+  .flowline .fn small{display:block;font-weight:500;color:var(--muted);font-size:10px;margin-top:3px;}
+  .flowline .fa{display:flex;align-items:center;color:#B7CBDC;font-size:13px;}
+
+  /* ---------- nav ---------- */
+  .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;display:flex;align-items:center;gap:3px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:1px solid rgba(0,59,92,.12);border-radius:999px;padding:6px 11px;box-shadow:0 8px 22px rgba(15,34,51,.14);z-index:50;}
+  .nav .arrow{border:none;background:transparent;cursor:pointer;color:rgba(0,59,92,.72);width:26px;height:26px;border-radius:50%;font-size:18px;font-weight:300;line-height:1;display:grid;place-items:center;transition:background .15s,opacity .15s;}
+  .nav .arrow:hover{background:#EAF3FA;color:var(--navy);}
+  .nav .arrow:disabled{opacity:.22;cursor:default;background:transparent;}
+  .nav .dots{display:flex;align-items:center;gap:5px;padding:0 6px;}
+  .nav .ndot{width:7px;height:7px;border-radius:999px;background:#C8D8E4;border:none;padding:0;cursor:pointer;transition:width .22s cubic-bezier(.22,.8,.3,1),background .18s;}
+  .nav .ndot:hover{background:#93ABBE;}
+  .nav .ndot.on{width:19px;background:var(--accent);}
+  .nav .sep{width:1px;height:14px;background:rgba(0,59,92,.14);margin:0 4px;}
+  .nav .cnt{display:flex;align-items:baseline;justify-content:flex-end;gap:3px;padding:0 2px 0 6px;user-select:none;font-variant-numeric:tabular-nums;}
+  .nav .cnt b{font-size:12.5px;font-weight:700;color:var(--navy);letter-spacing:.04em;min-width:16px;text-align:right;}
+  .nav .cnt i{font-style:normal;font-size:10px;color:#B4C6D5;margin:0 1px;transform:translateY(-1px);}
+  .nav .cnt em{font-style:normal;font-size:10.5px;font-weight:600;color:#93A8B9;letter-spacing:.02em;min-width:15px;}
+  .nav .fs{border:none;background:transparent;cursor:pointer;color:rgba(0,59,92,.72);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;transition:background .15s,color .15s;}
+  .nav .fs:hover{background:#EAF3FA;color:var(--navy);}
+  .nav .fs svg{width:14px;height:14px;display:block;}
+  .nav .fs .ico-compress{display:none;}
+  .nav .fs.on .ico-expand{display:none;}
+  .nav .fs.on .ico-compress{display:block;}
+  .tip{position:fixed;bottom:56px;left:0;transform:translate(-50%,4px);background:rgba(0,59,92,.95);color:#fff;font-size:11.5px;line-height:1.4;padding:5px 10px;border-radius:7px;white-space:nowrap;max-width:64vw;overflow:hidden;text-overflow:ellipsis;opacity:0;pointer-events:none;transition:opacity .14s,transform .14s;z-index:51;box-shadow:0 6px 16px rgba(0,59,92,.22);}
+  .tip.show{opacity:1;transform:translate(-50%,0);}
+  body.presenting{padding-bottom:0;}
+  body.presenting .nav,body.presenting .toc-tab{transition:opacity .32s ease;}
+  body.presenting .toc-tab{display:none;}
+  body.presenting.ui-idle .nav{opacity:0;pointer-events:none;}
+  body.presenting.ui-idle{cursor:none;}
+
+  /* ---------- toc ---------- */
+  .toc{position:fixed;left:10px;top:48px;max-height:calc(100vh - 100px);width:148px;background:#fff;
+       border-radius:12px;box-shadow:0 18px 46px rgba(15,34,51,.16);z-index:55;
+       display:flex;flex-direction:column;overflow:hidden;
+       transform:translateX(calc(-100% - 24px));transition:transform .3s cubic-bezier(.22,.8,.3,1);}
+  .toc.open{transform:translateX(0);}
+  .toc::after{content:"";position:absolute;left:0;right:0;bottom:0;height:18px;pointer-events:none;
+       background:linear-gradient(to bottom,rgba(255,255,255,0),#fff);transition:opacity .2s;}
+  .toc.at-end::after{opacity:0;}
+  .toc-list{overflow-y:auto;overflow-x:hidden;padding:9px 8px 12px 10px;display:flex;flex-direction:column;gap:6px;}
+  .toc-list::-webkit-scrollbar{width:5px;}
+  .toc-list::-webkit-scrollbar-thumb{background:#D5E1EA;border-radius:9px;}
+  .toc-item{display:flex;align-items:center;gap:6px;width:100%;border:none;background:transparent;padding:0;cursor:pointer;text-align:left;}
+  .toc-num{flex:0 0 14px;font-size:10px;font-weight:700;color:#93A8B9;letter-spacing:.02em;text-align:center;font-variant-numeric:tabular-nums;transition:color .15s;}
+  .toc-item.on .toc-num{color:var(--accent);}
+  .toc-thumb{position:relative;flex:0 0 auto;width:104px;height:59px;border:1px solid #DCE6EF;border-radius:5px;overflow:hidden;background:#fff;transition:border-color .15s,box-shadow .15s;}
+  .toc-item:hover .toc-thumb{border-color:#9EC2DC;}
+  .toc-item.on .toc-thumb{border-color:#9EC2DC;box-shadow:0 0 0 2px rgba(0,112,173,.16);}
+  .toc-thumb .slide{position:absolute!important;left:0;top:0;inset:auto;display:flex!important;width:1280px;height:720px;
+      transform:scale(.08125);transform-origin:top left;animation:none!important;pointer-events:none;}
+  .toc-tab{position:fixed;left:10px;top:8px;width:28px;height:28px;border:1px solid rgba(0,59,92,.1);padding:0;
+      border-radius:8px;background:#fff;box-shadow:0 4px 14px rgba(15,34,51,.14);cursor:pointer;
+      display:grid;place-items:center;color:rgba(0,59,92,.72);z-index:56;transition:color .15s,background .15s,opacity .3s;}
+  .toc-tab:hover{color:var(--navy);background:#F6FAFD;}
+  .toc-tab svg{width:14px;height:14px;display:block;}
+  .toc-tab .ico-close{display:none;}
+  .toc-tab.on .ico-open{display:none;}
+  .toc-tab.on .ico-close{display:block;}
+  body.toc-open .nav{left:calc(50% + 85px);}
+  .progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#003B5C 0%,#0070AD 52%,#00A3E0 100%);z-index:60;transition:width .3s ease;}
+
+  @media print{
+    @page{size:1280px 720px;margin:0;}
+    body,body.toc-open{display:block;overflow:visible;background:#fff;padding:0;}
+    .stage{transform:none!important;box-shadow:none;width:1280px;height:auto;}
+    .slide{position:relative;display:flex!important;width:1280px;height:720px;page-break-after:always;animation:none;}
+    .nav,.progress,.toc,.toc-tab{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="stage" id="stage">
+
+<!-- ============ 01 ============ -->
+<section class="slide cover active">
+  <div class="grid-bg"></div>
+  <div class="inner">
+    <div class="brandline"><span class="bar"></span>凯捷咨询 · 架构组内部分享</div>
+    <h1>
+      <span>把 AI 装进流程，</span>
+      <span class="accent">而不是装进个人工具</span>
+    </h1>
+    <div class="sub">
+      某零售集团 AI-DLC 研发提效的 10 周实践：从「说不清交付了多少」，到<strong>两把尺子量到底</strong>。<br>
+      这不是一次工具选型，而是一次<strong>度量口径 + 组织交接面</strong>的重构。
+    </div>
+
+    <div class="motif">
+      <div class="mrow">
+        <span><b>S1</b>需求分析</span><em>›</em>
+        <span><b>S2</b>PRD · Story</span><em>›</em>
+        <span><b>S3</b>架构方案</span><em>›</em>
+        <span><b>S4</b>实现 · 编码</span><em>›</em>
+        <span><b>S5</b>测试 · 报告 </span>
+      </div>
+      <div class="mcap">五个阶段 · 一张卡贯穿 · 两把尺子量到底</div>
+    </div>
+
+    <div class="meta">
+      <div class="who">
+        <b>袁慎建</b> ｜ AI 架构师<br>
+        2026 年 11 月 19 日
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="kv">3</div><div class="kl">试点项目</div></div>
+        <div class="kpi"><div class="kv">10<span style="font-size:14px;font-weight:700">周</span></div><div class="kl">从诊断到度量</div></div>
+        <div class="kpi"><div class="kv">2</div><div class="kl">待解瓶颈</div></div>
+        <div class="kpi"><div class="kv">14<span style="font-size:14px;font-weight:700">项</span></div><div class="kl">可复用技能</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 议程 ============ -->
+<section class="slide">
+  <div class="kicker">00 · 议程 <span class="dim">先算清，再谈快慢</span></div>
+  <h1 class="title">五段内容，<em>回答同一个问题</em></h1>
+  <div class="lead">
+    「AI 到底让交付快了多少？」—— 没有统一口径，这个问题只能靠感觉回答。所以先讲<b>怎么算</b>，再讲<b>怎么干</b>。
+  </div>
+  <div class="body">
+    <div style="display:grid;grid-template-columns:1.12fr .88fr;gap:28px;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;min-height:0">
+          <div style="flex:1;display:grid;grid-template-columns:46px 1fr auto;gap:16px;align-items:center;border-bottom:1px solid #EDF3F8;">
+            <div style="font-size:20px;font-weight:800;color:#AFC6D8;letter-spacing:.02em;font-variant-numeric:tabular-nums;">01</div>
+            <div>
+              <div style="font-size:15.5px;font-weight:700;color:var(--navy);letter-spacing:.01em;">为什么做 · 两个卡点</div>
+              <div class="small" style="margin-top:4px;font-size:11.8px;">需求算不清大小，测试堵在交付末端</div>
+            </div>
+            <div style="font-size:10.5px;color:#93A8B9;letter-spacing:.06em;font-variant-numeric:tabular-nums;">P3–P5</div>
+          </div>
+          <div style="flex:1;display:grid;grid-template-columns:46px 1fr auto;gap:16px;align-items:center;border-bottom:1px solid #EDF3F8;">
+            <div style="font-size:20px;font-weight:800;color:#AFC6D8;letter-spacing:.02em;font-variant-numeric:tabular-nums;">02</div>
+            <div>
+              <div style="font-size:15.5px;font-weight:700;color:var(--navy);letter-spacing:.01em;">怎么定 · 一条链路</div>
+              <div class="small" style="margin-top:4px;font-size:11.8px;">五个阶段、固定产物，一张卡贯穿需求到测试</div>
+            </div>
+            <div style="font-size:10.5px;color:#93A8B9;letter-spacing:.06em;font-variant-numeric:tabular-nums;">P6–P7</div>
+          </div>
+          <div style="flex:1;display:grid;grid-template-columns:46px 1fr auto;gap:16px;align-items:center;border-bottom:1px solid #EDF3F8;">
+            <div style="font-size:20px;font-weight:800;color:#AFC6D8;letter-spacing:.02em;font-variant-numeric:tabular-nums;">03</div>
+            <div>
+              <div style="font-size:15.5px;font-weight:700;color:var(--navy);letter-spacing:.01em;">怎么量 · 两把尺子</div>
+              <div class="small" style="margin-top:4px;font-size:11.8px;">结构定规模，工时定排期，指标证真伪</div>
+            </div>
+            <div style="font-size:10.5px;color:#93A8B9;letter-spacing:.06em;font-variant-numeric:tabular-nums;">P8–P10</div>
+          </div>
+          <div style="flex:1;display:grid;grid-template-columns:46px 1fr auto;gap:16px;align-items:center;border-bottom:1px solid #EDF3F8;">
+            <div style="font-size:20px;font-weight:800;color:#AFC6D8;letter-spacing:.02em;font-variant-numeric:tabular-nums;">04</div>
+            <div>
+              <div style="font-size:15.5px;font-weight:700;color:var(--navy);letter-spacing:.01em;">怎么测 · 数字人</div>
+              <div class="small" style="margin-top:4px;font-size:11.8px;">用例与脚本交给 TEA，人只负责判断</div>
+            </div>
+            <div style="font-size:10.5px;color:#93A8B9;letter-spacing:.06em;font-variant-numeric:tabular-nums;">P11–P12</div>
+          </div>
+          <div style="flex:1;display:grid;grid-template-columns:46px 1fr auto;gap:16px;align-items:center;">
+            <div style="font-size:20px;font-weight:800;color:#AFC6D8;letter-spacing:.02em;font-variant-numeric:tabular-nums;">05</div>
+            <div>
+              <div style="font-size:15.5px;font-weight:700;color:var(--navy);letter-spacing:.01em;">带走什么 · 六个模式</div>
+              <div class="small" style="margin-top:4px;font-size:11.8px;">与工具、模型、行业无关的设计选择</div>
+            </div>
+            <div style="font-size:10.5px;color:#93A8B9;letter-spacing:.06em;font-variant-numeric:tabular-nums;">P13</div>
+          </div>
+      </div>
+      <div style="background:var(--navy);border-radius:12px;padding:34px 32px;color:#fff;display:flex;flex-direction:column;justify-content:center">
+        <div style="font-size:10.5px;letter-spacing:.18em;opacity:.55;font-weight:700">主张</div>
+        <div style="margin-top:18px;font-size:22px;line-height:1.72;font-weight:600">
+          算得清，<br>才谈得上干得快。
+        </div>
+        <div style="margin-top:26px;border-top:1px solid rgba(255,255,255,.18);padding-top:16px;font-size:12.3px;line-height:1.75;opacity:.78">
+          十周、三个试点项目、两条真实需求走完整链路——<br>后面出现的每个数字，都来自这里。
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>凯捷咨询 · 架构组内部技术分享</div><div class="pg">02</div></div>
+</section>
+
+<!-- ============ 02 ============ -->
+<section class="slide">
+  <div class="kicker">01 · 背景 <span class="dim">我们进场时，AI 已经在了</span></div>
+  <h1 class="title">工具不缺、热情不缺，缺的是<em>一套能算账的口径</em></h1>
+  <div class="lead">
+    三个团队都在用 AI 写代码，开发单点效率肉眼可见地涨。但把三个团队放到一张桌子上问「这个迭代交付了多少」，
+    各说各话、互相不可比——<b>成果说不清，提效就无法被承认，也无法被复制</b>。
+  </div>
+  <div class="body spread">
+    <div class="tl">
+      <div class="step"><div class="w">W1–W2</div><div class="n">访谈 · 基线诊断</div><div class="d">三项目流程走查，找出 Top 2 瓶颈</div><div class="out"><b>产出</b>开发流程图 · Top 2 瓶颈结论</div><div class="dt">09.02 – 09.11</div></div>
+      <div class="step"><div class="w">W3</div><div class="n">定口径 · 建尺子</div><div class="d">需求当量 + 链路串联规范</div><div class="out"><b>产出</b>需求当量标准 · 串联规范 v1</div><div class="dt">09.14 – 09.18</div></div>
+      <div class="step"><div class="w">W4–W5</div><div class="n">规范与技能落地</div><div class="d">五个 Agent、四本手册、一个门户（含中秋假）</div><div class="out"><b>产出</b>5 个 Agent · 4 本手册 · 门户上线</div><div class="dt">09.21 – 09.30</div></div>
+      <div class="step"><div class="w">W6–W7</div><div class="n">真实需求全链路试跑</div><div class="d">两条需求走完 PRD → 测试（国庆后启动）</div><div class="out"><b>产出</b>两条需求全链路闭环 · 测试样板</div><div class="dt">10.08 – 10.23</div></div>
+      <div class="step"><div class="w">W8–W9</div><div class="n">度量与归因</div><div class="d">周期、吞吐、瓶颈对比</div><div class="out"><b>产出</b>周期 / 吞吐对比 · 瓶颈归因</div><div class="dt">10.26 – 11.06</div></div>
+    </div>
+    <div class="grid4">
+      <div class="tile"><div class="tv">3</div><div class="tl">试点项目：A 平台 · B 电商 · C 平台</div></div>
+      <div class="tile"><div class="tv">262<span class="tu">/ 11</span></div><div class="tl">A 平台历史卡片 / 迭代（建模基线）</div></div>
+      <div class="tile"><div class="tv">6,760<span class="tu">/ 159</span></div><div class="tl">B 电商卡片 / 迭代（13 类版本线）</div></div>
+      <div class="tile"><div class="tv">82</div><div class="tl">试点任务（含 11 条问题、9 条风险）</div></div>
+    </div>
+    <div class="note">
+      <b>一句话定位：</b>凯捷教练组交付的不是「更会用的 AI」，而是能指导后续规模化的资产 —— 技能包、手册、门户与一套度量口径。
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>某零售集团 AI-DLC 研发提效实践</div><div class="pg">03</div></div>
+</section>
+
+<!-- ============ 03 ============ -->
+<section class="slide">
+  <div class="kicker">02 · 痛点一 <span class="dim">需求评级缺失</span></div>
+  <h1 class="title">需求没有尺子，<em>吞吐量只是一个形容词</em></h1>
+  <div class="body">
+    <div class="two" style="flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="label">真实卡片长这样</div>
+        <div style="border:1px solid var(--line);border-radius:10px;background:#F7FAFD;display:flex;flex-direction:column;flex:1">
+          <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;border-bottom:1px solid #EDF3F8"><span sf="" mono",menlo,monospace;font-size:11.5px;color:var(--ink2)"="" style="font-family:">0715迭代需求 - 项目UX调整&amp;状态流转UAT测试</span><span style="font-size:10px;color:#7A8FA3;background:#EEF4FA;border:1px solid #E0EAF3;border-radius:99px;padding:2px 8px;white-space:nowrap">UAT 测试</span></div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;border-bottom:1px solid #EDF3F8"><span sf="" mono",menlo,monospace;font-size:11.5px;color:var(--ink2)"="" style="font-family:">0715迭代需求 - 交付物调整-功能测试</span><span style="font-size:10px;color:#7A8FA3;background:#EEF4FA;border:1px solid #E0EAF3;border-radius:99px;padding:2px 8px;white-space:nowrap">功能测试</span></div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;border-bottom:1px solid #EDF3F8"><span sf="" mono",menlo,monospace;font-size:11.5px;color:var(--ink2)"="" style="font-family:">0729迭代需求 -【项目制】BPM 价值展示</span><span style="font-size:10px;color:#7A8FA3;background:#EEF4FA;border:1px solid #E0EAF3;border-radius:99px;padding:2px 8px;white-space:nowrap">功能开发</span></div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px"><span sf="" mono",menlo,monospace;font-size:11.5px;color:var(--ink2)"="" style="font-family:">V20260909 -【项目制】复盘功能测试验证</span><span style="font-size:10px;color:#7A8FA3;background:#EEF4FA;border:1px solid #E0EAF3;border-radius:99px;padding:2px 8px;white-space:nowrap">功能测试</span></div>
+        </div>
+        <div class="small">同一条需求被切成 N 张卡，粒度随人而定：<span class="strong">拆分越细，卡数越多，越像干得多。</span></div>
+      </div>
+      <div style="display:grid;grid-template-rows:1fr 1fr 1fr;gap:12px;min-height:0">
+        <div class="card" style="justify-content:center">
+          <div class="ct"><span class="num red">1</span>不可加</div>
+          <div class="cd">卡数 ≠ 需求数。拆分粒度不同，卡数可以翻倍而交付内容不变。</div>
+        </div>
+        <div class="card" style="justify-content:center">
+          <div class="ct"><span class="num red">2</span>不可比</div>
+          <div class="cd">三个项目各算各的账：有的数卡、有的数工时、有的数版本，横向比不了，跨期也比不了。</div>
+        </div>
+        <div class="card" style="justify-content:center">
+          <div class="ct"><span class="num red">3</span>不可信</div>
+          <div class="cd">工时估得其实挺准（整体偏差 <b class="strong">-3.1%</b>）——但工时是<b class="strong">成本</b>，不是交付规模。用成本证明产出，逻辑不成立。</div>
+        </div>
+      </div>
+    </div>
+    <div class="note warn">
+      <b>所以先说清楚一件事：</b>没有统一的「大小」，就没有统一的「吞吐」；没有吞吐，「提效 20%」既无法证明，也无法被审计。
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>数据源：需求平台迭代数据（262 张卡 / 11 迭代）</div><div class="pg">04</div></div>
+</section>
+
+<!-- ============ 04 ============ -->
+<section class="slide">
+  <div class="kicker">03 · 痛点二 <span class="dim">QA 测试瓶颈</span></div>
+  <h1 class="title">DEV 变快了，交付没变快——<em>瓶颈长在交接面</em></h1>
+  <div class="lead">
+    <b>测试类卡占了 52%–63%，开发类只占 14%–32%</b>。
+    迭代的大部分工时花在「验」而不是「做」上，验的方式是手工执行。
+  </div>
+  <div class="body">
+    <div style="display:grid;grid-template-columns:1.18fr .82fr;gap:26px;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+        <div class="legend">
+          <span><i style="background:#0070AD"></i>开发卡</span>
+          <span><i style="background:#8E3B45"></i>测试卡</span>
+          <span><i style="background:#D7E3ED"></i>其他</span>
+        </div>
+        <div class="bars">
+          <div class="brow"><div class="bl">0715 迭代</div><div class="track"><span style="width:23.9%;background:#0070AD">24%</span><span style="width:51.7%;background:#8E3B45">52%</span><span style="width:24.4%;background:#D7E3ED"></span></div><div class="bv">51.7%</div></div>
+          <div class="brow"><div class="bl">0729 迭代</div><div class="track"><span style="width:14.2%;background:#0070AD">14%</span><span style="width:62.8%;background:#8E3B45">63%</span><span style="width:23%;background:#D7E3ED"></span></div><div class="bv">62.8%</div></div>
+          <div class="brow"><div class="bl">0812 迭代</div><div class="track"><span style="width:32.2%;background:#0070AD">32%</span><span style="width:62.6%;background:#8E3B45">63%</span><span style="width:5.2%;background:#D7E3ED"></span></div><div class="bv">62.6%</div></div>
+          <div class="brow"><div class="bl">V20260826</div><div class="track"><span style="width:21.5%;background:#0070AD">22%</span><span style="width:58.1%;background:#8E3B45">58%</span><span style="width:20.4%;background:#D7E3ED"></span></div><div class="bv">58.1%</div></div>
+          <div class="brow"><div class="bl">V20260909</div><div class="track"><span style="width:16.7%;background:#0070AD">17%</span><span style="width:62.5%;background:#8E3B45">63%</span><span style="width:20.8%;background:#D7E3ED"></span></div><div class="bv">62.5%</div></div>
+        </div>
+        <div class="axis"><div></div><div class="ticks"><span>0</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div><div></div></div>
+        <div class="small">团队基线：200 工时 / 迭代 · 21 张卡 / 迭代 · 均值 9.6 工时 / 卡</div>
+      </div>
+      <div style="display:flex;flex-direction:column;min-height:0">
+        <div class="label">测试类活动的单卡基线（历史回归）</div>
+        <div style="display:flex;flex-direction:column;margin-top:8px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line2);padding:14px 0">
+            <span style="font-size:12.3px;color:var(--ink2)">测试案例编写</span><b class="mono" style="color:var(--navy);font-size:14px">16h</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line2);padding:14px 0">
+            <span style="font-size:12.3px;color:var(--ink2)">功能测试执行</span><b class="mono" style="color:var(--navy);font-size:14px">12h</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line2);padding:14px 0">
+            <span style="font-size:12.3px;color:var(--ink2)">SIT 系统集成测试</span><b class="mono" style="color:var(--navy);font-size:14px">20h</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line2);padding:14px 0">
+            <span style="font-size:12.3px;color:var(--ink2)">UAT 用户验收</span><b class="mono" style="color:var(--navy);font-size:14px">12h</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0">
+            <span style="font-size:12.3px;color:var(--ink2)">测试往返（缺陷修复）</span><b class="mono" style="color:var(--navy);font-size:14px">20h</b>
+          </div>
+        </div>
+        <div class="small" style="margin-top:14px">这些工时里，<span class="strong">真正需要判断的少，重复执行与「人肉建数」多</span>：同一条链路，每个版本回归一次、每个缺陷复测一次。</div>
+      </div>
+    </div>
+    <div class="note warn">
+      <b>端到端周期 = 需求 + 开发 + 测试 + 等待。</b>只优化其中一段，上限就在另一段——开发提效 30%，端到端可能只快 10%。
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>数据源：需求平台迭代卡片结构与活动级工时回归（n=104）</div><div class="pg">05</div></div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section class="slide">
+  <div class="kicker">04 · 我们定的 AI-DLC <span class="dim">长什么样</span></div>
+  <h1 class="title">不是新流程，是把五个阶段<em>编成一条流水线</em></h1>
+  <div class="lead">
+    五个阶段：每个阶段有<b>固定的产物</b>、<b>固定的落点</b>、<b>固定的归属卡</b>，
+    以及一个专职的 Agent，每个阶段基于标准的Spec协作。
+  </div>
+  <div class="body spread">
+    <div class="pipe">
+      <div class="st">
+        <div class="sn">S1</div><div class="sr">Bob</div>
+        <div class="sa">需求澄清与业务分析，产出 PRD 的输入材料</div>
+        <div class="sk2">约束 · 非主链，不贴 trace</div>
+        <div class="sf">1-analysis/</div>
+      </div>
+      <div class="arw">›</div>
+      <div class="st">
+        <div class="sn">S2</div><div class="sr">Peter</div>
+        <div class="sa">写 PRD，拆 Story，每条验收标准可验证</div>
+        <div class="sk2">约束 · 主链起点，从这里开始贴 trace</div>
+        <div class="sf">prd-*.md · story-*.md<br>2-planning/{version}/</div>
+      </div>
+      <div class="arw">›</div>
+      <div class="st">
+        <div class="sn">S3</div><div class="sr">Andy</div>
+        <div class="sa">一个 PRD 一份架构方案，定契约与影响面</div>
+        <div class="sk2">约束 · 无契约变更可豁免，走 quick-dev</div>
+        <div class="sf">solution-*.md<br>3-solution/{version}/</div>
+      </div>
+      <div class="arw">›</div>
+      <div class="st">
+        <div class="sn">S4</div><div class="sr">David</div>
+        <div class="sa">实现计划 + 直接提交代码，不做文档回填</div>
+        <div class="sk2">约束 · commit 带卡 Key，需求靠 git 串联</div>
+        <div class="sf">impl-story-*.md<br>[KEY] commit</div>
+      </div>
+      <div class="arw">›</div>
+      <div class="st">
+        <div class="sn">S5</div><div class="sr">Lilian</div>
+        <div class="sa">策略 → 用例 → 脚本 → 执行 → 报告 → 审核</div>
+        <div class="sk2">约束 · 用例目录人批准后才允许出脚本</div>
+        <div class="sf">test-report.md<br>5-testing/…/tc-{key}/</div>
+      </div>
+    </div>
+    <div class="spine">
+      <div class="sk">SPINE</div>
+      <div class="sv">链路主键 = 需求平台卡片 Key（如 REQ001-2104）</div>
+      <div class="sd">一张卡贯穿 需求 → 架构 → 编码 → 测试</div>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="ct" style="font-size:13px">一张卡贯穿</div><div class="cd">所有产物靠卡 Key 归属，父子关系显式声明，不靠文件夹猜。</div></div>
+      <div class="card"><div class="ct" style="font-size:13px">一份产物一个落点</div><div class="cd">目录、文件名、阶段号固定；中文字段直接写中文，不转拼音。</div></div>
+      <div class="card"><div class="ct" style="font-size:13px">每个文件头贴 trace</div><div class="cd">14 个字段，机器自动填 11 个，人只确认 3 个关键字段。</div></div>
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>《AI-DLC 全链路串联规范》v2.2</div><div class="pg">06</div></div>
+</section>
+
+<!-- ============ 06 ============ -->
+<section class="slide">
+  <div class="kicker">05 · 关键设计 <span class="dim">让链路自己长出来</span></div>
+  <h1 class="title">可观测性来自<em>数据结构</em>，不来自额外流程</h1>
+  <div class="lead">
+    <b>把度量需要的信息，塞进本来就该写的地方</b>——
+    文档头、文件名、提交信息。度量变成副产品，没人需要额外交表。
+  </div>
+  <div class="body">
+    <div style="display:grid;grid-template-columns:1.04fr .96fr;gap:24px;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="label">每份产物开头的 trace 块</div>
+        <div style="flex:1;min-height:0;display:flex"><div class="code" style="width:100%;height:100%">
+<span class="c">---</span>
+<span class="k">trace:</span>
+  <span class="k">schema_version:</span> sdlc/v1
+  <span class="k">artifact_id:</span> <span class="v">REQ001-2104</span>      <span class="c"># 挂哪张卡</span>
+  <span class="k">parent_artifact_id:</span> <span class="v">—</span>              <span class="c"># 父需求卡</span>
+  <span class="k">artifact_type:</span> <span class="v">prd</span>             <span class="c"># prd/story/…</span>
+  <span class="k">dir:</span> <span class="v">2-planning/req-20261014.01/prd</span>
+  <span class="k">version:</span> <span class="v">req-20261014.01</span>
+  <span class="k">upstream:</span> <span class="v">[../prd/prd-….md]</span>     <span class="c"># 上一环节</span>
+  <span class="k">created:</span> <span class="v">2026-09-03 10:00:00</span>  <span class="c"># 阶段完成</span>
+<span class="c">---</span>
+        </div></div>
+        <div class="small">一个 <span class="mono">created</span> 时间戳之差，就是阶段 Lead Time——不需要任何人回忆「这事什么时候做完的」。</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:11px;min-height:0;padding-top:28px;padding-bottom:24px">
+        <div class="card">
+          <div class="ct">① 文档名带 Key</div>
+          <div class="cd">人眼可追：<span class="mono" style="color:var(--blue);font-size:11px">prd-REQ001-2104-考核待办.md</span></div>
+        </div>
+        <div class="card">
+          <div class="ct">② 文档头贴 trace</div>
+          <div class="cd">机器可读：谁是谁的上游、属于哪个版本、什么时候完成，一次扫盘就能重建链路台账。</div>
+        </div>
+        <div class="card">
+          <div class="ct">③ 提交信息带 Key</div>
+          <div class="cd">需求 ↔ 代码自动关联：<span class="mono" style="color:var(--blue);font-size:11px">[REQ001-2186] feat: 新增审批接口</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="note" style="font-size:12.3px;padding:10px 16px">
+      三条约定合起来，<b>「需求 → 架构 → 代码 → 测试」全链路跟踪</b>，无额外维护成本。
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>不新增填报系统的度量设计</div><div class="pg">07</div></div>
+</section>
+
+<!-- ============ 07 ============ -->
+<section class="slide">
+  <div class="kicker">06 · 解法一 <span class="dim">需求评级</span></div>
+  <h1 class="title">给需求一把<em>能对外解释</em>的尺子</h1>
+  <div class="lead">
+    国际标准 <b>COSMIC 功能点（ISO/IEC 19761）</b>：数一条需求有多少次「数据移动」，
+    再把刻度锚到一个所有人都看得懂的基准上——<b>一个标准 CRUD 页面</b>。
+  </div>
+  <div class="body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+        <div style="background:var(--navy);border-radius:10px;padding:24px 26px;color:#fff">
+          <div style="font-size:10.5px;letter-spacing:.16em;opacity:.55;font-weight:700">当量换算（全局唯一公式）</div>
+          <div style="margin-top:10px;font-size:33px;font-weight:800;letter-spacing:-.015em">当量 = CFP ÷ 14</div>
+          <div style="margin-top:8px;font-size:12.3px;line-height:1.7;opacity:.8">
+            1 标准需求 = 一个标准 CRUD 页面 = <b style="color:#F0CDD2">14 个数据移动</b>
+          </div>
+          <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,.16);padding-top:12px;display:grid;grid-template-columns:1fr auto;gap:7px 10px;font-size:11.8px">
+            <span style="opacity:.82">Create 新增</span><b class="mono" style="font-weight:700">E+W+X = 3</b>
+            <span style="opacity:.82">Read 查询</span><b class="mono" style="font-weight:700">E+R+X = 3</b>
+            <span style="opacity:.82">Update 修改</span><b class="mono" style="font-weight:700">E+R+W+X = 4</b>
+            <span style="opacity:.82">Delete 删除</span><b class="mono" style="font-weight:700">E+R+W+X = 4</b>
+          </div>
+        </div>
+        <div class="grid4" style="gap:9px">
+          <div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#FBFDFE">
+            <div style="font-size:12.5px;font-weight:800;color:var(--navy)">Entry</div><div class="small" style="font-size:10.5px">输入</div>
+          </div>
+          <div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#FBFDFE">
+            <div style="font-size:12.5px;font-weight:800;color:var(--navy)">Exit</div><div class="small" style="font-size:10.5px">输出</div>
+          </div>
+          <div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#FBFDFE">
+            <div style="font-size:12.5px;font-weight:800;color:var(--navy)">Read</div><div class="small" style="font-size:10.5px">读库</div>
+          </div>
+          <div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#FBFDFE">
+            <div style="font-size:12.5px;font-weight:800;color:var(--navy)">Write</div><div class="small" style="font-size:10.5px">写库</div>
+          </div>
+        </div>
+        <div style="margin-top:auto">
+          <div class="small" style="margin-bottom:8px">每类数据移动计 1 CFP；一条需求的全部数据移动求和，就是它的功能规模。</div>
+          <div class="small">结构定规模、成本另算：当量与工时解耦，同一把尺子量所有团队。</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;min-height:0">
+        <div class="label">刻度读起来是什么感觉</div>
+        <div style="display:flex;flex-direction:column;gap:42px;margin-top:16px">
+          <div style="display:grid;grid-template-columns:78px 1fr;align-items:baseline;gap:10px">
+            <b class="mono" style="color:var(--blue);font-size:18px">0.21</b><span style="font-size:13px;color:var(--ink2)">一个查询接口</span>
+          </div>
+          <div style="display:grid;grid-template-columns:78px 1fr;align-items:baseline;gap:10px">
+            <b class="mono" style="color:var(--accent);font-size:18px">1.00</b><span style="font-size:13px;color:var(--ink2)"><b class="strong">一个标准 CRUD 页面</b>（锚点，全局唯一）</span>
+          </div>
+          <div style="display:grid;grid-template-columns:78px 1fr;align-items:baseline;gap:10px">
+            <b class="mono" style="color:var(--blue);font-size:18px">1.7–2.3</b><span style="font-size:13px;color:var(--ink2)">带校验与流转的审批表单</span>
+          </div>
+          <div style="display:grid;grid-template-columns:78px 1fr;align-items:baseline;gap:10px">
+            <b class="mono" style="color:var(--blue);font-size:18px">9.30</b><span style="font-size:13px;color:var(--ink2)">86 条 AC 合并去重后的大需求（建议拆卡）</span>
+          </div>
+        </div>
+        <div class="rule" style="margin:auto 0 12px"></div>
+        <div class="small" style="margin-bottom:8px"><span class="strong">两层尺子：</span>定级层全局统一（谁也不能改刻度）；校准层各项目自算「1 当量 ≈ N 工时」。</div>
+        <div class="small"><span class="strong">三条红线：</span>结构定规模（工时免疫）· 尺子只有一把 · 成本单独换算。</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>COSMIC 功能点（ISO/IEC 19761）· 锚 = 标准 CRUD 页面 14 CFP</div><div class="pg">08</div></div>
+</section>
+
+<!-- ============ 新增A 工时尺 ============ -->
+<section class="slide">
+  <div class="kicker">07 · 解法一延伸 <span class="dim">第二把尺子</span></div>
+  <h1 class="title">结构尺量「多大」，<em>工时尺量「多少活」</em></h1>
+  <div class="lead">
+    只有大小还不够——排期要的是工作量。第二把尺子把 Story 拆成一条条<b>改动项</b>，
+    查团队自己的带值表，算出<b>工时期望与置信区间</b>；两把尺子并行跑，互为校验。
+  </div>
+  <div class="body">
+    <div class="flowline">
+      <div class="fn" style="padding:13px 8px">Story + 证据源<small>impl 的 TASK 清单 / AC 清单</small></div>
+      <div class="fa">›</div>
+      <div class="fn" style="padding:13px 8px">① 枚举改动项<small>AI 只列项，不填小时</small></div>
+      <div class="fa">›</div>
+      <div class="fn" style="padding:13px 8px">② 查带值表<small>17 类 · O/M/P 三值</small></div>
+      <div class="fa">›</div>
+      <div class="fn" style="padding:13px 8px">③ PERT + 蒙特卡洛<small>1 万次采样</small></div>
+      <div class="fa">›</div>
+      <div class="fn" style="padding:13px 8px">④ 回填 Story<small>estimatedDays + P80</small></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+        <div style="background:var(--navy);border-radius:10px;padding:22px 24px;color:#fff">
+          <div style="font-size:10.5px;letter-spacing:.16em;opacity:.55;font-weight:700">三点估算（PMI PMBOK 标准）</div>
+          <div style="margin-top:10px;font-size:30px;font-weight:800;letter-spacing:-.01em">E = (O + 4M + P) ÷ 6</div>
+          <div style="margin-top:10px;font-size:12.2px;line-height:1.75;opacity:.82">
+            每类改动项带三值：O 乐观 · M 最可能 · P 悲观<br>
+            再对每项按 Beta-PERT 采样 <b style="color:#F0CDD2">1 万次</b>求和 → 得到分布，不是一个数
+          </div>
+        </div>
+        <div class="grid3" style="gap:9px">
+          <div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#FBFDFE">
+            <div style="font-size:12.5px;font-weight:800;color:var(--navy)">P50</div><div class="small" style="font-size:10.5px">一半概率完成</div>
+          </div>
+          <div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#FBFDFE">
+            <div style="font-size:12.5px;font-weight:800;color:var(--blue)">P80</div><div class="small" style="font-size:10.5px">承诺边界</div>
+          </div>
+          <div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#FBFDFE">
+            <div style="font-size:12.5px;font-weight:800;color:var(--navy)">P95</div><div class="small" style="font-size:10.5px">风险缓冲</div>
+          </div>
+        </div>
+        <div style="margin-top:auto">
+          <div class="small" style="margin-bottom:9px">带值表覆盖 <b class="strong">17 类</b>改动项，按阶段分三组：</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="small" style="width:52px;font-size:10.5px">编码接入</span>
+              <div style="width:220px;height:14px;background:#EEF4FA;border-radius:3px;overflow:hidden"><div style="width:70.6%;height:100%;background:#0070AD"></div></div>
+              <b class="mono" style="font-size:11px;color:var(--navy)">12</b>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="small" style="width:52px;font-size:10.5px">单元测试</span>
+              <div style="width:220px;height:14px;background:#EEF4FA;border-radius:3px;overflow:hidden"><div style="width:5.9%;height:100%;background:#00A3E0"></div></div>
+              <b class="mono" style="font-size:11px;color:var(--navy)">1</b>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="small" style="width:52px;font-size:10.5px">验证类</span>
+              <div style="width:220px;height:14px;background:#EEF4FA;border-radius:3px;overflow:hidden"><div style="width:23.5%;height:100%;background:#9FB6C8"></div></div>
+              <b class="mono" style="font-size:11px;color:var(--navy)">4</b>
+            </div>
+          </div>
+        </div>
+        <div class="small">Story 卡上人只看一个数字：<b class="strong">estimatedDays（开发人日）</b>，注释里带 P80——一个期望，一个边界。</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="label">三条与结构尺同源的纪律</div>
+        <div class="card"><div class="ct" style="font-size:13px"><span class="num red">1</span>AI 只列项，不填小时</div>
+          <div class="cd">估工时是判断不是测量，换模型就漂。实测：自由填小时卡间离散约 <b class="strong">29%</b>，走带值表收窄到约 <b class="strong">10%</b>。</div></div>
+        <div class="card"><div class="ct" style="font-size:13px"><span class="num red">2</span>带值表是团队属性</div>
+          <div class="cd">表里的 M 值由本团队真实卡片校准。跨团队只比当量，不比工时；换表必升版本号，全批重跑。</div></div>
+        <div class="card"><div class="ct" style="font-size:13px"><span class="num red">3</span>两把尺子交叉验证</div>
+          <div class="cd">隐含生产率 = Σ开发工时 ÷ Σ当量。与团队历史比，能分清是<b class="strong">「刻度不准」</b>还是<b class="strong">「排序不准」</b>——这是双尺最大的价值。</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>PERT + Beta-PERT 蒙特卡洛 · 17 类改动项带值表</div><div class="pg">09</div></div>
+</section>
+
+<!-- ============ 新增B 指标 ============ -->
+<section class="slide">
+  <div class="kicker">08 · 怎么证明 <span class="dim">真提效 vs 感觉快了</span></div>
+  <h1 class="title">什么才算真提效：<em>三个指标，两个陷阱</em></h1>
+  <div class="lead">
+    有了两把尺子，才谈得上「证明」。判断标准只有一条：<b>把需求大小归一之后，再看速度与成本</b>——
+    不是看大家有多忙，也不是看工时填了多少。
+  </div>
+  <div class="body">
+    <div style="display:grid;grid-template-columns:1.12fr .88fr;gap:24px;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="label">三个真信号（同口径 · 前后对比）</div>
+        <div class="card">
+          <div class="ct"><span class="num blue">1</span>单位当量交付周期 ↓</div>
+          <div class="cd">同样大小的需求，从开工到完成更快。分子是自然日，分母是当量——需求大小被归一，快慢才可比。</div>
+          <div class="cd mono" style="color:var(--muted);font-size:11px">cycleDaysPerStandardReq</div>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="num blue">2</span>每迭代交付当量 ↑</div>
+          <div class="cd">同样长的时间，交付的「标准需求个数」更多。这是吞吐的北极星，不是卡数、不是任务数。</div>
+          <div class="cd mono" style="color:var(--muted);font-size:11px">Σ PRD requirementEquivalent / iteration</div>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="num blue">3</span>工时 / 当量 ↓</div>
+          <div class="cd">同样的产出，投入更少。AI 真正压下来的是这块成本，而不是让人加更多班。</div>
+          <div class="cd mono" style="color:var(--muted);font-size:11px">hoursPerStandardReq</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="label">两个陷阱（看着像，其实不是）</div>
+        <div class="card" style="border-color:#ECDADD;background:#FBF7F8;flex:1;justify-content:center">
+          <div class="ct" style="color:#74303A">✕ 卡数 / 任务数上升</div>
+          <div class="cd">拆分粒度一改，卡数就能翻倍。用卡数证明提效，等于用「拆得更细」证明「干得更多」。</div>
+        </div>
+        <div class="card" style="border-color:#ECDADD;background:#FBF7F8;flex:1;justify-content:center">
+          <div class="ct" style="color:#74303A">✕ 工时填报下降</div>
+          <div class="cd">可能只是少填了。工时是成本单位，必须配合「当量吞吐」一起看；单看会得出反的结论。</div>
+        </div>
+        <div class="note" style="margin-top:auto">
+          <b>稳定器：估算准确度。</b>提效不能靠「每次都延期」换——P80 命中率不明显恶化，结论才站得住。
+        </div>
+        <div class="small">结论写法：<span class="strong">「本迭代交付 16.20 当量，单位当量周期 4.65 天」</span>，而不是「团队效率提升 30%」。</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>指标口径：需求当量度量 + 迭代仪表盘</div><div class="pg">10</div></div>
+</section>
+
+<!-- ============ 09 ============ -->
+<section class="slide">
+  <div class="kicker">09 · 解法二 <span class="dim">测试内核</span></div>
+  <h1 class="title">测试不靠「人手写」，靠<em>「按 AC 生成 + 机器核对」</em></h1>
+  <div class="lead">
+    Lilian 是交互层，测试内核换成了 <b>BMAD TEA（Test Architecture Enterprise）</b>：把「风险 → 设计 → 证据 → 发布门禁」
+    做成一条工程链路，每一步有产物、有判据、有人工确认点。
+  </div>
+  <div class="body">
+    <div style="display:grid;grid-template-columns:.92fr 1.08fr;gap:24px;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:9px;min-height:0">
+        <div class="label">八个技能，压成六步</div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+          <div style="flex:1;display:flex;align-items:center;gap:11px;background:#F4F9FD;border:1px solid #DCE9F4;border-radius:6px;padding:0 13px">
+            <b class="mono" style="color:var(--blue);font-size:10.5px;width:22px">01</b>
+            <div><div style="font-size:12.3px;font-weight:700;color:var(--navy)">test-design</div><div class="small" style="font-size:10.5px">按风险选测试层，出系统级 + Epic 级设计</div></div>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:11px;background:#F4F9FD;border:1px solid #DCE9F4;border-radius:6px;padding:0 13px">
+            <b class="mono" style="color:var(--blue);font-size:10.5px;width:22px">02</b>
+            <div><div style="font-size:12.3px;font-weight:700;color:var(--navy)">framework / CI</div><div class="small" style="font-size:10.5px">脚手架 + 流水线，测试从第一天就能跑</div></div>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:11px;background:#FAF4F5;border:1px solid #ECDADD;border-radius:6px;padding:0 13px">
+            <b class="mono" style="color:var(--accent);font-size:10.5px;width:22px">03</b>
+            <div><div style="font-size:12.3px;font-weight:700;color:#74303A">automate · red</div><div class="small" style="font-size:10.5px">每条 AC 一个红测试，标题带 AC 编号</div></div>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:11px;background:#F4F9FD;border:1px solid #DCE9F4;border-radius:6px;padding:0 13px">
+            <b class="mono" style="color:var(--blue);font-size:10.5px;width:22px">04</b>
+            <div><div style="font-size:12.3px;font-weight:700;color:var(--navy)">automate · expand</div><div class="small" style="font-size:10.5px">扩到边界、负向、跨页回归</div></div>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:11px;background:#F4F9FD;border:1px solid #DCE9F4;border-radius:6px;padding:0 13px">
+            <b class="mono" style="color:var(--blue);font-size:10.5px;width:22px">05</b>
+            <div><div style="font-size:12.3px;font-weight:700;color:var(--navy)">test-review</div><div class="small" style="font-size:10.5px">35 条固定准则打分，四路独立评审</div></div>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:11px;background:#EEF5FB;border:1px solid #CFE0EC;border-radius:6px;padding:0 13px">
+            <b class="mono" style="color:var(--navy);font-size:10.5px;width:22px">06</b>
+            <div><div style="font-size:12.3px;font-weight:700;color:var(--navy)">trace / gate</div><div class="small" style="font-size:10.5px">断言级可追溯矩阵 + 发布门禁</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="label">三条比「写用例」更硬的约束</div>
+        <div class="card">
+          <div class="ct" style="font-size:13px"><span class="num red">1</span>声明不算证据</div>
+          <div class="cd">标题里写了 AC 不算数。断言没有真正命中这条 AC，就进 <span class="mono" style="font-size:11px">rejectedEvidence</span>——覆盖是核对出来的，不是标注出来的。</div>
+        </div>
+        <div class="card">
+          <div class="ct" style="font-size:13px"><span class="num red">2</span>严重度不靠评审人拍</div>
+          <div class="cd">35 条准则固定分级，评审只负责对号入座。CRITICAL 扣 10 分且封顶 69，直接 Block；四路（确定性/隔离性/可维护性/性能）并行打分再聚合。</div>
+        </div>
+        <div class="card">
+          <div class="ct" style="font-size:13px"><span class="num red">3</span>豁免只能人签</div>
+          <div class="cd">覆盖率数据推不出 WAIVED。必须人签，并写清理由、期限、监控与整改人。门禁阈值：P0 100%、P1 ≥90% 才 PASS。</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:.92fr 1.08fr;gap:24px">
+      <div class="note" style="font-size:11.8px;padding:8px 14px">
+        <b>Agent 干：</b>读 PRD / 架构 → 算风险分 → 拆场景选层 → 生成并执行 → 修测试自身缺陷
+      </div>
+      <div class="note warn" style="font-size:11.8px;padding:8px 14px">
+        <b>人只干三件：</b>批策略与用例 · 定缺陷归属 · 签豁免
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>BMAD TEA · 测试架构工程链路</div><div class="pg">11</div></div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section class="slide">
+  <div class="kicker">10 · 用例与脚本 <span class="dim">为什么用 PyTest BDD</span></div>
+  <h1 class="title">用例先让<em>人能达成共识</em>，脚本才让<em>机器能反复执行</em></h1>
+  <div class="lead">
+    我们让 TEA 按 <b>PyTest BDD（Given / When / Then）</b> 写用例：产品、QA、开发读同一份文本就能对齐；
+    同一份用例再生成 pytest-bdd 场景与 step 实现——人只需要审一件事：<b>这条 AC 有没有被准确覆盖</b>。
+  </div>
+  <div class="body">
+    <div style="display:grid;grid-template-columns:1.02fr .98fr;gap:24px;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="label">一份用例长什么样</div>
+        <div class="code" style="font-size:11.8px;line-height:2.2;color:#D6E6F4;flex:1;min-height:0">
+<span class="k">Feature:</span> 复盘签批
+
+  <span class="k">Scenario:</span> 签批通过后状态自动流转  <span class="c">[AC-3]</span>
+    <span class="v">Given</span> 项目已推进至 <span class="c">"completed"</span>
+    <span class="v">When</span>  提交复盘签批并通过
+    <span class="v">Then</span>  项目状态应为 <span class="c">"reviewCompleted"</span>
+        </div>
+        <div class="grid4" style="gap:9px">
+          <div class="tile" style="padding:11px 12px"><div class="tv" style="font-size:22px">13 ↔ 13</div><div class="tl" style="font-size:10.3px">用例与脚本一一对应</div></div>
+          <div class="tile" style="padding:11px 12px"><div class="tv" style="font-size:22px">8 / 8</div><div class="tl" style="font-size:10.3px">验收标准全映射</div></div>
+          <div class="tile" style="padding:11px 12px"><div class="tv" style="font-size:22px">5 步</div><div class="tl" style="font-size:10.3px">前置链路脚本建数</div></div>
+          <div class="tile" style="padding:11px 12px"><div class="tv" style="font-size:22px">6 维</div><div class="tl" style="font-size:10.3px">资产质量审核</div></div>
+        </div>
+        <div class="small" style="margin-top:auto">业务读 Given / Then，开发读 step，QA 审覆盖——<b class="strong">同一份文本，三种角色各自能读</b>。</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+        <div class="label">从用例到脚本：三步映射</div>
+        <div class="card">
+          <div class="ct" style="font-size:13px"><span class="num blue">1</span>一条 AC → 一个 Scenario</div>
+          <div class="cd">Scenario 标题带 AC 编号，覆盖关系可被机器统计，不靠人写覆盖矩阵。</div>
+        </div>
+        <div class="card">
+          <div class="ct" style="font-size:13px"><span class="num blue">2</span>每句 GWT → 一个 step</div>
+          <div class="cd">step 实现可复用：Given 建状态、When 做动作、Then 断言，跨需求共享同一批 step。</div>
+        </div>
+        <div class="card">
+          <div class="ct" style="font-size:13px"><span class="num blue">3</span>数据准备写进 step，不写进用例</div>
+          <div class="cd">用例只描述业务状态；建数、清理、等轮询都在 step 里完成——用例因此短、稳、可读。</div>
+        </div>
+        <div class="note warn" style="font-size:12.2px;padding:10px 14px;margin-top:auto">
+          <b>人审就三问：</b>这条 AC 被覆盖了吗？边界与负向有吗？断言验到的是业务结果吗？
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>PyTest BDD · Given / When / Then</div><div class="pg">12</div></div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section class="slide">
+  <div class="kicker">11 · 可借鉴 <span class="dim">架构师视角的六个模式</span></div>
+  <h1 class="title">能带走的<em>不是工具，是六个设计选择</em></h1>
+  <div class="lead">
+    客户会换、工具会换、模型半年一迭代。下面六条与具体产品无关，换到任何一个交付团队都成立。
+  </div>
+  <div class="body">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:13px">
+      <div class="card" style="justify-content:space-between">
+        <div><div class="ct"><span class="num blue">1</span>主键先行</div>
+        <div class="cd" style="margin-top:9px">先定义能贯穿「需求→文档→代码→测试」的唯一 ID，再谈自动化与度量。没有脊柱，所有报表都是估出来的。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">反例：靠文件夹猜归属，三个月后没人说得清哪行代码属于哪个需求。</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 落地：卡片 Key + trace + commit 前缀</div>
+      </div>
+      <div class="card" style="justify-content:space-between">
+        <div><div class="ct"><span class="num blue">2</span>尺子先于工具</div>
+        <div class="cd" style="margin-top:9px">口径不定，工具只会放大噪音。优先选能对外解释的标准，而不是自研一套只有自己人懂的公式。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">反例：自研评分公式，每次跨团队汇报都要重讲一遍算法。</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 落地：COSMIC 当量 + 两层尺子</div>
+      </div>
+      <div class="card" style="justify-content:space-between">
+        <div><div class="ct"><span class="num blue">3</span>确定性归程序，不确定性归 AI</div>
+        <div class="cd" style="margin-top:9px">AI 负责从非结构化文档里抽取事实，程序负责求和与换算。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">好处：换模型、换提示词，历史数字都不用重算，跨期可比。</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 落地：AI 数数 + 脚本算当量</div>
+      </div>
+      <div class="card" style="justify-content:space-between">
+        <div><div class="ct"><span class="num blue">4</span>红线写进代码</div>
+        <div class="cd" style="margin-top:9px">「没有证据不评定」「没有批准不出脚本」，写成门禁而不是倡议。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">反例：靠自觉的规范，第二周就退化成「这次特殊，先过吧」。</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 落地：双证据源门禁 + 用例硬门禁</div>
+      </div>
+      <div class="card" style="justify-content:space-between">
+        <div><div class="ct"><span class="num blue">5</span>Agent 提速「生成」，回归交给流水线</div>
+        <div class="cd" style="margin-top:9px">Agent 解决的是用例与脚本的生成效率；脚本一旦产出，回归就是自动化执行，不再依赖 Agent。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">反例：只给 QA 配个 Copilot，写用例快 20%，脚本还得手写，端到端没变。</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 落地：Lilian 生成用例与脚本 → 脚本进 CI</div>
+      </div>
+      <div class="card" style="justify-content:space-between">
+        <div><div class="ct"><span class="num blue">6</span>交付可撤出的资产</div>
+        <div class="cd" style="margin-top:9px">技能包可整目录拷走、手册可照着做、门户可自己维护。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">判据：教练团队撤出三个月后，这套东西还在被用吗？</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 落地：14 项技能 + 4 本手册 + 知识门户</div>
+      </div>
+    </div>
+    <div class="note" style="margin-top:auto">
+      <b>六条里最难的不是技术，是让「口径」和「归属」在组织里被承认。</b>前五条是设计，最后一条是耐力。
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>与工具、模型、行业无关的设计选择</div><div class="pg">13</div></div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section class="slide">
+  <div class="kicker">12 · 小结 <span class="dim">三句话与三个动作</span></div>
+  <h1 class="title">AI 提效的瓶颈，很少在模型能力</h1>
+  <div class="lead" style="max-width:1010px">
+    更多时候在<b>度量口径</b>与<b>组织交接面</b>。这两件事都不性感，但它们决定了 AI 的收益能不能被看见、被承认、被复制。
+  </div>
+  <div class="body">
+    <div style="flex:1;min-height:0;display:flex;align-items:center">
+    <div style="display:grid;grid-template-columns:1.08fr .92fr;gap:26px;width:100%">
+      <div style="display:flex;flex-direction:column;min-height:0">
+        <div class="label" style="margin-bottom:11px">回到团队，可以马上做的三件事</div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:11px;min-height:0">
+          <div class="card">
+            <div class="ct"><span class="num red">1</span>挑一条真实需求，先给它一个贯穿全链路的 ID</div>
+            <div class="cd">不用等平台改造。文档名、文档头、提交信息三处对齐，一天就能试。</div>
+          </div>
+          <div class="card">
+            <div class="ct"><span class="num red">2</span>定一把尺子，选标准不选自研，先量一个迭代</div>
+            <div class="cd">量出来的第一个数字一定不准——没关系，口径统一比数字精准更重要。</div>
+          </div>
+          <div class="card">
+            <div class="ct"><span class="num red">3</span>找端到端最堵的那一段，问「这里谁负责」</div>
+            <div class="cd">如果答不上来，那就是瓶颈——通常也是收益最大的地方。</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;min-height:0">
+        <div class="label" style="margin-bottom:11px;visibility:hidden" aria-hidden="true">&nbsp;</div>
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;background:var(--navy);border-radius:12px;padding:34px 32px;color:#fff">
+          <div style="font-size:10.5px;letter-spacing:.18em;opacity:.55;font-weight:700">TAKEAWAY</div>
+          <div style="margin-top:18px;font-size:19px;line-height:1.85;font-weight:600">
+            规范定「算得清」，<br>
+            Agent 定「干得快」，<br>
+            <span style="color:#F0CDD2">分工定「跑得远」。</span>
+          </div>
+          <div style="margin-top:30px;border-top:1px solid rgba(255,255,255,.18);padding-top:16px;font-size:12.5px;line-height:1.7;opacity:.78">
+            讨论：你们团队的「交接面」在哪一段？<br>
+            谁在等谁、等多久，这件事有人算过吗？
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="note">
+      <b>别一次全做。</b>先把第一件事做出一个数字，再谈第二件——顺序反了，三件事都会变成文档。
+    </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>谢谢 · Q &amp; A</div><div class="pg">14</div></div>
+</section>
+
+</div>
+
+<button class="toc-tab" id="tocTab" type="button" title="目录 (T)" aria-label="展开或收起目录">
+  <svg class="ico-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+    <path d="M8.5 6h12.5M8.5 12h12.5M8.5 18h12.5"/>
+    <circle cx="3.8" cy="6" r="1.15" fill="currentColor" stroke="none"/>
+    <circle cx="3.8" cy="12" r="1.15" fill="currentColor" stroke="none"/>
+    <circle cx="3.8" cy="18" r="1.15" fill="currentColor" stroke="none"/>
+  </svg>
+  <svg class="ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 4.5 7.5 12l7.5 7.5"/>
+  </svg>
+</button>
+<aside class="toc" id="toc" aria-label="页面目录">
+  <div class="toc-list" id="tocList"></div>
+</aside>
+
+<div class="nav" id="nav">
+  <button class="arrow" id="prev" type="button" title="上一页 ←" aria-label="上一页">‹</button>
+  <div class="dots" id="dots"></div>
+  <button class="arrow" id="next" type="button" title="下一页 →" aria-label="下一页">›</button>
+  <span class="cnt" id="cnt" aria-live="polite"><b>01</b><i>/</i><em>13</em></span>
+  <span class="sep"></span>
+  <button class="fs" id="fs" type="button" title="全屏播放 (F)" aria-label="全屏播放">
+    <svg class="ico-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3.4H3.4V9"/><path d="M15 3.4h5.6V9"/><path d="M20.6 15v5.6H15"/><path d="M3.4 15v5.6H9"/></svg>
+    <svg class="ico-compress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 9H9V3.4"/><path d="M20.6 9H15V3.4"/><path d="M15 20.6V15h5.6"/><path d="M9 20.6V15H3.4"/></svg>
+  </button>
+</div>
+<div class="tip" id="tip"></div>
+
+<script data-pnid-children="qgsiPJ4oDe1SLVAumqH8LF">
+(function(){
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let cur = 0;
+  const prog = document.getElementById('progress');
+  const stage = document.getElementById('stage');
+  const dotsEl = document.getElementById('dots');
+  const tipEl = document.getElementById('tip');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+
+  const clean = t => (t||'').replace(/\s+/g,' ').trim();
+  const titles = slides.map((s,i)=>{
+    if(i===0) return '封面';
+    const t = s.querySelector('.title');
+    return clean(t && t.textContent) || ('第 ' + (i+1) + ' 页');
+  });
+
+  const ANCHORS = 5;
+  const anchorPages = [];
+  for(let k=0;k<=ANCHORS;k++){
+    const p = 1 + Math.round((total-1)*k/ANCHORS);
+    if(anchorPages[anchorPages.length-1] !== p) anchorPages.push(p);
+  }
+  anchorPages.forEach(p=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ndot';
+    b.setAttribute('aria-label', '跳转到第 ' + p + ' 页：' + titles[p-1]);
+    b.addEventListener('click', ()=>{ go(p-1); hideTip(); });
+    b.addEventListener('mouseenter', ()=>showTip(p-1,b));
+    b.addEventListener('mouseleave', hideTip);
+    dotsEl.appendChild(b);
+  });
+  const dotEls = Array.from(dotsEl.children);
+
+
+  // ---- 左侧缩略图目录 ----
+  const tocEl = document.getElementById('toc');
+  const tocList = document.getElementById('tocList');
+  const tocTab = document.getElementById('tocTab');
+  const tocItems = slides.map((s,i)=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'toc-item';
+    b.setAttribute('aria-label', '第 ' + (i+1) + ' 页：' + titles[i]);
+    b.title = '第 ' + (i+1) + ' 页 · ' + titles[i];
+    const num = document.createElement('span');
+    num.className = 'toc-num';
+    num.textContent = String(i+1).padStart(2,'0');
+    const th = document.createElement('span');
+    th.className = 'toc-thumb';
+    const clone = s.cloneNode(true);
+    clone.classList.add('active');
+    clone.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+    th.appendChild(clone);
+    b.appendChild(num); b.appendChild(th);
+    b.addEventListener('click', ()=>go(i));
+    tocList.appendChild(b);
+    return b;
+  });
+  tocList.addEventListener('scroll', ()=>{
+    tocEl.classList.toggle('at-end', tocList.scrollTop + tocList.clientHeight >= tocList.scrollHeight - 3);
+  });
+  function setToc(open){
+    tocEl.classList.toggle('open', open);
+    tocTab.classList.toggle('on', open);
+    document.body.classList.toggle('toc-open', open);
+    fit();
+    if(open) {
+      const it = tocItems[cur];
+      if(it){
+        const lr = tocList.getBoundingClientRect(), ir = it.getBoundingClientRect();
+        if(ir.bottom > lr.bottom - 26) tocList.scrollTop += ir.bottom - lr.bottom + 26;
+        else if(ir.top < lr.top + 10) tocList.scrollTop -= (lr.top + 10 - ir.top);
+      }
+      requestAnimationFrame(()=>{
+        tocEl.classList.toggle('at-end', tocList.scrollTop + tocList.clientHeight >= tocList.scrollHeight - 3);
+      });
+    }
+  }
+  tocTab.addEventListener('click', ()=>setToc(!tocEl.classList.contains('open')));
+
+  function showTip(i, el){
+    tipEl.textContent = (i+1) + ' / ' + total + '　' + titles[i];
+    tipEl.classList.add('show');
+    const r = el.getBoundingClientRect();
+    const w = tipEl.offsetWidth;
+    let x = r.left + r.width/2;
+    x = Math.min(Math.max(x, w/2 + 12), window.innerWidth - w/2 - 12);
+    tipEl.style.left = x + 'px';
+  }
+  function hideTip(){ tipEl.classList.remove('show'); }
+
+  function render(){
+    slides.forEach((s,i)=>s.classList.toggle('active', i===cur));
+    let bi = 0, bd = Infinity;
+    anchorPages.forEach((p,i)=>{ const d = Math.abs(p-(cur+1)); if(d<bd){ bd=d; bi=i; } });
+    dotEls.forEach((d,i)=>d.classList.toggle('on', i===bi));
+    tocItems.forEach((b,i)=>b.classList.toggle('on', i===cur));
+    prevBtn.disabled = cur===0;
+    nextBtn.disabled = cur===total-1;
+    cntCur.textContent = String(cur+1).padStart(PAD,'0');
+    prog.style.width = ((cur+1)/total*100) + '%';
+  }
+  function go(n){
+    n = Math.max(0, Math.min(total-1, n));
+    if(n===cur) return;
+    cur = n; render();
+  }
+  prevBtn.onclick = ()=>go(cur-1);
+  nextBtn.onclick = ()=>go(cur+1);
+  const cntEl = document.getElementById('cnt');
+  const cntCur = cntEl.querySelector('b');
+  const cntAll = cntEl.querySelector('em');
+  const PAD = String(total).length;
+  cntAll.textContent = String(total).padStart(PAD,'0');
+  const fsBtn = document.getElementById('fs');
+  function toggleFs(){
+    if(document.fullscreenElement){ document.exitFullscreen(); return; }
+    const el = document.documentElement;
+    if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  }
+  fsBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleFs(); });
+  let presenting = false, idleTimer = null, lastMove = 0;
+  function clearIdle(){ clearTimeout(idleTimer); idleTimer = null; }
+  function wakeChrome(force){
+    if(!presenting) return;
+    const now = Date.now();
+    if(!force && now - lastMove < 180) return;
+    lastMove = now;
+    document.body.classList.remove('ui-idle');
+    clearIdle();
+    idleTimer = setTimeout(()=>document.body.classList.add('ui-idle'), 2200);
+  }
+  function syncPresenting(){
+    presenting = !!document.fullscreenElement;
+    document.body.classList.toggle('presenting', presenting);
+    fsBtn.classList.toggle('on', presenting);
+    if(presenting){
+      setToc(false);
+      wakeChrome(true);
+    }else{
+      clearIdle();
+      document.body.classList.remove('ui-idle');
+    }
+    fit();
+  }
+  document.addEventListener('fullscreenchange', syncPresenting);
+  document.addEventListener('mousemove', ()=>wakeChrome(false), {passive:true});
+  document.addEventListener('click', ()=>wakeChrome(true), {passive:true});
+
+  document.addEventListener('keydown', e=>{
+    if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ e.preventDefault(); go(cur+1); }
+    else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); go(cur-1); }
+    else if(e.key==='Home'){ e.preventDefault(); go(0); }
+    else if(e.key==='End'){ e.preventDefault(); go(total-1); }
+    else if(e.key==='t'||e.key==='T'){ e.preventDefault(); if(!presenting) setToc(!tocEl.classList.contains('open')); }
+    else if(e.key==='f'||e.key==='F'){ e.preventDefault(); toggleFs(); }
+    else if(e.key==='Escape'){ setToc(false); if(document.fullscreenElement) document.exitFullscreen(); }
+  });
+
+  let sx=null;
+  document.addEventListener('touchstart', e=>{ sx = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', e=>{
+    if(sx===null) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    if(Math.abs(dx)>50){ dx<0 ? go(cur+1) : go(cur-1); }
+    sx=null;
+  }, {passive:true});
+
+  function fit(){
+    const reserve = presenting ? 24 : 104;
+    const leftPad = document.body.classList.contains('toc-open') ? 170 : 0;
+    const s = Math.min((window.innerWidth-leftPad-36)/1280, (window.innerHeight-reserve)/720);
+    stage.style.transform = 'translateX(' + (leftPad/2) + 'px) scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit);
+  fit(); render();
+})();
+</script>
+
+
+</body></html>

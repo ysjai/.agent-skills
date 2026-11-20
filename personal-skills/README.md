@@ -14,6 +14,7 @@
 - `writing-plans/`：根据已批准设计文档或明确确认的无 spec 实现依据生成执行计划。
 - `executing-plans/`：按设计文档和执行计划落地实现并验证验收标准；低风险单一任务可使用快速路径。
 - `xiaomi-financial-tracker/`：小米财务跟踪相关 skill。
+- `deck-kit/`：把内容做成单文件 HTML 演示片（1280×720），带翻页、缩略图目录、全屏放映，可替换与联合展示企业 logo。
 
 其中 `brainstorming/`、`writing-plans/`、`executing-plans/` 是基于 `git-repo-skills/superpowers` 的本地定制版本。
 
@@ -43,6 +44,13 @@ description: 说明这个 skill 做什么，以及什么时候应该触发。
 - OpenCode：`/install-skills-opencode`
 - Claude Code：`/user:install-skills-claude`
 - Codex：通过 OpenCode / Claude Code 的安装命令安装到 Codex，或手动链接到 `~/.agents/skills/`
+- WorkBuddy：软链到 `~/.workbuddy/skills/`
+
+```bash
+ln -s ~/.agent-skills/personal-skills/<skill-name> ~/.workbuddy/skills/<skill-name>
+```
+
+用软链而不是复制：改仓库里的文件，WorkBuddy 侧立即生效；两边始终是同一份。
 
 ## 注意事项
 

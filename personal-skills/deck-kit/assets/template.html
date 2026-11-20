@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}}</title>
+<style>
+{{CSS}}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <!-- ============ 封面 ============ -->
+  <section class="slide cover">
+    <div class="grid-bg"></div>
+    <div class="inner">
+      <div class="brandline"><span>{{BRANDLINE}}</span></div>
+      <h1>
+        <span>在这里写主标题</span>
+        <span class="accent">第二行用强调色</span>
+      </h1>
+      <div class="sub">一到两句导语：这次分享解决什么问题，听众能带走什么。</div>
+      <div class="motif">
+        <div class="mrow">
+          <span><b>01</b>问题</span><em>›</em>
+          <span><b>02</b>做法</span><em>›</em>
+          <span><b>03</b>证据</span>
+        </div>
+        <div class="mcap">这三段各自解决什么，一行说清；不需要可整块删掉</div>
+      </div>
+      <div class="meta">
+        <div class="who"><b>分享人</b><br>日期 · 场合</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 正文页样板（正式制作时按 references/layouts.md 换版式） ============ -->
+  <section class="slide" data-layout="two-col">
+    <div class="kicker">01 · 章节名 <span class="dim">这一段的副标题</span></div>
+    <h1 class="title">结论式标题，<em>后半句是主张</em></h1>
+    <div class="lead">一到两句导语，说清这一页要让听众记住什么。</div>
+    <div class="body">
+      <div class="two" style="flex:1;min-height:0">
+        <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+          <div class="label">左边放支撑点</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:11px;min-height:0">
+            <div class="card" style="flex:1;justify-content:center">
+              <div class="ct"><span class="num red">1</span>要点标题</div>
+              <div class="cd">两行以内的解释，具体、可验证，最好带一个数字或一个反例。</div>
+            </div>
+            <div class="card" style="flex:1;justify-content:center">
+              <div class="ct"><span class="num red">2</span>要点标题</div>
+              <div class="cd">两行以内的解释，说清与上一条的差别，避免同义重复。</div>
+            </div>
+            <div class="card" style="flex:1;justify-content:center">
+              <div class="ct"><span class="num red">3</span>要点标题</div>
+              <div class="cd">两行以内的解释，落到可执行的动作，让听众知道下一步做什么。</div>
+            </div>
+          </div>
+        </div>
+        <div class="thesis" style="flex:1">
+          <div class="lb">TAKEAWAY</div>
+          <div class="st">右边放这一页的<br>结论或公式。</div>
+          <div class="ft">一句边界说明：结论在什么前提下成立。</div>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><div class="fl"><span class="dot"></span>数据来源或出处</div><div class="pg">02</div></div>
+  </section>
+
+  <!-- 新页面追加在下面这行锚点之前，锚点本身保留 -->
+  <!-- SLIDES -->
+
+</div>
+<script>window.DECK = {{BRAND}};</script>
+<script>
+{{JS}}
+</script>
+</body>
+</html>
