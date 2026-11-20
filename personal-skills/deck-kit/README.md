@@ -1,7 +1,7 @@
 # deck-kit · 演示片制作
 
 把内容做成一份**单文件 HTML 演示片**：双击能开、离线能放、Ctrl+P 直接导 PDF。
-自带一套固定的企业视觉系统（凯捷蓝 + 酒红强调），换公司只换一个配置文件。
+自带一套固定的视觉系统（藏青蓝 + 酒红强调）；品牌按需注入，不提供就不带 logo。
 
 ---
 
@@ -42,7 +42,7 @@ node $KIT/scripts/verify.mjs outputs/my-deck.html
 
 ## 一份片子怎么长出来
 
-1. **收料**：受众、时长、必讲点、数据与来源、品牌
+1. **收料**：受众、时长、必讲点、手上的材料、品牌（可选）
 2. **出大纲**：每页一行 `页码 | 结论式标题 | 一句话主张 | 版式名`，确认后再写
 3. **生成外壳** → **填页面**：从 `references/layouts.md` 挑版式，替换文案
 4. **校验** → 看截图 → 修
@@ -52,16 +52,18 @@ node $KIT/scripts/verify.mjs outputs/my-deck.html
 
 ---
 
-## 换品牌 / 联合展示
+## 品牌（可选）
+
+**不传就是无品牌**：封面没有品牌行，内页右上没有 logo，标题区也不留 logo 位。要牌子就写一份 `brand.json`：
 
 ```json
 {
-  "name": "凯捷咨询",
-  "tagline": "架构组内部技术分享",
+  "name": "某某公司",
+  "tagline": "内部技术分享",
   "accent": "#8E3B45",
   "logos": [
-    { "src": "assets/logos/capgemini.png", "alt": "Capgemini" },
-    { "src": "assets/logos/partner.png", "alt": "合作方" }
+    { "src": "logo-a.png", "alt": "A 公司" },
+    { "src": "logo-b.png", "alt": "B 公司" }
   ]
 }
 ```
@@ -70,10 +72,11 @@ node $KIT/scripts/verify.mjs outputs/my-deck.html
 node $KIT/scripts/new-deck.mjs --out outputs/x.html --title "标题" --brand brand.json
 ```
 
-注意：`logos[].src` 的路径相对 `brand.json` 自己所在目录，不是项目根；`~` 不会被展开。不写 `logos` 就用内置的凯捷 logo。
+注意：`logos[].src` 的路径相对 `brand.json` 自己所在目录，不是项目根；`~` 不会被展开。
 
+- `name` + `tagline` 上封面左上角，填一个显示一个，两个都空则整行不占位
 - `logos` 放几个就并排几个，自动加分隔线；内页标题区会按 logo 实际宽度留白，不会压字
-- 新 logo 先处理成透明底、统一高度：`node $KIT/scripts/brand.mjs logo.png --out-dir $KIT/assets/logos`
+- 新 logo 先处理成透明底、统一高度：`node $KIT/scripts/brand.mjs logo.png --out-dir <目标目录>`
   （`brand.mjs` 只适合白底图；深色底的 logo 会被抠坏，请人工处理）
 - 只换强调色不动版式：加 `--accent "#7A5C3E"`
 
@@ -87,7 +90,7 @@ README.md                本文件：给人看的速览
 assets/deck.css          设计系统：色/字/间距令牌 + 组件 + 导航 + 打印
 assets/deck.js           运行时：logo 注入、缩放自适应、翻页、缩略图目录、全屏
 assets/template.html     骨架与占位符
-assets/logos/            品牌 logo 库（默认凯捷）
+assets/logos/            品牌 logo 库（备用素材，默认不使用）
 scripts/new-deck.mjs     生成外壳
 scripts/brand.mjs        处理 logo（去白底、等比缩放）
 scripts/verify.mjs       交付前自检

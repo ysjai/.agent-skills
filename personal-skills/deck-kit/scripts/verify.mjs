@@ -73,7 +73,7 @@ const struct = await page.evaluate(() => {
     const text = (body.textContent || '').replace(/\s+/g, '');
     if (text.length < 40) thin.push(`第 ${i + 1} 页正文只有 ${text.length} 字`);
   });
-  const badPages = [], emptyBody = [], placeholders = [];
+  const badPages = [], emptyBody = [], placeholders = [], unsourced = [];
   const PLACEHOLDER = ['在这里写主标题', '第二行用强调色', '要点标题', '段落标题', '…同上…',
     '两行以内的解释', '示例文本', '数据来源或出处', '一句话说明这一段', 'TODO'];
   slides.forEach((s, i) => {
@@ -89,8 +89,15 @@ const struct = await page.evaluate(() => {
     if (body && !body.children.length && !s.classList.contains('cover')) emptyBody.push(i + 1);
     const txt = s.textContent || '';
     PLACEHOLDER.forEach(p => { if (txt.includes(p)) placeholders.push(`第 ${i + 1} 页残留占位文案「${p}」`); });
+    if (s.classList.contains('cover')) return;
+    const fl = s.querySelector('.foot .fl');
+    if (fl && (fl.textContent || '').trim()) return;
+    const copy = s.cloneNode(true);
+    const cf = copy.querySelector('.foot');
+    if (cf) cf.remove();
+    if (/[\d.]\s*%|n\s*=\s*\d|[\d.]+\s*倍/.test((copy.textContent || '').replace(/\s+/g, ''))) unsourced.push(i + 1);
   });
-  return { total: slides.length, covers, badPages, emptyBody, placeholders, strays, thin };
+  return { total: slides.length, covers, badPages, emptyBody, placeholders, strays, thin, unsourced };
 });
 
 const problems = [];
@@ -171,6 +178,10 @@ if (groups.length) {
 if (sparse.length) {
   console.log('\n⚠ 提示：正文填充偏低（不阻塞，但观众可能觉得没讲完）');
   sparse.forEach(p => console.log(`  第 ${p.page} 页只填了 ${p.fill}%，可以补内容、放大字号或换版式`));
+}
+if (struct.unsourced.length) {
+  console.log('\n⚠ 提示：这些页出现了百分比或倍数，页脚却没写来源（不阻塞）');
+  console.log('  ' + struct.unsourced.map(n => `第 ${n} 页`).join('、') + '：补口径与出处，或把这个数字改成定性表述');
 }
 
 if (!groups.length) {

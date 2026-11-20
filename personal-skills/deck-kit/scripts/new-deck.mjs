@@ -21,10 +21,10 @@ if (!opt.out) {
 }
 
 const DEFAULTS = {
-  name: '凯捷咨询',
-  tagline: '架构组内部技术分享',
+  name: '',
+  tagline: '',
   accent: '#8E3B45',
-  logos: [{ src: path.join(ROOT, 'assets/logos/capgemini.png'), alt: 'Capgemini' }]
+  logos: []
 };
 
 let cfg = { ...DEFAULTS };
@@ -82,7 +82,8 @@ fs.writeFileSync(out, html);
 const pages = (html.match(/<section class="slide/g) || []).length;
 console.log(`✔ 已生成 ${path.relative(process.cwd(), out)}`);
 console.log(`  标题：${title}`);
-console.log(`  品牌：${cfg.name} · ${cfg.logos.length} 个 logo · 强调色 ${cfg.accent}`);
+console.log(`  品牌：${cfg.name || '未指定'}${cfg.logos.length ? ' · ' + cfg.logos.length + ' 个 logo' : ' · 无 logo'}`);
+console.log(`  强调色：${cfg.accent}`);
 console.log(`  页数：${pages}（含封面与 1 页示例） · 体积 ${(html.length / 1024).toFixed(0)}KB`);
 console.log('');
 console.log('下一步：');

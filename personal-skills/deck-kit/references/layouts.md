@@ -11,6 +11,8 @@
 
 标「片段」的版式只负责正文区，外层 `<section class="slide">`、`kicker / title / lead / foot` 仍要按 SKILL.md 的页面结构自己补齐。
 
+页脚里的 `.fl` 来源行只在有量化断言时加；没有数字的页只留 `.pg` 一个页码。
+
 ---
 
 ## 1. 封面 `.cover`

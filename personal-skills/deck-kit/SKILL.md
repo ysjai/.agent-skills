@@ -1,11 +1,11 @@
 ---
 name: "deck-kit"
-version: "1.1.0"
+version: "2.0.0"
 display_name: "演示片制作"
 display_name_en: "Deck Kit"
-description: "把内容做成单文件 HTML 演示片（1280×720，16:9），带翻页、缩略图目录、全屏放映、导出 PDF。用于技术分享、方案汇报、项目复盘、内部培训、路演。自带企业 logo 与统一视觉风格，支持替换 logo 与多 logo 联合展示。用户提到做片子、做 PPT、出幻灯片、做汇报页、deck、讲稿配图时使用。"
-description_zh: "把内容做成单文件 HTML 演示片（1280×720，16:9），带翻页、缩略图目录、全屏放映、导出 PDF。用于技术分享、方案汇报、项目复盘、内部培训、路演。自带企业 logo 与统一视觉风格，支持替换 logo 与多 logo 联合展示。"
-description_en: "Build single-file HTML slide decks (1280x720) with navigation, thumbnail rail, fullscreen presenting and PDF export; ships a corporate visual system with replaceable and co-branded logos."
+description: "把内容做成单文件 HTML 演示片（1280×720，16:9），带翻页、缩略图目录、全屏放映、导出 PDF。用于技术分享、方案汇报、项目复盘、内部培训、路演。视觉风格已固化，可按需注入企业 logo（单枚或多枚并排），不提供则不带品牌。用户提到做片子、做 PPT、出幻灯片、做汇报页、deck、讲稿配图时使用。"
+description_zh: "把内容做成单文件 HTML 演示片（1280×720，16:9），带翻页、缩略图目录、全屏放映、导出 PDF。用于技术分享、方案汇报、项目复盘、内部培训、路演。视觉风格已固化，可按需注入企业 logo（单枚或多枚并排），不提供则不带品牌。"
+description_en: "Build single-file HTML slide decks (1280x720) with navigation, thumbnail rail, fullscreen presenting and PDF export. Fixed visual system, optional corporate logos (single or co-branded), unbranded by default."
 ---
 
 # 演示片制作
@@ -20,7 +20,7 @@ description_en: "Build single-file HTML slide decks (1280x720) with navigation, 
 ## 五步流程
 
 **1. 收料**（缺一项就问，不要猜）
-受众与场合、时长与页数、必讲的三五个点、数据与来源、品牌（用哪家 logo / 是否联合展示 / 封面品牌行文案）。
+受众与场合、时长与页数、必讲的 3–5 个点、手上的材料（数据、报表、截图、旧文档都算；没有就说没有）、品牌（要不要放 logo、封面品牌行写什么；用户说空着就空着，不追问）。
 
 **2. 出大纲，先确认**
 每页一行：`页码 | 结论式标题 | 一句话主张 | 版式名`。用户点头再写代码。
@@ -31,7 +31,7 @@ description_en: "Build single-file HTML slide decks (1280x720) with navigation, 
 ```bash
 KIT=~/.workbuddy/skills/deck-kit
 node $KIT/scripts/new-deck.mjs --out outputs/<name>.html --title "<标题>"
-# 换品牌：
+# 要品牌时（用户没说就不用加）：
 node $KIT/scripts/new-deck.mjs --out outputs/<name>.html --title "<标题>" --brand brand.json
 ```
 外壳自带封面 + 1 页示例 + 全部导航逻辑。新页面按顺序插到 `<!-- SLIDES -->` 这行锚点**之前**，锚点本身保留（下次还能接着加）。示例页用完删掉，页脚页码按实际位置改。
@@ -48,6 +48,7 @@ node $KIT/scripts/new-deck.mjs --out outputs/<name>.html --title "<标题>" --br
   <div class="foot"><div class="fl"><span class="dot"></span>来源</div><div class="pg">03</div></div>
 </section>
 ```
+页脚平时只有页码。这一页有量化断言时，才在 `.pg` 前面加 `.fl` 来源行——上面那行是带来源的写法。
 封面用 `class="slide cover"`，内部结构见 `assets/template.html`。
 
 `data-layout` 只是给人看的标记，不参与渲染。**导航、目录、页码读数、进度条、全屏按钮全部由 `deck.js` 自动生成，页面里一行都不用写**，也不要自己写。
@@ -86,32 +87,39 @@ node $KIT/scripts/verify.mjs outputs/<name>.html
 4. **左右两栏不要各自垂直居中**，顶边/底边永远对不齐。用等高行 + 占位标题，或让短的一侧 `flex:1`。
 5. **深色块一页最多两个**，多了没有重心。
 6. **强调色只给主张**，一页不超过三处；数字、标题、结论各一处已是上限。
-7. **每个数字带来源**，写在 `.foot` 里，讲不清来源的数字不要放。
+7. **量化断言必须带来源**。页上出现百分比、倍数或样本量，就在 `.foot .fl` 写清单位、样本与出处；拿不到来源只有两条路——改成定性表述，或删掉这个数字。没有量化断言的页不要留 `.fl`（连圆点一起删），页脚只留页码。
 8. **不要为了一页改 CSS**。改不动说明版式选错了，换一个。
 
 ## 品牌
 
-`brand.json`（可放在任意位置；下面 `logos[].src` 的路径**相对这个 json 文件**，不是相对项目根）：
+**默认不带品牌。** 不传 `--brand`，封面没有品牌行、内页右上没有 logo、标题区也不留 logo 位。品牌在收料时问，用户说空着就不加，不要再劝。
+
+需要品牌时写一份 `brand.json`（可放在任意位置；`logos[].src` 的路径**相对这个 json 文件**，不是相对项目根）：
 
 ```json
 {
-  "name": "凯捷咨询",
-  "tagline": "架构组内部技术分享",
+  "name": "某某公司",
+  "tagline": "内部技术分享",
   "accent": "#8E3B45",
   "logos": [
-    { "src": "assets/logos/capgemini.png", "alt": "Capgemini" },
-    { "src": "assets/logos/partner.png", "alt": "合作方" }
+    { "src": "logo-a.png", "alt": "A 公司" },
+    { "src": "logo-b.png", "alt": "B 公司" }
   ]
 }
 ```
 
-- `name` + `tagline` 显示在封面左上角，形如「凯捷咨询 · 架构组内部技术分享」。
-- 单 logo：`logos` 放一个；多 logo 自动并排、自动加细分隔线，顺序即展示顺序。内页标题区会按 logo 实际宽度自动留白，长 kicker 不会压到 logo。
+```bash
+node $KIT/scripts/new-deck.mjs --out outputs/x.html --title "标题" --brand brand.json
+```
+
+- `name` + `tagline` 显示在封面左上角，形如「某某公司 · 内部技术分享」。填一个就显示一个，两个都空则整行不占位。
+- `logos` 放几个就并排几个，自动加细分隔线，顺序即展示顺序。内页标题区会按 logo 实际宽度自动留白，长 kicker 不会压到 logo；不放 logo 就不留白。
 - `accent` 只接受 6 位十六进制色值；深色块上的浅色强调会跟着自动算，不用手改。
 - 品牌在**生成时**烘进 HTML（logo 转 data URI、封面文案转静态文本）。改完 `brand.json` 要重新跑一次 `new-deck`，已生成的文件不会变。
-- 想用技能内置的凯捷 logo：不写 `logos` 就是它；要显式写就填**绝对路径**（`~` 不会被展开）。
-- 新 logo 先处理成透明底、统一高度：`node $KIT/scripts/brand.mjs logo.png --out-dir $KIT/assets/logos`（放项目里则换成项目路径）。
+- `logos[].src` 要填**绝对路径**或相对 json 的路径（`~` 不会被展开）。
+- 新 logo 先处理成透明底、统一高度：`node $KIT/scripts/brand.mjs logo.png --out-dir <目标目录>`。
 - 只换强调色不动版式：`--accent "#7A5C3E"`。
+- `assets/logos/` 下备有一枚现成 logo，可以直接拿来试格式，填它的绝对路径即可。
 
 ## 文件地图
 
@@ -120,7 +128,7 @@ README.md             给人和 agent 的速览：是什么、怎么用、怎么
 assets/deck.css       设计系统（令牌 + 版式 + 导航 + 打印）
 assets/deck.js        运行时（品牌注入 / 缩放 / 翻页 / 目录 / 全屏）
 assets/template.html  骨架与占位符
-assets/logos/         品牌 logo 库
+assets/logos/         备用 logo（默认不使用）
 scripts/new-deck.mjs  生成外壳
 scripts/brand.mjs     处理 logo
 scripts/verify.mjs    交付前自检

@@ -36,16 +36,25 @@
     });
     return el;
   }
+  const cover = slides.find(s => s.classList.contains('cover'));
+  const brandline = cover && cover.querySelector('.brandline');
   if (brandList.length) {
     slides.forEach(s => { if (!s.classList.contains('cover')) s.appendChild(makeBrand('head')); });
-    const cover = slides.find(s => s.classList.contains('cover'));
-    if (cover) {
-      const line = cover.querySelector('.brandline');
-      if (line) line.insertBefore(makeBrand('cover'), line.firstChild);
-    }
+    if (brandline) brandline.insertBefore(makeBrand('cover'), brandline.firstChild);
     measureBrand();
     window.addEventListener('load', measureBrand);
+  } else {
+    document.documentElement.style.setProperty('--brand-w', '0px');
   }
+  /* 没有 logo 也没有品牌行文案时，整行不占位 */
+  if (brandline && !brandline.querySelector('img') && !clean(brandline.textContent)) {
+    brandline.style.display = 'none';
+  }
+
+  /* 页脚来源行没写文案时，连圆点一起去掉，只留页码 */
+  document.querySelectorAll('.foot .fl').forEach(el => {
+    if (!clean(el.textContent)) el.remove();
+  });
 
   /* 按 logo 实际宽高比算出占位宽度，供标题区留白，避免长 kicker 压到 logo */
   function measureBrand() {
