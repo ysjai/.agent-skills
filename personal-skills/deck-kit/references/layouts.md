@@ -85,7 +85,7 @@
       </div>
     </div>
   </div>
-  <div class="foot"><div class="fl"><span class="dot"></span>公司 · 场合</div><div class="pg">02</div></div>
+  <div class="foot"><div class="pg">02</div></div>
 </section>
 ```
 

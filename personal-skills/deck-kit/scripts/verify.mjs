@@ -5,10 +5,9 @@
    退出码：0 通过 / 1 有问题（不要交付）/ 2 缺少依赖
 */
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(process.cwd() + path.sep);
@@ -30,10 +29,11 @@ for (let i = 0; i < argv.length; i++) if (argv[i].startsWith('--')) opt[argv[i].
 
 const outDir = opt.out || '/tmp/deck-shot';
 const W = Number(opt.width || 1440), H = Number(opt.height || 900);
-const TMP = [os.tmpdir(), '/tmp', '/private/tmp', '/var/folders'].some(d => outDir.startsWith(d));
-if (TMP || /deck-shot/.test(outDir)) fs.rmSync(outDir, { recursive: true, force: true });
-else console.warn('提示：输出目录不在临时目录，保留已有文件（只覆盖同名截图）。');
 fs.mkdirSync(outDir, { recursive: true });
+/* 只清本脚本上一次生成的 p*.png，不动目录里的其它文件 */
+for (const f of fs.readdirSync(outDir)) {
+  if (/^p\d+\.png$/.test(f)) fs.rmSync(path.join(outDir, f), { force: true });
+}
 
 const abs = path.resolve(file);
 const browser = await chromium.launch({ channel: 'chrome' }).catch(() => chromium.launch());
@@ -42,7 +42,7 @@ const errors = [];
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('pageerror: ' + e.message));
 
-await page.goto('file://' + abs);
+await page.goto(pathToFileURL(abs).href);
 await page.waitForTimeout(600);
 
 const count = await page.evaluate(() => document.querySelectorAll('#stage > .slide').length);
@@ -112,7 +112,7 @@ for (let i = 0; i < count; i++) {
   await page.evaluate(n => {
     document.querySelectorAll('#stage > .slide').forEach((s, j) => s.classList.toggle('active', j === n));
   }, i);
-  await page.waitForTimeout(120);
+  await page.waitForTimeout(420); /* 切页动画 380ms，等它走完再截图，否则截到淡入中途 */
   await page.evaluate(n => {
     const el = document.querySelector('#cnt b');
     if (el) el.textContent = String(n + 1).padStart(el.textContent.length, '0');

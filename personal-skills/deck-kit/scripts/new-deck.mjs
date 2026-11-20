@@ -30,7 +30,14 @@ const DEFAULTS = {
 let cfg = { ...DEFAULTS };
 if (opt.brand) {
   const bp = path.resolve(opt.brand);
-  const raw = JSON.parse(fs.readFileSync(bp, 'utf8'));
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(bp, 'utf8'));
+  } catch (e) {
+    console.error('读不了 brand.json：' + bp);
+    console.error('  ' + (e instanceof SyntaxError ? 'JSON 格式有误：' + e.message : e.message));
+    process.exit(1);
+  }
   const dir = path.dirname(bp);
   cfg = {
     name: raw.name || DEFAULTS.name,
@@ -67,10 +74,11 @@ const tpl = fs.readFileSync(path.join(ROOT, 'assets/template.html'), 'utf8');
 
 const title = typeof opt.title === 'string' ? opt.title : '未命名演示文稿';
 const brandline = [cfg.name, cfg.tagline].filter(Boolean).join(' · ');
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const html = tpl
-  .replace('{{TITLE}}', () => title)
-  .replace('{{BRANDLINE}}', () => brandline)
+  .replace('{{TITLE}}', () => esc(title))
+  .replace('{{BRANDLINE}}', () => esc(brandline))
   .replace('{{BRAND}}', () => brandJson)
   .replace('{{CSS}}', () => css)
   .replace('{{JS}}', () => js);

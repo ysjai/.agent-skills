@@ -2,8 +2,8 @@
 <html lang="zh-CN"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-pnid-children="KDaRo7mQcdSfZHY8C1GPPm">某零售集团 AI-DLC 研发提效实践 · 架构组分享</title>
-<style data-pnid-children="E9J4HEOxXUcOPDcEalfPQz">
+<title>某零售集团 AI-DLC 研发提效实践 · 架构组分享</title>
+<style>
   :root{
     --ink:#0F2233;
     --ink2:#3B5266;
@@ -333,10 +333,10 @@
           <div style="flex:1;display:grid;grid-template-columns:46px 1fr auto;gap:16px;align-items:center;">
             <div style="font-size:20px;font-weight:800;color:#AFC6D8;letter-spacing:.02em;font-variant-numeric:tabular-nums;">05</div>
             <div>
-              <div style="font-size:15.5px;font-weight:700;color:var(--navy);letter-spacing:.01em;">带走什么 · 六个模式</div>
-              <div class="small" style="margin-top:4px;font-size:11.8px;">与工具、模型、行业无关的设计选择</div>
+              <div style="font-size:15.5px;font-weight:700;color:var(--navy);letter-spacing:.01em;">带走什么 · 坑、模式与边界</div>
+              <div class="small" style="margin-top:4px;font-size:11.8px;">六条模式、四条坑、四条边界</div>
             </div>
-            <div style="font-size:10.5px;color:#93A8B9;letter-spacing:.06em;font-variant-numeric:tabular-nums;">P13</div>
+            <div style="font-size:10.5px;color:#93A8B9;letter-spacing:.06em;font-variant-numeric:tabular-nums;">P13–P15</div>
           </div>
       </div>
       <div style="background:var(--navy);border-radius:12px;padding:34px 32px;color:#fff;display:flex;flex-direction:column;justify-content:center">
@@ -896,7 +896,46 @@
 
 <!-- ============ 11 ============ -->
 <section class="slide">
-  <div class="kicker">11 · 可借鉴 <span class="dim">架构师视角的六个模式</span></div>
+  <div class="kicker">11 · 踩过的坑 <span class="dim">四条真金白银换来的</span></div>
+  <h1 class="title">有些弯路<em>不走一遍就不会信</em></h1>
+  <div class="lead">
+    下面四条不是方法论，是当时硬撞上去的。代价写在每条后面——写出来是为了让别人少撞一次。
+  </div>
+  <div class="body">
+    <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:1fr;gap:13px">
+      <div class="card" style="justify-content:center;gap:10px">
+        <div><div class="ct"><span class="num red">1</span>口径没定就改流程</div>
+        <div class="cd" style="margin-top:9px">前两周直接动流程，到第 4 周三个项目对齐，才发现各算各的账：有的数卡、有的数工时、有的数版本。前面攒的基线全部作废。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">代价：两周返工，第一次汇报拿不出可比数字。</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 改法：先定口径，再动环节。顺序反了，后面全是重来。</div>
+      </div>
+      <div class="card" style="justify-content:center;gap:10px">
+        <div><div class="ct"><span class="num red">2</span>Agent 产出没人收</div>
+        <div class="cd" style="margin-top:9px">五个 Agent 上线第一周产出一堆 PRD 和方案，没人 review，全堆在仓库里。产出速度和消化能力不匹配时，多出来的都是库存。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">代价：第一周的产物大半后来重写。</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 改法：用例目录必须人批准，才允许出脚本。</div>
+      </div>
+      <div class="card" style="justify-content:center;gap:10px">
+        <div><div class="ct"><span class="num red">3</span>拿卡数当吞吐</div>
+        <div class="cd" style="margin-top:9px">中途做过一版按卡片数排的周报。拆分粒度一改，数字就翻倍，被业务方当场质疑，这张周报直接下架。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">代价：一次汇报会失去一半信任，后面每页都要先自证口径。</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 改法：周报只报当量与周期，卡数不进报表。</div>
+      </div>
+      <div class="card" style="justify-content:center;gap:10px">
+        <div><div class="ct"><span class="num red">4</span>trace 字段上太满</div>
+        <div class="cd" style="margin-top:9px">第一版 trace 定了 23 个字段，写的人嫌烦，两周后一半的行是空的。约束一旦超过人的耐心，就会被静默绕过。</div>
+        <div class="cd" style="margin-top:7px;color:#6D8299;font-size:11.6px">代价：两周的 trace 数据不可用，链路台账重建一次。</div></div>
+        <div class="cd" style="color:var(--muted);font-size:11px">→ 改法：砍到 14 个，机器自动填 11 个，人只确认 3 个。</div>
+      </div>
+    </div>
+    <div class="note warn"><b>四条坑的共同点：</b>都是先做、后发现口径不对。而口径这件事越晚改代价越高——它不是返工一次，是把前面所有数字作废。</div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>数据源：试点项目周会记录与规范版本变更</div><div class="pg">13</div></div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section class="slide">
+  <div class="kicker">12 · 可借鉴 <span class="dim">架构师视角的六个模式</span></div>
   <h1 class="title">能带走的<em>不是工具，是六个设计选择</em></h1>
   <div class="lead">
     客户会换、工具会换、模型半年一迭代。下面六条与具体产品无关，换到任何一个交付团队都成立。
@@ -944,12 +983,60 @@
       <b>六条里最难的不是技术，是让「口径」和「归属」在组织里被承认。</b>前五条是设计，最后一条是耐力。
     </div>
   </div>
-  <div class="foot"><div class="fl"><span class="dot"></span>与工具、模型、行业无关的设计选择</div><div class="pg">13</div></div>
+  <div class="foot"><div class="fl"><span class="dot"></span>与工具、模型、行业无关的设计选择</div><div class="pg">14</div></div>
 </section>
 
-<!-- ============ 12 ============ -->
+<!-- ============ 13 ============ -->
 <section class="slide">
-  <div class="kicker">12 · 小结 <span class="dim">三句话与三个动作</span></div>
+  <div class="kicker">13 · 边界 <span class="dim">它什么时候不适用</span></div>
+  <h1 class="title">它能治的<em>只有两件事</em></h1>
+  <div class="lead" style="max-width:1010px">
+    口径不一致、交接面拥堵。<b>不是人不够，也不是技术不行</b>——这两类问题，这套东西一点忙都帮不上。
+  </div>
+  <div class="body">
+    <div class="two" style="flex:1;min-height:0;align-items:stretch">
+      <div style="display:flex;flex-direction:column;min-height:0">
+        <div class="label" style="margin-bottom:11px">四条不适用的情况</div>
+        <div style="flex:1;display:grid;grid-template-columns:1fr;grid-auto-rows:1fr;gap:11px;min-height:0">
+          <div class="card" style="justify-content:center">
+            <div class="ct" style="font-size:13px">需求粒度已经稳定</div>
+            <div class="cd">团队本来就有统一的拆卡规范，当量尺带来的增量很小，直接上工时尺就够。</div>
+          </div>
+          <div class="card" style="justify-content:center">
+            <div class="ct" style="font-size:13px">探索型 0 → 1</div>
+            <div class="cd">需求每周推翻重来，当量算完第二天就失效。先做短周期复盘，别急着建度量。</div>
+          </div>
+          <div class="card" style="justify-content:center">
+            <div class="ct" style="font-size:13px">少于 3 人的小队</div>
+            <div class="cd">协调成本本来就低，度量的开销大于收益。三个人当面说清楚比建表快。</div>
+          </div>
+          <div class="card" style="justify-content:center">
+            <div class="ct" style="font-size:13px">没有历史卡片可校准</div>
+            <div class="cd">带值表要用本团队真实卡片校准，新团队第一次只能给宽区间，P80 不可信。</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;min-height:0">
+        <div class="label" style="margin-bottom:11px;visibility:hidden" aria-hidden="true">&nbsp;</div>
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;background:var(--navy);border-radius:12px;padding:34px 32px;color:#fff">
+          <div style="font-size:10.5px;letter-spacing:.18em;opacity:.55;font-weight:700">判据</div>
+          <div style="margin-top:18px;font-size:19px;line-height:1.85;font-weight:600">
+            先问一句：<br>你们是「算不清」，<br>
+            <span style="color:#F0CDD2">还是「干不完」？</span>
+          </div>
+          <div style="margin-top:30px;border-top:1px solid rgba(255,255,255,.18);padding-top:16px;font-size:12.5px;line-height:1.7;opacity:.78">
+            算不清 = 口径问题，这套能用。<br>干不完 = 人手或技术问题，它只能让问题更清楚，解决不了。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><div class="fl"><span class="dot"></span>数据源：试点项目复盘记录</div><div class="pg">15</div></div>
+</section>
+
+<!-- ============ 14 ============ -->
+<section class="slide">
+  <div class="kicker">14 · 小结 <span class="dim">三句话与三个动作</span></div>
   <h1 class="title">AI 提效的瓶颈，很少在模型能力</h1>
   <div class="lead" style="max-width:1010px">
     更多时候在<b>度量口径</b>与<b>组织交接面</b>。这两件事都不性感，但它们决定了 AI 的收益能不能被看见、被承认、被复制。
@@ -994,7 +1081,7 @@
     <div class="note">
       <b>别一次全做。</b>先把第一件事做出一个数字，再谈第二件——顺序反了，三件事都会变成文档。
     </div>
-  <div class="foot"><div class="fl"><span class="dot"></span>谢谢 · Q &amp; A</div><div class="pg">14</div></div>
+  <div class="foot"><div class="fl"><span class="dot"></span>谢谢 · Q &amp; A</div><div class="pg">16</div></div>
 </section>
 
 </div>
@@ -1027,7 +1114,7 @@
 </div>
 <div class="tip" id="tip"></div>
 
-<script data-pnid-children="qgsiPJ4oDe1SLVAumqH8LF">
+<script>
 (function(){
   const slides = Array.from(document.querySelectorAll('.slide'));
   const total = slides.length;

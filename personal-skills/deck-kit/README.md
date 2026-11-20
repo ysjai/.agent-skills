@@ -30,11 +30,13 @@ node $KIT/scripts/new-deck.mjs --out outputs/my-deck.html --title "分享标题"
 # 2. 按 $KIT/references/layouts.md 把页面插到 <!-- SLIDES --> 锚点之前
 #    示例页用完删掉，页脚页码改成实际位置
 
-# 3. 交付前自检（0 越界、0 报错、页码连续、无占位残留才算过）
+# 3. 交付前自检（要 playwright，缺就 npm i -D playwright）
 node $KIT/scripts/verify.mjs outputs/my-deck.html
 ```
 
 打开 `outputs/my-deck.html` 就能讲。截图落在 `/tmp/deck-shot/`，逐页看一遍密度和对齐再交付。
+
+退出码：`0` 通过、`1` 片子有问题、`2` 缺 playwright。末尾以 ⚠ 开头的提示（填充率偏低、数字没来源、末页是致谢）不阻塞，改不改自己判断。
 
 > 外壳刚生成时校验**必然不通过**——它本身就是占位内容。这不是坏了。
 
@@ -100,7 +102,7 @@ references/deck-types.md 四类片子（方案讲解 / 方案评审 / 总结汇�
 references/layouts.md    11 个版式片段，可直接拷贝
 references/style-guide.md 色板、字号、间距、密度、对齐铁律
 references/content-rules.md 文案口径：结论先行、数字带来源、讲代价
-examples/sample-ai-dlc.html 14 页样例（只参考内容写法，不要抄它的 style/script）
+examples/sample-ai-dlc.html 16 页样例（只参考内容写法，不要抄它的 style/script）
 examples/README.md      样例怎么看
 ```
 
