@@ -43,12 +43,14 @@ node $KIT/scripts/verify.mjs outputs/my-deck.html
 ## 一份片子怎么长出来
 
 1. **收料**：受众、时长、必讲点、手上的材料、品牌（可选）
-2. **出大纲**：每页一行 `页码 | 结论式标题 | 一句话主张 | 版式名`，确认后再写
+2. **定类型 + 出大纲**：先定这是方案讲解 / 方案评审 / 总结汇报 / 经验分享，再按该类骨架排页
 3. **生成外壳** → **填页面**：从 `references/layouts.md` 挑版式，替换文案
 4. **校验** → 看截图 → 修
 5. **交付**：单文件 HTML + 一句使用说明
 
 页数经验值：10 分钟 ≈ 6–8 页，30 分钟 ≈ 12–16 页。
+
+四类片子的骨架、自检清单、页面配比与版式偏好都在 `references/deck-types.md`。
 
 ---
 
@@ -94,6 +96,7 @@ assets/logos/            品牌 logo 库（备用素材，默认不使用）
 scripts/new-deck.mjs     生成外壳
 scripts/brand.mjs        处理 logo（去白底、等比缩放）
 scripts/verify.mjs       交付前自检
+references/deck-types.md 四类片子（方案讲解 / 方案评审 / 总结汇报 / 经验分享）的骨架与自检
 references/layouts.md    11 个版式片段，可直接拷贝
 references/style-guide.md 色板、字号、间距、密度、对齐铁律
 references/content-rules.md 文案口径：结论先行、数字带来源、讲代价

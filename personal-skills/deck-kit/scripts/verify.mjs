@@ -97,7 +97,13 @@ const struct = await page.evaluate(() => {
     if (cf) cf.remove();
     if (/[\d.]\s*%|n\s*=\s*\d|[\d.]+\s*倍/.test((copy.textContent || '').replace(/\s+/g, ''))) unsourced.push(i + 1);
   });
-  return { total: slides.length, covers, badPages, emptyBody, placeholders, strays, thin, unsourced };
+  const last = slides[slides.length - 1];
+  const lastCopy = last.cloneNode(true);
+  const lf = lastCopy.querySelector('.foot');
+  if (lf) lf.remove();
+  const lastText = (lastCopy.textContent || '').replace(/\s+/g, '');
+  const thanksLast = slides.length > 1 && /谢谢|感谢|Q&A|Q＆A|Thank/i.test(lastText);
+  return { total: slides.length, covers, badPages, emptyBody, placeholders, strays, thin, unsourced, thanksLast };
 });
 
 const problems = [];
@@ -182,6 +188,10 @@ if (sparse.length) {
 if (struct.unsourced.length) {
   console.log('\n⚠ 提示：这些页出现了百分比或倍数，页脚却没写来源（不阻塞）');
   console.log('  ' + struct.unsourced.map(n => `第 ${n} 页`).join('、') + '：补口径与出处，或把这个数字改成定性表述');
+}
+if (struct.thanksLast) {
+  console.log('\n⚠ 提示：最后一页是致谢（不阻塞）');
+  console.log('  听众离场前看到的最后一屏应该推他们做事：换成一个可执行的下一步，或一个待决定的问题');
 }
 
 if (!groups.length) {

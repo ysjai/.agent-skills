@@ -1,6 +1,6 @@
 ---
 name: "deck-kit"
-version: "2.0.0"
+version: "2.1.0"
 display_name: "演示片制作"
 display_name_en: "Deck Kit"
 description: "把内容做成单文件 HTML 演示片（1280×720，16:9），带翻页、缩略图目录、全屏放映、导出 PDF。用于技术分享、方案汇报、项目复盘、内部培训、路演。视觉风格已固化，可按需注入企业 logo（单枚或多枚并排），不提供则不带品牌。用户提到做片子、做 PPT、出幻灯片、做汇报页、deck、讲稿配图时使用。"
@@ -20,11 +20,13 @@ description_en: "Build single-file HTML slide decks (1280x720) with navigation, 
 ## 五步流程
 
 **1. 收料**（缺一项就问，不要猜）
-受众与场合、时长与页数、必讲的 3–5 个点、手上的材料（数据、报表、截图、旧文档都算；没有就说没有）、品牌（要不要放 logo、封面品牌行写什么；用户说空着就空着，不追问）。
+先问一句：这份片子讲完，**听众要做什么决定**——批预算 / 拍板 / 认可进展 / 带走方法。这一句定类型，类型定骨架。
+另外还要问：受众与场合、时长与页数、必讲的 3–5 个点、手上的材料（数据、报表、截图、旧文档都算；没有就说没有）、品牌（要不要放 logo、封面品牌行写什么；用户说空着就空着，不追问）。
 
-**2. 出大纲，先确认**
+**2. 定类型，出大纲，先确认**
+从 `references/deck-types.md` 落一类（A 方案讲解 / B 方案评审 / C 总结汇报 / D 经验分享），取该类骨架。必需页不能省，可选页按内容取舍，「不要出现」的页直接不列。
 每页一行：`页码 | 结论式标题 | 一句话主张 | 版式名`。用户点头再写代码。
-页数经验值：10 分钟 ≈ 6–8 页，30 分钟 ≈ 12–16 页。
+页数经验值：10 分钟 ≈ 6–8 页，30 分钟 ≈ 12–16 页；与该类型的默认区间冲突时以内容为准，先砍可选页。
 
 **3. 生成外壳**（命令在**项目目录**下执行，脚本用技能的绝对路径）
 
@@ -77,7 +79,7 @@ node $KIT/scripts/verify.mjs outputs/<name>.html
 | 一个公式 / 一把尺子 | 深色公式面板 | 内联深色块 + `.small` |
 | 收尾行动项 | 三卡 + 深色结论 | `.card` + `.thesis` |
 
-细节片段见 `references/layouts.md`。
+细节片段见 `references/layouts.md`。一页用哪个版式看内容形态；一份片子整体偏重什么，看 `references/deck-types.md` 的页面配比。
 
 ## 硬规则（都是踩过坑换来的）
 
@@ -132,6 +134,7 @@ assets/logos/         备用 logo（默认不使用）
 scripts/new-deck.mjs  生成外壳
 scripts/brand.mjs     处理 logo
 scripts/verify.mjs    交付前自检
+references/deck-types.md 四类片子的骨架、自检、页面配比与版式偏好
 references/layouts.md 11 个版式片段
 references/style-guide.md 色值与字号、对齐铁律、加新版式的四步
 references/content-rules.md 文案口径
